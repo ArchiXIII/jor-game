@@ -1,0 +1,692 @@
+.metaTopBar {
+  position: fixed;
+  top: calc(var(--safe-top) + 12px);
+  left: calc(var(--safe-left) + 18px);
+  right: calc(var(--safe-right) + 18px);
+  z-index: 45;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(5px, 1.2vw, 10px);
+  padding: 0 clamp(8px, 2vw, 18px);
+  border-radius: 26px;
+  border: 1px solid rgba(135, 233, 255, 0.22);
+  background: linear-gradient(180deg, rgba(16, 55, 71, 0.78), rgba(6, 23, 33, 0.91));
+  pointer-events: none;
+}
+
+.metaTopBar button {
+  pointer-events: auto;
+}
+
+.metaProfileButton,
+.metaIconButton,
+.metaCloseButton,
+.metaTabs button,
+.metaXpCard {
+  appearance: none;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+}
+
+.metaProfileButton {
+  width: 170px;
+  height: 56px;
+  border: 0;
+  background: transparent;
+  color: #eafff8;
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  text-align: left;
+}
+
+.metaProfileText {
+  display: grid;
+  align-content: center;
+  grid-template-rows: auto auto 4px;
+  gap: 3px;
+  width: 154px;
+  height: 100%;
+  min-width: 0;
+}
+
+.metaPlayerName,
+.metaRankName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaButtonCluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.metaTrophyShelf {
+  display: flex;
+  align-items: center;
+  justify-content: stretch;
+  gap: clamp(0px, 0.35vw, 3px);
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-width: 0;
+  height: auto;
+  padding: 4px 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.metaTrophyItem {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  opacity: 0.72;
+}
+
+.metaTrophyItem img {
+  width: 100%;
+  height: 100%;
+  max-height: 56px;
+  display: block;
+  object-fit: contain;
+  filter: brightness(0) saturate(0);
+}
+
+
+#metaLeaderboardButton svg path {
+  transform: scaleX(1.1);
+  transform-origin: 18px 18px;
+}
+
+.metaTrophyItem.complete {
+  opacity: 1;
+}
+
+.metaTrophyItem.complete img {
+  filter: none;
+}
+
+.metaTrophyItem.currentChapter {
+  opacity: 1;
+  z-index: 1;
+}
+
+.metaTrophyItem.currentChapter img {
+  position: relative;
+  z-index: 1;
+  transform: translateY(-1px) scale(1.08);
+  filter: brightness(0) saturate(0);
+}
+
+.metaTrophyItem.currentChapter.complete img {
+  filter: none;
+}
+
+.metaTrophyItem.awarding {
+  opacity: 1;
+  z-index: 1;
+}
+
+.metaTrophyItem.awarding::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 236, 141, 0.72), rgba(120, 242, 255, 0.28) 42%, rgba(120, 242, 255, 0) 70%);
+  animation: metaTrophyGlow 1.35s ease-out both;
+}
+
+.metaTrophyItem.awarding img {
+  position: relative;
+  filter: none;
+  animation: metaTrophyAward 1.35s cubic-bezier(0.16, 0.84, 0.24, 1) both;
+}
+
+@keyframes metaTrophyAward {
+  0% { transform: translateY(10px) scale(0.22) rotate(-10deg); opacity: 0; }
+  38% { transform: translateY(-8px) scale(1.32) rotate(5deg); opacity: 1; }
+  62% { transform: translateY(2px) scale(0.94) rotate(-2deg); }
+  82% { transform: translateY(-1px) scale(1.05) rotate(1deg); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes metaTrophyGlow {
+  0% { transform: scale(0.25); opacity: 0; }
+  30% { opacity: 0.95; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+
+.metaPlayerName {
+  color: #eafff8;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.metaRankName {
+  color: #ffe590;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.metaRankBar,
+.metaModalRankBar {
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+}
+
+.metaRankBar {
+  width: 126px;
+  height: 4px;
+  margin-top: 0;
+  align-self: start;
+}
+
+.metaRankBar span,
+.metaModalRankBar span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f6bd4c, #ffe590 58%, #7af2ff);
+  transition: width 0.25s ease;
+}
+
+.metaIconButton {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(135, 233, 255, 0.28);
+  background: radial-gradient(circle at 35% 24%, rgba(176, 250, 255, 0.95), rgba(57, 174, 196, 0.88) 52%, rgba(14, 66, 84, 0.96));
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.metaIconButton svg {
+  width: 24px;
+  height: 24px;
+  fill: rgba(8, 42, 52, 0.95);
+}
+
+.metaSoundButton .soundIcon {
+  width: 25px;
+  height: 25px;
+  color: rgba(8, 42, 52, 0.95);
+}
+
+.metaSoundButton .soundSpeaker {
+  fill: currentColor;
+}
+
+.metaSoundButton .soundWave {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.metaSoundButton .soundSlash {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.metaSoundButton.muted .soundWave {
+  opacity: 0.16;
+}
+
+.metaSoundButton.muted .soundSlash {
+  opacity: 1;
+}
+
+.metaProfileButton:hover,
+.metaIconButton:hover,
+.metaCloseButton:hover,
+.metaXpCard:hover,
+.metaTabs button:hover {
+  filter: brightness(1.07);
+}
+
+.metaModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 14px) calc(var(--safe-right) + 14px) calc(var(--safe-bottom) + 14px) calc(var(--safe-left) + 14px);
+  background: rgba(0, 0, 0, 0.66);
+}
+
+.metaModalOverlay.active {
+  display: flex;
+}
+
+.metaModal {
+  position: relative;
+  display: none;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 2px solid rgba(122, 242, 255, 0.46);
+  background: linear-gradient(180deg, rgba(15, 55, 71, 0.97), rgba(5, 20, 30, 0.99));
+  color: #eafff8;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+.metaModal.active {
+  display: block;
+}
+
+.metaProfileModal {
+  width: min(430px, calc(100vw - var(--safe-left) - var(--safe-right) - 30px));
+  height: min(340px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 34px));
+  padding: 0;
+}
+
+.metaCloseButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(135, 233, 255, 0.28);
+  background: radial-gradient(circle at 35% 24%, rgba(176, 250, 255, 0.9), rgba(57, 174, 196, 0.82) 52%, rgba(14, 66, 84, 0.95));
+  color: rgba(7, 37, 48, 0.96);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.metaProfileModal h2 {
+  margin: 56px 58px 0;
+  color: #eafff8;
+  font-size: 28px;
+  line-height: 1.08;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaModalRank {
+  margin: 14px 28px 0;
+  color: #ffe590;
+  font-size: 21px;
+  line-height: 1.08;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaModalRankBar {
+  width: min(280px, calc(100% - 74px));
+  height: 7px;
+  margin: 20px auto 0;
+}
+
+.metaXpCard {
+  width: calc(100% - 84px);
+  height: 76px;
+  margin: 28px auto 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.metaXpLabel,
+.metaXpAction,
+.metaLeaderboardHint {
+  color: #7af2ff;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.metaXpValue {
+  margin: 12px 0 7px;
+  color: #eafff8;
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.metaXpAction {
+  font-size: 13px;
+  color: rgba(234, 255, 248, 0.78);
+}
+
+.metaThanks {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 24px;
+  margin: 0;
+  color: rgba(234, 255, 248, 0.82);
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.metaLeaderboardModal {
+  width: min(480px, calc(100vw - var(--safe-left) - var(--safe-right) - 28px));
+  height: min(640px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 28px));
+  padding: 0;
+}
+
+.metaXpLeaderboardModal {
+  width: min(460px, calc(100vw - var(--safe-left) - var(--safe-right) - 28px));
+  height: min(560px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 28px));
+  padding: 0;
+}
+
+.metaTabs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(16, 28, 38, 0.98), rgba(6, 13, 20, 0.98));
+}
+
+.metaTabs::before {
+  content: '';
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-0.5px);
+  background: linear-gradient(180deg, rgba(122, 242, 255, 0), rgba(122, 242, 255, 0.48), rgba(122, 242, 255, 0));
+  z-index: 2;
+  pointer-events: none;
+}
+
+.metaTabs button {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(234, 255, 248, 0.72);
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.metaTabs button.active {
+  color: #9df8ff;
+  background: linear-gradient(180deg, rgba(29, 86, 104, 0.99), rgba(9, 39, 53, 0.99));
+}
+
+.metaLeaderboardModal .metaCloseButton {
+  top: 56px;
+}
+
+.metaXpLeaderboardModal .metaCloseButton {
+  top: 12px;
+}
+
+.metaLeaderboardModal h2,
+.metaXpLeaderboardModal h2 {
+  margin: 72px 64px 0;
+  color: #eafff8;
+  font-size: 25px;
+  line-height: 1.08;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.metaXpLeaderboardModal h2 {
+  margin-top: 50px;
+}
+
+.metaLeaderboardHint {
+  margin: 13px 46px 0;
+  min-height: 14px;
+  color: rgba(157, 248, 255, 0.86);
+  font-size: 11px;
+}
+
+.metaLeaderboardList {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 138px;
+  bottom: 24px;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.metaXpLeaderboardModal .metaLeaderboardList {
+  top: 96px;
+}
+
+.metaLeaderboardState {
+  align-self: center;
+  padding: 18px 10px;
+  text-align: center;
+  color: rgba(234, 255, 248, 0.82);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.metaLeaderboardGap {
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: rgba(122, 242, 255, 0.58);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.metaLeaderboardGap::before {
+  content: '...';
+}
+
+.metaLeaderboardRow {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 12px 0 8px;
+  border-radius: 11px;
+  border: 1px solid rgba(255,255,255,0.045);
+  background: linear-gradient(135deg, rgba(255,255,255,0.065), rgba(255,255,255,0.035));
+}
+
+.metaLeaderboardRow.isPlayer {
+  border-color: rgba(122, 242, 255, 0.58);
+  background: linear-gradient(135deg, rgba(122, 242, 255, 0.2), rgba(53, 177, 205, 0.1));
+}
+
+.metaLeaderboardRank {
+  color: #7af2ff;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.metaLeaderboardName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #eafff8;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.metaLeaderboardScore {
+  color: #eafff8;
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.metaLeaderboardRow.top1 {
+  border-color: rgba(246, 189, 76, 0.72);
+  background: linear-gradient(135deg, rgba(255, 220, 108, 0.20), rgba(126, 79, 18, 0.12));
+}
+
+.metaLeaderboardRow.top2 {
+  border-color: rgba(158, 181, 207, 0.66);
+  background: linear-gradient(135deg, rgba(210, 230, 255, 0.15), rgba(96, 118, 148, 0.1));
+}
+
+.metaLeaderboardRow.top3 {
+  border-color: rgba(201, 121, 50, 0.66);
+  background: linear-gradient(135deg, rgba(255, 160, 82, 0.14), rgba(111, 57, 22, 0.1));
+}
+
+.metaLeaderboardRow.top1 .metaLeaderboardRank,
+.metaLeaderboardRow.top1 .metaLeaderboardName,
+.metaLeaderboardRow.top1 .metaLeaderboardScore { color: #9df8ff; }
+.metaLeaderboardRow.top2 .metaLeaderboardRank,
+.metaLeaderboardRow.top2 .metaLeaderboardName,
+.metaLeaderboardRow.top2 .metaLeaderboardScore { color: #e9f2ff; }
+.metaLeaderboardRow.top3 .metaLeaderboardRank,
+.metaLeaderboardRow.top3 .metaLeaderboardName,
+.metaLeaderboardRow.top3 .metaLeaderboardScore { color: #ffc279; }
+
+
+
+@media (max-width: 430px), (max-height: 700px) {
+  .metaTopBar {
+    top: calc(var(--safe-top) + 8px);
+    left: calc(var(--safe-left) + 10px);
+    right: calc(var(--safe-right) + 10px);
+    height: 56px;
+    padding: 0 14px;
+    border-radius: 20px;
+  }
+
+  .metaProfileButton {
+    width: 132px;
+    height: 48px;
+    padding: 5px 0;
+  }
+
+  .metaProfileText {
+    width: 112px;
+    grid-template-rows: auto auto 3px;
+    gap: 2px;
+  }
+  .metaPlayerName { font-size: 15px; line-height: 1.04; }
+  .metaRankName { font-size: 11px; line-height: 1.04; }
+  .metaRankBar { width: 86px; height: 3px; margin-top: 0; }
+
+  .metaIconButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .metaIconButton svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .metaSoundButton .soundIcon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .metaProfileModal {
+    width: min(360px, calc(100vw - var(--safe-left) - var(--safe-right) - 30px));
+    height: min(300px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 34px));
+  }
+
+  .metaCloseButton {
+    width: 34px;
+    height: 34px;
+    font-size: 24px;
+  }
+
+  .metaProfileModal h2 {
+    margin-top: 48px;
+    font-size: 24px;
+  }
+
+  .metaModalRank {
+    margin-top: 11px;
+    font-size: 18px;
+  }
+
+  .metaModalRankBar {
+    width: min(230px, calc(100% - 74px));
+    margin-top: 17px;
+  }
+
+  .metaXpCard {
+    width: calc(100% - 84px);
+    height: 64px;
+    margin-top: 24px;
+  }
+
+  .metaXpLabel { font-size: 14px; }
+  .metaXpValue { font-size: 34px; margin-top: 10px; }
+  .metaXpAction { font-size: 12px; }
+  .metaThanks { bottom: 20px; font-size: 13px; line-height: 1.32; }
+
+  .metaLeaderboardModal {
+    width: min(400px, calc(100vw - var(--safe-left) - var(--safe-right) - 28px));
+    height: min(560px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 28px));
+  }
+
+  .metaXpLeaderboardModal {
+    width: min(376px, calc(100vw - var(--safe-left) - var(--safe-right) - 28px));
+    height: min(500px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 28px));
+  }
+
+  .metaTabs { height: 44px; }
+  .metaTabs button { font-size: 13px; }
+  .metaLeaderboardModal .metaCloseButton { top: 52px; }
+  .metaLeaderboardModal h2 { margin-top: 67px; font-size: 23px; }
+  .metaXpLeaderboardModal h2 { margin-top: 46px; font-size: 22px; }
+  .metaLeaderboardHint { margin-top: 12px; font-size: 9.5px; }
+  .metaLeaderboardList { top: 127px; gap: 4px; }
+  .metaXpLeaderboardModal .metaLeaderboardList { top: 84px; }
+  .metaLeaderboardRow { height: 24px; grid-template-columns: 40px minmax(0, 1fr) auto; }
+  .metaLeaderboardRank { font-size: 13px; }
+  .metaLeaderboardName, .metaLeaderboardScore { font-size: 12px; }
+}
+
+@media (max-width: 720px) {
+  .metaTrophyShelf {
+    gap: 0;
+    padding: 5px 0;
+  }
+
+  .metaTrophyItem img {
+    max-height: 46px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metaTrophyItem.awarding::before,
+  .metaTrophyItem.awarding img {
+    animation: none;
+  }
+}

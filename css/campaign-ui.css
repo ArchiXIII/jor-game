@@ -1,0 +1,587 @@
+.campaignOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 42;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(var(--safe-top) + 88px)
+    max(22px, env(safe-area-inset-right))
+    calc(var(--safe-bottom) + 28px)
+    max(22px, env(safe-area-inset-left));
+  background: rgba(0, 8, 14, 0.54);
+  font-family: Arial, sans-serif;
+  color: #eafff8;
+}
+
+.campaignOverlay.active {
+  display: flex;
+}
+
+.campaignPanel {
+  --campaign-theme-top: rgb(22, 75, 91);
+  --campaign-theme-mid: rgb(9, 38, 50);
+  --campaign-theme-bottom: rgb(4, 17, 27);
+  --campaign-theme-glow: rgba(103, 237, 255, 0.14);
+  --campaign-header-width: 330px;
+  --campaign-side-zone: calc((100% - var(--campaign-header-width)) / 2);
+  position: relative;
+  width: min(640px, calc(100vw - var(--safe-left) - var(--safe-right) - 44px));
+  height: min(570px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 116px));
+  min-height: min(430px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 116px));
+  border-radius: 24px;
+  overflow: visible;
+  background:
+    radial-gradient(circle at 50% 46%, var(--campaign-theme-glow), rgba(103, 237, 255, 0.045) 52%, rgba(0, 0, 0, 0) 72%),
+    linear-gradient(180deg, var(--campaign-theme-top) 0%, var(--campaign-theme-mid) 52%, var(--campaign-theme-bottom) 100%);
+  border: 5px solid rgba(48, 173, 196, 0.72);
+}
+
+.campaignPanel::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -31px;
+  width: min(204px, 34%);
+  aspect-ratio: 516 / 279;
+  transform: translateX(-50%);
+  background: url('../sprites/ui/chapter_frame_ornament.png') center / contain no-repeat;
+  filter: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.campaignCloseBtn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(7, 26, 35, 0.72);
+  color: rgba(234, 255, 248, 0.88);
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 900;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.campaignHeader {
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  width: min(var(--campaign-header-width), calc(100% - 230px));
+  min-width: 250px;
+  height: 58px;
+  transform: translateX(-50%);
+  border-radius: 18px;
+  border: 2px solid rgba(122, 242, 255, 0.48);
+  background: linear-gradient(180deg, rgba(22, 64, 76, 0.98), rgba(8, 24, 34, 0.98));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  padding: 0 14px;
+}
+
+.campaignTitle {
+  color: #9df8ff;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.campaignName {
+  color: #eafff8;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.05;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campaignStars {
+  position: absolute;
+  top: 28px;
+  left: calc(50% + var(--campaign-header-width) / 2);
+  width: var(--campaign-side-zone);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  color: #9df8ff;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.campaignStarIcon {
+  width: 31px;
+  height: 31px;
+  display: block;
+  object-fit: contain;
+  filter: none;
+}
+
+.campaignTrophy {
+  position: absolute;
+  top: 21px;
+  left: calc(var(--campaign-side-zone) / 2 - 36px);
+  width: 72px;
+  height: 72px;
+  transform: scale(0.86);
+  transition: transform .18s ease;
+  pointer-events: none;
+}
+
+.campaignTrophy.complete {
+  transform: scale(1);
+}
+
+.campaignTrophy::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 236, 160, 0.2), rgba(246, 189, 76, 0.1) 56%, rgba(246, 189, 76, 0) 74%);
+}
+
+.campaignTrophy:not(.complete)::before {
+  content: none;
+}
+
+.campaignTrophyCup {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  filter: none;
+}
+
+.campaignTrophy:not(.complete) .campaignTrophyCup {
+  opacity: 0.72;
+  filter: brightness(0) saturate(0);
+}
+
+.campaignTrophy:not(.complete)::after {
+  content: none;
+}
+
+.campaignTrophyCup::before,
+.campaignTrophyCup::after {
+  content: none;
+}
+
+.campaignGrid {
+  position: absolute;
+  left: 37px;
+  right: 37px;
+  top: 98px;
+  bottom: 92px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(78px, 106px));
+  grid-template-rows: repeat(2, minmax(92px, 110px));
+  justify-content: center;
+  align-content: center;
+  gap: 18px;
+}
+
+.campaignLevelBtn {
+  position: relative;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+  color: #fff1c9;
+  font-family: Arial, sans-serif;
+}
+
+.campaignLevelShape {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: min(100%, 112px);
+  aspect-ratio: 256 / 268;
+  transform: translateX(-50%);
+  background: url('../sprites/ui/campaign_level_icon.png') center / contain no-repeat;
+  filter: none;
+}
+
+.campaignLevelShape::before {
+  content: none;
+}
+
+.campaignLevelNumber {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 45%;
+  transform: translateY(-50%);
+  color: #f4ffff;
+  font-size: clamp(20px, 2.2vw, 28px);
+  font-weight: 900;
+  text-align: center;
+  z-index: 1;
+}
+
+.campaignStarsBadge {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  min-width: 72px;
+  height: 28px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  border: 1px solid rgba(122, 242, 255, 0.36);
+  background: linear-gradient(180deg, rgba(32, 22, 12, 0.88), rgba(9, 8, 13, 0.78) 52%, rgba(0, 0, 0, 0.64));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.campaignSmallStar {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+  opacity: 0.28;
+  filter: grayscale(1) brightness(0.72);
+}
+
+.campaignSmallStar.active {
+  opacity: 1;
+  filter: none;
+}
+
+.campaignLevelBtn.locked {
+  cursor: default;
+  opacity: 0.48;
+  filter: grayscale(0.32) brightness(0.78) contrast(0.94);
+}
+
+.campaignLevelBtn.locked .campaignStarsBadge {
+  display: none;
+}
+
+.campaignLevelBtn.selected:not(.locked)::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  width: min(112%, 120px);
+  height: calc(100% + 10px);
+  transform: translateX(-50%);
+  border-radius: 16px;
+  border: 5px solid rgba(122, 242, 255, 0.72);
+  pointer-events: none;
+}
+
+.campaignArrow {
+  position: absolute;
+  top: 50%;
+  width: 72px;
+  height: 96px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 1;
+  z-index: 2;
+}
+
+.campaignArrow::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 17px;
+  width: 50px;
+  height: 62px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%, 32% 50%);
+  background: linear-gradient(135deg, #f4fff3 0%, #b7ff72 34%, #51e65b 64%, #0aa868 100%);
+  filter: none;
+}
+
+.campaignArrowLeft {
+  left: -78px;
+}
+
+.campaignArrowLeft::before {
+  transform: scaleX(-1);
+}
+
+.campaignArrowRight {
+  right: -78px;
+}
+
+.campaignArrow:disabled {
+  opacity: 0.24;
+  cursor: default;
+}
+
+.campaignMessage {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 74px;
+  min-height: 18px;
+  color: #eafff8;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.campaignActions {
+  position: absolute;
+  z-index: 2;
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.campaignBackBtn,
+.campaignPlayBtn {
+  width: min(160px, calc((100% - 20px) / 2));
+  height: 50px;
+  border-radius: 18px;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform .14s ease, filter .14s ease;
+}
+
+.campaignBackBtn {
+  color: #eafff8;
+  border: 2px solid rgba(122, 242, 255, 0.42);
+  background: linear-gradient(180deg, rgba(38, 72, 82, 0.94), rgba(7, 23, 33, 0.96));
+}
+
+.campaignPlayBtn {
+  color: #140b04;
+  border: 2px solid rgba(170, 248, 255, 0.62);
+  background: linear-gradient(180deg, #d9ffff, #73efff 48%, #1395b4);
+}
+
+.campaignPlayBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  filter: grayscale(0.4);
+}
+
+.campaignBackBtn:hover,
+.campaignPlayBtn:hover:not(:disabled),
+.campaignCloseBtn:hover,
+.campaignLevelBtn:not(.locked):hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.startScreen .startCampaignBtn {
+  background: linear-gradient(180deg, #ffe996 0%, #f6bd4c 55%, #d58b26 100%);
+}
+
+.startScreen .startCampaignBtn:hover {
+}
+
+@media (max-width: 780px), (max-height: 560px) {
+  .campaignOverlay {
+    padding:
+      calc(var(--safe-top) + 76px)
+      max(16px, env(safe-area-inset-right))
+      calc(var(--safe-bottom) + 24px)
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .campaignPanel {
+    --campaign-header-width: 300px;
+    width: min(640px, calc(100vw - var(--safe-left) - var(--safe-right) - 32px));
+    height: min(540px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 100px));
+    min-height: min(390px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 100px));
+  }
+
+  .campaignHeader {
+    top: 15px;
+    height: 52px;
+    width: min(var(--campaign-header-width), calc(100% - 172px));
+    min-width: 214px;
+  }
+
+  .campaignTitle { font-size: 14px; }
+  .campaignName { font-size: 16px; }
+
+  .campaignStars {
+    top: 18px;
+    left: calc(50% + var(--campaign-header-width) / 2);
+    width: var(--campaign-side-zone);
+    font-size: 16px;
+  }
+
+  .campaignStarIcon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .campaignTrophy {
+    top: 10px;
+    left: calc(var(--campaign-side-zone) / 2 - 36px);
+    transform: scale(0.72);
+    transform-origin: center;
+  }
+
+  .campaignTrophy.complete {
+    transform: scale(0.82);
+  }
+
+  .campaignGrid {
+    left: 28px;
+    right: 28px;
+    top: 84px;
+    bottom: 78px;
+    gap: 12px;
+    grid-template-columns: repeat(5, minmax(58px, 86px));
+    grid-template-rows: repeat(2, minmax(74px, 92px));
+  }
+
+  .campaignStarsBadge {
+    min-width: 60px;
+    height: 23px;
+    bottom: 4px;
+  }
+
+  .campaignSmallStar {
+    width: 19px;
+    height: 19px;
+  }
+
+  .campaignArrowLeft {
+    left: -26px;
+  }
+
+  .campaignArrowRight {
+    right: -26px;
+  }
+
+  .campaignArrow {
+    width: 56px;
+    height: 78px;
+  }
+
+  .campaignArrow::before {
+    left: 8px;
+    top: 14px;
+    width: 38px;
+    height: 48px;
+  }
+
+  .campaignPanel::after {
+    bottom: -24px;
+    width: min(176px, 36%);
+  }
+
+  .campaignActions {
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+  }
+
+  .campaignBackBtn,
+  .campaignPlayBtn {
+    height: 42px;
+    font-size: 15px;
+  }
+
+  .campaignMessage {
+    bottom: 60px;
+    font-size: 12px;
+  }
+}
+
+@media (max-height: 500px) {
+  .campaignOverlay {
+    padding:
+      calc(var(--safe-top) + 72px)
+      max(14px, env(safe-area-inset-right))
+      calc(var(--safe-bottom) + 20px)
+      max(14px, env(safe-area-inset-left));
+  }
+
+  .campaignPanel {
+    height: min(500px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 92px));
+    min-height: min(340px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 92px));
+    border-width: 4px;
+    border-radius: 22px;
+  }
+
+  .campaignHeader {
+    top: 12px;
+    height: 48px;
+  }
+
+  .campaignStars {
+    top: 14px;
+  }
+
+  .campaignTrophy {
+    top: 7px;
+    transform: scale(0.68);
+  }
+
+  .campaignTrophy.complete {
+    transform: scale(0.78);
+  }
+
+  .campaignGrid {
+    top: 72px;
+    bottom: 66px;
+    gap: 8px 12px;
+    grid-template-columns: repeat(5, minmax(54px, 82px));
+    grid-template-rows: repeat(2, minmax(68px, 84px));
+  }
+
+  .campaignLevelShape {
+    width: min(100%, 98px);
+  }
+
+  .campaignStarsBadge {
+    height: 21px;
+    min-width: 56px;
+    bottom: 2px;
+  }
+
+  .campaignSmallStar {
+    width: 17px;
+    height: 17px;
+  }
+
+  .campaignActions {
+    bottom: 14px;
+  }
+
+  .campaignBackBtn,
+  .campaignPlayBtn {
+    height: 40px;
+    border-radius: 15px;
+  }
+
+  .campaignMessage {
+    bottom: 54px;
+  }
+
+  .campaignPanel::after {
+    bottom: -20px;
+    width: min(164px, 34%);
+  }
+}
+

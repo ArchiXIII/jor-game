@@ -1,0 +1,247 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <title>Gluttony &mdash; Yandex Games</title>
+  <script src="/sdk.js"></script>
+  <link rel="stylesheet" href="css/game.css" />
+  <link rel="stylesheet" href="css/meta-ui.css" />
+  <link rel="stylesheet" href="css/campaign-ui.css" />
+  <link rel="stylesheet" href="css/shop-ui.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div class="metaTopBar" id="metaTopBar" aria-label="&#1055;&#1088;&#1086;&#1075;&#1088;&#1077;&#1089;&#1089; &#1080;&#1075;&#1088;&#1086;&#1082;&#1072;">
+    <button class="metaProfileButton" id="metaProfileButton" type="button">
+      <span class="metaProfileText">
+        <span class="metaPlayerName" id="metaPlayerName">&#1048;&#1075;&#1088;&#1086;&#1082;</span>
+        <span class="metaRankName" id="metaRankName">&#1047;&#1072;&#1088;&#1086;&#1076;&#1099;&#1096;</span>
+        <span class="metaRankBar" aria-hidden="true"><span id="metaRankFill"></span></span>
+      </span>
+    </button>
+    <div class="metaTrophyShelf" id="metaTrophyShelf" aria-label="&#1050;&#1091;&#1073;&#1082;&#1080; &#1075;&#1083;&#1072;&#1074;"></div>
+    <div class="metaButtonCluster">
+      <button class="metaIconButton" id="metaLeaderboardButton" type="button" aria-label="&#1056;&#1077;&#1081;&#1090;&#1080;&#1085;&#1075;">
+        <svg viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+          <path d="M12 7h12v4h6v3c0 5.1-3.1 8.9-7.5 9.8A7.8 7.8 0 0 1 20 26.6V30h5v3H11v-3h5v-3.4a7.8 7.8 0 0 1-2.5-2.8C9.1 22.9 6 19.1 6 14v-3h6V7Zm12 7v5.7c1.8-.8 3-2.8 3.2-5.7H24Zm-15.2 0c.2 2.9 1.4 4.9 3.2 5.7V14H8.8Z"></path>
+        </svg>
+      </button>
+      <button class="metaIconButton metaSoundButton soundToggleBtn" id="metaSoundToggleBtn" type="button" aria-label="Sound on">
+        <svg class="soundIcon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+          <path class="soundSpeaker" d="M6 14H12L22 6V30L12 22H6Z"></path>
+          <path class="soundWave soundWaveOne" d="M25 13C27 15.2 27 20.8 25 23"></path>
+          <path class="soundWave soundWaveTwo" d="M29 9C33 13.6 33 22.4 29 27"></path>
+          <path class="soundSlash" d="M8 28L30 8"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+
+  <div class="startScreen" id="startScreen">
+    <div class="startCard">
+      <div class="startBadge" id="startBadge">Milevora team</div>
+      <h1 id="startTitle">&#1046;&#1086;&#1088;</h1>
+      <p id="startSubtitle">&#1055;&#1086;&#1075;&#1083;&#1086;&#1097;&#1072;&#1081; &#1087;&#1080;&#1097;&#1091;, &#1088;&#1072;&#1089;&#1090;&#1080;, &#1086;&#1090;&#1082;&#1088;&#1099;&#1074;&#1072;&#1081; &#1084;&#1091;&#1090;&#1072;&#1094;&#1080;&#1080; &#1080; &#1087;&#1077;&#1088;&#1077;&#1093;&#1086;&#1076;&#1080; &#1074; &#1073;&#1077;&#1089;&#1082;&#1086;&#1085;&#1077;&#1095;&#1085;&#1091;&#1102; &#1092;&#1072;&#1079;&#1091; &#1074;&#1099;&#1078;&#1080;&#1074;&#1072;&#1085;&#1080;&#1103;</p>
+      <div class="startActions">
+        <div class="startModeRow">
+          <button class="startCampaignBtn" id="startCampaignBtn" type="button">&#1055;&#1088;&#1086;&#1093;&#1086;&#1078;&#1076;&#1077;&#1085;&#1080;&#1077;</button>
+          <button class="startPlayBtn" id="startPlayBtn" type="button">&#1041;&#1077;&#1089;&#1082;&#1086;&#1085;&#1077;&#1095;&#1085;&#1099;&#1081; &#1088;&#1077;&#1078;&#1080;&#1084;</button>
+        </div>
+        <div class="startSecondaryRow">
+          <button class="startShopBtn" id="startShopBtn" type="button">&#1052;&#1072;&#1075;&#1072;&#1079;&#1080;&#1085;</button>
+          <button class="startOurGamesBtn" id="startOurGamesBtn" type="button" disabled aria-disabled="true">&#1053;&#1072;&#1096;&#1080; &#1080;&#1075;&#1088;&#1099;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="shopOverlay" id="shopOverlay" aria-hidden="true">
+    <section class="shopPanel" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+      <button class="shopCloseBtn" id="shopCloseBtn" type="button" aria-label="&#1047;&#1072;&#1082;&#1088;&#1099;&#1090;&#1100;">&times;</button>
+      <header class="shopHeader">
+        <h2 id="shopTitle">&#1052;&#1072;&#1075;&#1072;&#1079;&#1080;&#1085;</h2>
+      </header>
+      <div class="shopBody">
+        <nav class="shopTabs" id="shopTabs" aria-label="&#1056;&#1072;&#1079;&#1076;&#1077;&#1083;&#1099; &#1084;&#1072;&#1075;&#1072;&#1079;&#1080;&#1085;&#1072;"></nav>
+        <div class="shopContent">
+          <div class="shopStatus" id="shopStatus" aria-live="polite"></div>
+          <div class="shopGrid" id="shopGrid"></div>
+          <div class="shopPager" id="shopPager" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="campaignOverlay" id="campaignOverlay" aria-hidden="true">
+    <section class="campaignPanel" id="campaignPanel" role="dialog" aria-modal="true" aria-labelledby="campaignTitle">
+      <button class="campaignArrow campaignArrowLeft" id="campaignPrevBtn" type="button" aria-label="&#1055;&#1088;&#1077;&#1076;&#1099;&#1076;&#1091;&#1097;&#1072;&#1103; &#1075;&#1083;&#1072;&#1074;&#1072;"></button>
+      <button class="campaignArrow campaignArrowRight" id="campaignNextBtn" type="button" aria-label="&#1057;&#1083;&#1077;&#1076;&#1091;&#1102;&#1097;&#1072;&#1103; &#1075;&#1083;&#1072;&#1074;&#1072;"></button>
+
+      <div class="campaignTrophy" id="campaignTrophy" aria-hidden="true">
+        <img class="campaignTrophyCup" src="sprites/ui/chapter_trophy.png" alt="" aria-hidden="true" />
+      </div>
+
+      <header class="campaignHeader">
+        <div class="campaignTitle" id="campaignTitle">&#1043;&#1051;&#1040;&#1042;&#1040; 1</div>
+        <div class="campaignName" id="campaignName">&#1052;&#1077;&#1083;&#1082;&#1086;&#1074;&#1086;&#1076;&#1100;&#1077;</div>
+      </header>
+
+      <div class="campaignStars" aria-label="&#1047;&#1074;&#1105;&#1079;&#1076;&#1099; &#1075;&#1083;&#1072;&#1074;&#1099;">
+        <img class="campaignStarIcon" src="sprites/ui/level_star.webp" alt="" aria-hidden="true" />
+        <span id="campaignStarsText">0/30</span>
+      </div>
+
+      <div class="campaignGrid" id="campaignGrid"></div>
+      <div class="campaignMessage" id="campaignMessage" aria-live="polite"></div>
+
+      <div class="campaignActions">
+        <button class="campaignBackBtn" id="campaignBackBtn" type="button">&#1053;&#1072;&#1079;&#1072;&#1076;</button>
+        <button class="campaignPlayBtn" id="campaignPlayBtn" type="button">&#1048;&#1075;&#1088;&#1072;&#1090;&#1100;</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="hud" id="hud" style="display:none !important;">
+    <h1 id="hudTitle">&#1046;&#1086;&#1088;</h1>
+    <div class="line" id="hudStats"></div>
+  </div>
+
+  <div class="topProgress" id="topProgress">
+    <div class="topProgressScore" id="topProgressScore">0</div>
+  </div>
+  <div class="campaignTimer" id="campaignTimer" aria-hidden="true">0:00</div>
+
+  <div class="topControls" id="topControls" aria-hidden="true">
+    <button class="topControlBtn soundToggleBtn" id="soundToggleBtn" type="button" aria-label="Sound on">
+      <svg class="soundIcon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+        <path class="soundSpeaker" d="M6 14H12L22 6V30L12 22H6Z"></path>
+        <path class="soundWave soundWaveOne" d="M25 13C27 15.2 27 20.8 25 23"></path>
+        <path class="soundWave soundWaveTwo" d="M29 9C33 13.6 33 22.4 29 27"></path>
+        <path class="soundSlash" d="M8 28L30 8"></path>
+      </svg>
+    </button>
+    <button class="topControlBtn pauseToggleBtn" id="pauseToggleBtn" type="button" aria-label="Pause">II</button>
+  </div>
+
+  <div class="mobileControls" id="mobileControls" aria-hidden="true">
+    <div class="mobileStick" id="mobileStick" role="presentation">
+      <div class="mobileStickKnob" id="mobileStickKnob"></div>
+    </div>
+    <button class="mobileDashBtn" id="mobileDashBtn" type="button" aria-label="Dash">&gt;</button>
+  </div>
+
+  <div class="statusBadge" id="sdkStatus" style="display:none !important;">SDK: &#1083;&#1086;&#1082;&#1072;&#1083;&#1100;&#1085;&#1099;&#1081; &#1088;&#1077;&#1078;&#1080;&#1084;</div>
+  <div class="overlay" id="overlay"></div>
+
+  <div class="evolutionPanel" id="evolutionPanel">
+    <div class="evolutionHeader">
+      <h2 id="evolutionTitle">&#1069;&#1074;&#1086;&#1083;&#1102;&#1094;&#1080;&#1103;</h2>
+      <p id="evolutionText">&#1042;&#1099;&#1073;&#1077;&#1088;&#1080; &#1086;&#1076;&#1085;&#1091; &#1084;&#1091;&#1090;&#1072;&#1094;&#1080;&#1102;</p>
+    </div>
+    <div class="cards" id="evolutionCards"></div>
+  </div>
+
+  <div class="centerMessage" id="centerMessage">
+    <h2 id="messageTitle"></h2>
+    <div id="messageText"></div>
+    <div class="messageButtons">
+      <button id="messageRetryBtn" type="button" hidden>&#1055;&#1045;&#1056;&#1045;&#1047;&#1040;&#1055;&#1059;&#1057;&#1058;&#1048;&#1058;&#1068;</button>
+      <button id="restartBtn">&#1043;&#1051;&#1040;&#1042;&#1053;&#1054;&#1045; &#1052;&#1045;&#1053;&#1070;</button>
+      <button class="secondary" id="messageOurGamesBtn" type="button" disabled aria-disabled="true">&#1053;&#1072;&#1096;&#1080; &#1080;&#1075;&#1088;&#1099;</button>
+    </div>
+  </div>
+
+  <div class="pauseOverlay" id="pauseOverlay" aria-hidden="true">
+    <div class="pauseCard">
+      <h2 id="pauseTitle">&#1055;&#1072;&#1091;&#1079;&#1072;</h2>
+      <div class="pauseButtons">
+        <button id="pauseResumeBtn" type="button">&#1055;&#1088;&#1086;&#1076;&#1086;&#1083;&#1078;&#1080;&#1090;&#1100;</button>
+        <button class="pauseExitBtn" id="pauseExitBtn" type="button">&#1042;&#1067;&#1061;&#1054;&#1044;</button>
+      </div>
+    </div>
+    <div class="exitConfirmCard" id="exitConfirmCard" role="dialog" aria-modal="true" aria-labelledby="exitConfirmTitle" aria-hidden="true">
+      <h2 id="exitConfirmTitle">&#1042;&#1067;&#1049;&#1058;&#1048; &#1048;&#1047; &#1056;&#1040;&#1059;&#1053;&#1044;&#1040;?</h2>
+      <p id="exitConfirmText">&#1055;&#1088;&#1086;&#1075;&#1088;&#1077;&#1089;&#1089; &#1090;&#1077;&#1082;&#1091;&#1097;&#1077;&#1075;&#1086; &#1088;&#1072;&#1091;&#1085;&#1076;&#1072; &#1073;&#1091;&#1076;&#1077;&#1090; &#1087;&#1086;&#1090;&#1077;&#1088;&#1103;&#1085;.</p>
+      <div class="exitConfirmButtons">
+        <button class="exitStayBtn" id="exitStayBtn" type="button">&#1054;&#1057;&#1058;&#1040;&#1058;&#1068;&#1057;&#1071;</button>
+        <button class="exitConfirmBtn" id="exitConfirmBtn" type="button">&#1042;&#1067;&#1049;&#1058;&#1048;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="metaModalOverlay" id="metaModalOverlay" aria-hidden="true">
+    <section class="metaModal metaProfileModal" id="metaProfileModal" role="dialog" aria-modal="true" aria-labelledby="metaProfileTitle">
+      <button class="metaCloseButton" id="metaProfileClose" type="button" aria-label="&#1047;&#1072;&#1082;&#1088;&#1099;&#1090;&#1100;">&times;</button>
+      <h2 id="metaProfileTitle">&#1048;&#1075;&#1088;&#1086;&#1082;</h2>
+      <div class="metaModalRank" id="metaProfileRank">&#1047;&#1072;&#1088;&#1086;&#1076;&#1099;&#1096;</div>
+      <div class="metaModalRankBar" aria-hidden="true"><span id="metaProfileRankFill"></span></div>
+      <div class="metaXpCard" id="metaXpLeaderboardButton" role="button" tabindex="0">
+        <div class="metaXpLabel">&#1053;&#1072;&#1073;&#1088;&#1072;&#1085;&#1086; &#1086;&#1087;&#1099;&#1090;&#1072; &#1079;&#1072; &#1074;&#1089;&#1105; &#1074;&#1088;&#1077;&#1084;&#1103;</div>
+        <div class="metaXpValue" id="metaProfileXp">0</div>
+        <div class="metaXpAction">&#1056;&#1077;&#1081;&#1090;&#1080;&#1085;&#1075; &#1086;&#1087;&#1099;&#1090;&#1072;</div>
+      </div>
+      <p class="metaThanks">&#1057;&#1087;&#1072;&#1089;&#1080;&#1073;&#1086;, &#1095;&#1090;&#1086; &#1080;&#1075;&#1088;&#1072;&#1077;&#1096;&#1100; &#1074; &#1085;&#1072;&#1096;&#1080; &#1080;&#1075;&#1088;&#1099;. &#1053;&#1072;&#1084; &#1087;&#1088;&#1072;&#1074;&#1076;&#1072; &#1087;&#1088;&#1080;&#1103;&#1090;&#1085;&#1086; &#1074;&#1080;&#1076;&#1077;&#1090;&#1100; &#1090;&#1074;&#1086;&#1081; &#1087;&#1088;&#1086;&#1075;&#1088;&#1077;&#1089;&#1089;.</p>
+    </section>
+
+    <section class="metaModal metaLeaderboardModal" id="metaLeaderboardModal" role="dialog" aria-modal="true" aria-labelledby="metaLeaderboardTitle">
+      <button class="metaCloseButton" id="metaLeaderboardClose" type="button" aria-label="&#1047;&#1072;&#1082;&#1088;&#1099;&#1090;&#1100;">&times;</button>
+      <h2 id="metaLeaderboardTitle">&#1056;&#1077;&#1081;&#1090;&#1080;&#1085;&#1075;</h2>
+      <div class="metaTabs" id="metaLeaderboardTabs">
+        <button class="active" type="button" data-meta-tab="stars">&#1047;&#1074;&#1105;&#1079;&#1076;&#1099;</button>
+        <button type="button" data-meta-tab="endless">&#1041;&#1077;&#1089;&#1082;&#1086;&#1085;&#1077;&#1095;&#1085;&#1099;&#1081;</button>
+      </div>
+      <div class="metaLeaderboardHint" id="metaLeaderboardHint">&#1055;&#1086; &#1086;&#1073;&#1097;&#1077;&#1084;&#1091; &#1082;&#1086;&#1083;&#1080;&#1095;&#1077;&#1089;&#1090;&#1074;&#1091; &#1085;&#1072;&#1073;&#1088;&#1072;&#1085;&#1085;&#1099;&#1093; &#1079;&#1074;&#1105;&#1079;&#1076;</div>
+      <div class="metaLeaderboardList" id="metaLeaderboardList"></div>
+    </section>
+
+    <section class="metaModal metaLeaderboardModal" id="metaXpLeaderboardModal" role="dialog" aria-modal="true" aria-labelledby="metaXpLeaderboardTitle">
+      <button class="metaCloseButton" id="metaXpLeaderboardClose" type="button" aria-label="&#1047;&#1072;&#1082;&#1088;&#1099;&#1090;&#1100;">&times;</button>
+      <h2 id="metaXpLeaderboardTitle">&#1056;&#1077;&#1081;&#1090;&#1080;&#1085;&#1075; &#1086;&#1087;&#1099;&#1090;&#1072;</h2>
+      <div class="metaLeaderboardHint">&#1055;&#1086; &#1086;&#1073;&#1097;&#1077;&#1084;&#1091; &#1086;&#1087;&#1099;&#1090;&#1091; &#1079;&#1072; &#1074;&#1089;&#1105; &#1074;&#1088;&#1077;&#1084;&#1103;</div>
+      <div class="metaLeaderboardList" id="metaXpLeaderboardList"></div>
+    </section>
+  </div>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/game-core.js"></script>
+  <script src="js/game-ui.js"></script>
+  <script src="js/entities/player-skins.js"></script>
+  <script src="js/entities/pet-skins.js"></script>
+  <script src="js/entities/growth-effect-skins.js"></script>
+  <script src="js/entities/growth-effects.js"></script>
+    <script src="js/shop/shop-categories.js"></script>
+  <script src="js/shop/shop-items-characters.js"></script>
+  <script src="js/shop/shop-items-growth-effects.js"></script>
+  <script src="js/shop/shop-items-pets.js"></script>
+  <script src="js/shop/shop-items-icons.js"></script>
+  <script src="js/shop/shop-items-ads.js"></script>
+  <script src="js/shop-data.js"></script>
+  <script src="js/shop-ui.js"></script>
+  <script src="js/entities/entity-sprites.js"></script>
+  <script src="js/entities/entity-pickups-background.js"></script>
+  <script src="js/entities/entity-effects.js"></script>
+  <script src="js/entities/entity-enemies.js"></script>
+  <script src="js/entities/entity-player.js"></script>
+  <script src="js/entities/entity-pet.js"></script>
+  <script src="js/entities/entity-mutations.js"></script>
+  <script src="js/game-systems.js"></script>
+  <script src="js/meta-ui.js"></script>
+  <script src="js/campaign-ui.js"></script>
+  <script src="js/campaign/levels-chapter-1.js"></script>
+  <script src="js/campaign-levels.js"></script>
+  <script src="js/campaign-run.js"></script>
+  <script src="js/endless-mode.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
+
+
+
