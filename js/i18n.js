@@ -173,7 +173,11 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
       if (DOM.evolutionTitle) DOM.evolutionTitle.textContent = t('evolutionTitle');
       if (DOM.evolutionText) DOM.evolutionText.textContent = t('evolutionChoose');
       if (DOM.restartBtn) DOM.restartBtn.textContent = t('restart');
-      if (DOM.messageOurGamesBtn) DOM.messageOurGamesBtn.textContent = t('ourGames');
+      if (DOM.messageOurGamesBtn) {
+        DOM.messageOurGamesBtn.textContent = DOM.messageOurGamesBtn.dataset?.action === 'nextCampaignRound' && typeof getCampaignNextButtonText === 'function'
+          ? getCampaignNextButtonText()
+          : t('ourGames');
+      }
       if (DOM.pauseTitle) DOM.pauseTitle.textContent = t('pauseTitle');
       if (DOM.pauseHint) DOM.pauseHint.textContent = t('pauseHint');
       if (DOM.pauseResumeBtn) DOM.pauseResumeBtn.textContent = t('pauseResume');
@@ -204,6 +208,14 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
         } else {
           DOM.messageText.textContent = t('congratsText', formatCompactScore(score));
         }
+      }
+      if (DOM.messageTitle?.dataset?.messageKey === 'campaignComplete' && typeof showCampaignCompleteMessage === 'function' && App?.campaignRun?.level) {
+        showCampaignCompleteMessage(
+          App.campaignRun.level,
+          typeof getCampaignStars === 'function' ? getCampaignStars() : 0,
+          typeof getCampaignProgressValue === 'function' ? getCampaignProgressValue() : 0,
+          App.campaignRun.frames || 0
+        );
       }
     }
 

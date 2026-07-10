@@ -13,14 +13,14 @@ const App = {
       evolutionChoiceUnlockTimer: null,
       hasStarted: false,
       startScreenVisible: false,
-      // Р¤Р»Р°РіРё РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ СЃСЂР°Р±Р°С‚С‹РІР°РЅРёСЏ LoadingAPI.ready() вЂ” СЃРј. Рї. 1.19.
-      // gameReadyMoment вЂ” РёРіСЂР° РѕС‚СЂРёСЃРѕРІР°Р»Р° СЃС‚Р°СЂС‚РѕРІС‹Р№ СЌРєСЂР°РЅ (РёРіСЂР°Р±РµР»СЊРЅР°).
-      // loadingReadySent вЂ” СЃРёРіРЅР°Р» СѓР¶Рµ РѕС‚РїСЂР°РІР»РµРЅ, РґРІР°Р¶РґС‹ РµРіРѕ СЃР»Р°С‚СЊ РЅРµР»СЊР·СЏ.
+      // Р В¤Р В»Р В°Р С–Р С‘ Р Т‘Р В»РЎРЏ Р С”Р С•РЎР‚РЎР‚Р ВµР С”РЎвЂљР Р…Р С•Р С–Р С• РЎРѓРЎР‚Р В°Р В±Р В°РЎвЂљРЎвЂ№Р Р†Р В°Р Р…Р С‘РЎРЏ LoadingAPI.ready() РІР‚вЂќ РЎРѓР С. Р С—. 1.19.
+      // gameReadyMoment РІР‚вЂќ Р С‘Р С–РЎР‚Р В° Р С•РЎвЂљРЎР‚Р С‘РЎРѓР С•Р Р†Р В°Р В»Р В° РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… (Р С‘Р С–РЎР‚Р В°Р В±Р ВµР В»РЎРЉР Р…Р В°).
+      // loadingReadySent РІР‚вЂќ РЎРѓР С‘Р С–Р Р…Р В°Р В» РЎС“Р В¶Р Вµ Р С•РЎвЂљР С—РЎР‚Р В°Р Р†Р В»Р ВµР Р…, Р Т‘Р Р†Р В°Р В¶Р Т‘РЎвЂ№ Р ВµР С–Р С• РЎРѓР В»Р В°РЎвЂљРЎРЉ Р Р…Р ВµР В»РЎРЉР В·РЎРЏ.
       gameReadyMoment: false,
       loadingReadySent: false,
-      // РџР°СѓР·Р°, Р·Р°РїСЂРѕС€РµРЅРЅР°СЏ РёРіСЂРѕРєРѕРј РІСЂСѓС‡РЅСѓСЋ (ESC). РћС‚РґРµР»СЊРЅР°СЏ РѕС‚ localPause,
-      // С‡С‚РѕР±С‹ РЅРµ РєРѕРЅС„Р»РёРєС‚РѕРІР°С‚СЊ СЃ Р°РІС‚РѕРїР°СѓР·Р°РјРё СЃС‚Р°СЂС‚РѕРІРѕРіРѕ СЌРєСЂР°РЅР° / СЌРІРѕР»СЋС†РёРё /
-      // РѕРєРЅР° СЃРјРµСЂС‚Рё. РџСЂРѕРІРµСЂСЏРµС‚СЃСЏ РІ updateGame() РєР°Рє РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Р№ РіРµР№С‚.
+      // Р СџР В°РЎС“Р В·Р В°, Р В·Р В°Р С—РЎР‚Р С•РЎв‚¬Р ВµР Р…Р Р…Р В°РЎРЏ Р С‘Р С–РЎР‚Р С•Р С”Р С•Р С Р Р†РЎР‚РЎС“РЎвЂЎР Р…РЎС“РЎР‹ (ESC). Р С›РЎвЂљР Т‘Р ВµР В»РЎРЉР Р…Р В°РЎРЏ Р С•РЎвЂљ localPause,
+      // РЎвЂЎРЎвЂљР С•Р В±РЎвЂ№ Р Р…Р Вµ Р С”Р С•Р Р…РЎвЂћР В»Р С‘Р С”РЎвЂљР С•Р Р†Р В°РЎвЂљРЎРЉ РЎРѓ Р В°Р Р†РЎвЂљР С•Р С—Р В°РЎС“Р В·Р В°Р СР С‘ РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†Р С•Р С–Р С• РЎРЊР С”РЎР‚Р В°Р Р…Р В° / РЎРЊР Р†Р С•Р В»РЎР‹РЎвЂ Р С‘Р С‘ /
+      // Р С•Р С”Р Р…Р В° РЎРѓР СР ВµРЎР‚РЎвЂљР С‘. Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµРЎвЂљРЎРѓРЎРЏ Р Р† updateGame() Р С”Р В°Р С” Р Т‘Р С•Р С—Р С•Р В»Р Р…Р С‘РЎвЂљР ВµР В»РЎРЉР Р…РЎвЂ№Р в„– Р С–Р ВµР в„–РЎвЂљ.
       userPaused: false,
       player: null,
       leaderboardName: 'topScore',
@@ -43,9 +43,9 @@ const App = {
       try {
         App.ysdk = await YaGames.init();
         App.sdkReady = true;
-        // РўСЂРµР±РѕРІР°РЅРёРµ РЇРЅРґРµРєСЃ.РРіСЂ Рї. 2.14: СЏР·С‹Рє РёРЅС‚РµСЂС„РµР№СЃР° РѕРїСЂРµРґРµР»СЏРµС‚СЃСЏ
-        // С‡РµСЂРµР· ysdk.environment.i18n.lang. Р”РµР»Р°РµРј СЌС‚Рѕ СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ init
-        // Рё РїРµСЂРµРґ РІСЃРµРјРё РѕСЃС‚Р°Р»СЊРЅС‹РјРё UI-РѕРїРµСЂР°С†РёСЏРјРё.
+        // Р СћРЎР‚Р ВµР В±Р С•Р Р†Р В°Р Р…Р С‘Р Вµ Р Р‡Р Р…Р Т‘Р ВµР С”РЎРѓ.Р ВР С–РЎР‚ Р С—. 2.14: РЎРЏР В·РЎвЂ№Р С” Р С‘Р Р…РЎвЂљР ВµРЎР‚РЎвЂћР ВµР в„–РЎРѓР В° Р С•Р С—РЎР‚Р ВµР Т‘Р ВµР В»РЎРЏР ВµРЎвЂљРЎРѓРЎРЏ
+        // РЎвЂЎР ВµРЎР‚Р ВµР В· ysdk.environment.i18n.lang. Р вЂќР ВµР В»Р В°Р ВµР С РЎРЊРЎвЂљР С• РЎРѓРЎР‚Р В°Р В·РЎС“ Р С—Р С•РЎРѓР В»Р Вµ init
+        // Р С‘ Р С—Р ВµРЎР‚Р ВµР Т‘ Р Р†РЎРѓР ВµР СР С‘ Р С•РЎРѓРЎвЂљР В°Р В»РЎРЉР Р…РЎвЂ№Р СР С‘ UI-Р С•Р С—Р ВµРЎР‚Р В°РЎвЂ Р С‘РЎРЏР СР С‘.
         const sdkLang = App.ysdk?.environment?.i18n?.lang;
         if (sdkLang) {
           setLanguage(sdkLang);
@@ -62,9 +62,9 @@ const App = {
 
         await initYandexPlayer();
         await window.JorShopUI?.refreshPayments?.();
-        // Р•СЃР»Рё СЃС‚Р°СЂС‚РѕРІС‹Р№ СЌРєСЂР°РЅ СѓР¶Рµ РѕС‚СЂРёСЃРѕРІР°РЅ Рє РјРѕРјРµРЅС‚Сѓ РіРѕС‚РѕРІРЅРѕСЃС‚Рё SDK вЂ”
-        // РґР°С‚СЊ СЃРёРіРЅР°Р» ready() РїСЂСЏРјРѕ СЃРµР№С‡Р°СЃ. РРЅР°С‡Рµ РѕРЅ СЃС‚СЂРµР»СЊРЅС‘С‚ РёР·
-        // showStartScreen() РєР°Рє С‚РѕР»СЊРєРѕ С‚РѕС‚ РїРѕРєР°Р¶РµС‚СЃСЏ.
+        // Р вЂўРЎРѓР В»Р С‘ РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… РЎС“Р В¶Р Вµ Р С•РЎвЂљРЎР‚Р С‘РЎРѓР С•Р Р†Р В°Р Р… Р С” Р СР С•Р СР ВµР Р…РЎвЂљРЎС“ Р С–Р С•РЎвЂљР С•Р Р†Р Р…Р С•РЎРѓРЎвЂљР С‘ SDK РІР‚вЂќ
+        // Р Т‘Р В°РЎвЂљРЎРЉ РЎРѓР С‘Р С–Р Р…Р В°Р В» ready() Р С—РЎР‚РЎРЏР СР С• РЎРѓР ВµР в„–РЎвЂЎР В°РЎРѓ. Р ВР Р…Р В°РЎвЂЎР Вµ Р С•Р Р… РЎРѓРЎвЂљРЎР‚Р ВµР В»РЎРЉР Р…РЎвЂРЎвЂљ Р С‘Р В·
+        // showStartScreen() Р С”Р В°Р С” РЎвЂљР С•Р В»РЎРЉР С”Р С• РЎвЂљР С•РЎвЂљ Р С—Р С•Р С”Р В°Р В¶Р ВµРЎвЂљРЎРѓРЎРЏ.
         notifyGameReady();
         showEvolutionBanner();
         if (App.hasStarted && !App.startScreenVisible) {
@@ -146,12 +146,15 @@ const App = {
     }
 
     function shouldShowStickyBanner() {
-      return App.keepStickyBannerAlways;
+      return App.keepStickyBannerAlways && !window.JorShopUI?.hasNoSideAds?.();
     }
 
     async function showEvolutionBanner() {
       if (!App.sdkReady || !App.ysdk?.adv?.showBannerAdv || !App.usingBannerApi) return;
-      if (!shouldShowStickyBanner()) return;
+      if (!shouldShowStickyBanner()) {
+        await hideEvolutionBanner(true);
+        return;
+      }
       if (App.bannerVisible) return;
       if (App.bannerRequestPending) return;
 
@@ -182,7 +185,7 @@ const App = {
 
     async function hideEvolutionBanner(force = false) {
       if (!force) return;
-      if (App.keepStickyBannerAlways) return;
+      if (!force && App.keepStickyBannerAlways) return;
       if (!App.sdkReady || !App.ysdk?.adv?.hideBannerAdv || !App.usingBannerApi) return;
 
       try {
@@ -332,7 +335,7 @@ const App = {
     }
 
     // ------------------------------
-    // РРіСЂРѕРІС‹Рµ СЃСѓС‰РЅРѕСЃС‚Рё
+    // Р ВР С–РЎР‚Р С•Р Р†РЎвЂ№Р Вµ РЎРѓРЎС“РЎвЂ°Р Р…Р С•РЎРѓРЎвЂљР С‘
     // ------------------------------
 
 function showStartScreen() {
@@ -346,10 +349,10 @@ function showStartScreen() {
       } else {
         window.JorMetaUI?.playPendingTrophyAwards?.();
       }
-      // РџРѕРјРµС‡Р°РµРј РјРѕРјРµРЅС‚, РєРѕРіРґР° РёРіСЂР° СЃС‚Р°Р»Р° СЂРµР°Р»СЊРЅРѕ РёРіСЂР°Р±РµР»СЊРЅРѕР№ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-      // (СЃС‚Р°СЂС‚РѕРІС‹Р№ СЌРєСЂР°РЅ СЃ РєРЅРѕРїРєРѕР№ В«РРіСЂР°С‚СЊВ» РІ DOM). РЎР°Рј СЃРёРіРЅР°Р» РІ РЇРЅРґРµРєСЃ С€Р»С‘Рј
-      // РїРѕСЃР»Рµ СЃР»РµРґСѓСЋС‰РµРіРѕ animation frame вЂ” С‡С‚РѕР±С‹ РѕРЅ СЃРѕРІРїР°Р» СЃ СЂРµР°Р»СЊРЅРѕР№ РѕС‚СЂРёСЃРѕРІРєРѕР№,
-      // Р° РЅРµ СЃ РјРѕРјРµРЅС‚РѕРј СЃРјРµРЅС‹ display. РЎРј. notifyGameReady Рё Рї. 1.19.
+      // Р СџР С•Р СР ВµРЎвЂЎР В°Р ВµР С Р СР С•Р СР ВµР Р…РЎвЂљ, Р С”Р С•Р С–Р Т‘Р В° Р С‘Р С–РЎР‚Р В° РЎРѓРЎвЂљР В°Р В»Р В° РЎР‚Р ВµР В°Р В»РЎРЉР Р…Р С• Р С‘Р С–РЎР‚Р В°Р В±Р ВµР В»РЎРЉР Р…Р С•Р в„– Р Т‘Р В»РЎРЏ Р С—Р С•Р В»РЎРЉР В·Р С•Р Р†Р В°РЎвЂљР ВµР В»РЎРЏ
+      // (РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… РЎРѓ Р С”Р Р…Р С•Р С—Р С”Р С•Р в„– Р’В«Р ВР С–РЎР‚Р В°РЎвЂљРЎРЉР’В» Р Р† DOM). Р РЋР В°Р С РЎРѓР С‘Р С–Р Р…Р В°Р В» Р Р† Р Р‡Р Р…Р Т‘Р ВµР С”РЎРѓ РЎв‚¬Р В»РЎвЂР С
+      // Р С—Р С•РЎРѓР В»Р Вµ РЎРѓР В»Р ВµР Т‘РЎС“РЎР‹РЎвЂ°Р ВµР С–Р С• animation frame РІР‚вЂќ РЎвЂЎРЎвЂљР С•Р В±РЎвЂ№ Р С•Р Р… РЎРѓР С•Р Р†Р С—Р В°Р В» РЎРѓ РЎР‚Р ВµР В°Р В»РЎРЉР Р…Р С•Р в„– Р С•РЎвЂљРЎР‚Р С‘РЎРѓР С•Р Р†Р С”Р С•Р в„–,
+      // Р В° Р Р…Р Вµ РЎРѓ Р СР С•Р СР ВµР Р…РЎвЂљР С•Р С РЎРѓР СР ВµР Р…РЎвЂ№ display. Р РЋР С. notifyGameReady Р С‘ Р С—. 1.19.
       App.gameReadyMoment = true;
       if (typeof requestAnimationFrame === 'function') {
         requestAnimationFrame(() => notifyGameReady());
@@ -358,14 +361,14 @@ function showStartScreen() {
       }
     }
 
-    // РўСЂРµР±РѕРІР°РЅРёРµ РЇРЅРґРµРєСЃ.РРіСЂ Рї. 1.19: LoadingAPI.ready() РґРѕР»Р¶РµРЅ РІС‹Р·С‹РІР°С‚СЊСЃСЏ
-    // СЂРѕРІРЅРѕ РІ С‚РѕС‚ РјРѕРјРµРЅС‚, РєРѕРіРґР° РёРіСЂР° СЃС‚Р°РЅРѕРІРёС‚СЃСЏ РґРѕСЃС‚СѓРїРЅРѕР№ РґР»СЏ РёРіСЂР°РЅРёСЏ вЂ”
-    // РЅРµ СЂР°РЅСЊС€Рµ (РёРіСЂР° РµС‰С‘ РіСЂСѓР·РёС‚СЃСЏ) Рё РЅРµ РїРѕР·Р¶Рµ (РЅР°СЂСѓС€РµРЅРёРµ GRA).
-    // Р¤СѓРЅРєС†РёСЏ РёРґРµРјРїРѕС‚РµРЅС‚РЅР° Рё Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РґРѕР¶РёРґР°РµС‚СЃСЏ РіРѕС‚РѕРІРЅРѕСЃС‚Рё SDK.
+    // Р СћРЎР‚Р ВµР В±Р С•Р Р†Р В°Р Р…Р С‘Р Вµ Р Р‡Р Р…Р Т‘Р ВµР С”РЎРѓ.Р ВР С–РЎР‚ Р С—. 1.19: LoadingAPI.ready() Р Т‘Р С•Р В»Р В¶Р ВµР Р… Р Р†РЎвЂ№Р В·РЎвЂ№Р Р†Р В°РЎвЂљРЎРЉРЎРѓРЎРЏ
+    // РЎР‚Р С•Р Р†Р Р…Р С• Р Р† РЎвЂљР С•РЎвЂљ Р СР С•Р СР ВµР Р…РЎвЂљ, Р С”Р С•Р С–Р Т‘Р В° Р С‘Р С–РЎР‚Р В° РЎРѓРЎвЂљР В°Р Р…Р С•Р Р†Р С‘РЎвЂљРЎРѓРЎРЏ Р Т‘Р С•РЎРѓРЎвЂљРЎС“Р С—Р Р…Р С•Р в„– Р Т‘Р В»РЎРЏ Р С‘Р С–РЎР‚Р В°Р Р…Р С‘РЎРЏ РІР‚вЂќ
+    // Р Р…Р Вµ РЎР‚Р В°Р Р…РЎРЉРЎв‚¬Р Вµ (Р С‘Р С–РЎР‚Р В° Р ВµРЎвЂ°РЎвЂ Р С–РЎР‚РЎС“Р В·Р С‘РЎвЂљРЎРѓРЎРЏ) Р С‘ Р Р…Р Вµ Р С—Р С•Р В·Р В¶Р Вµ (Р Р…Р В°РЎР‚РЎС“РЎв‚¬Р ВµР Р…Р С‘Р Вµ GRA).
+    // Р В¤РЎС“Р Р…Р С”РЎвЂ Р С‘РЎРЏ Р С‘Р Т‘Р ВµР СР С—Р С•РЎвЂљР ВµР Р…РЎвЂљР Р…Р В° Р С‘ Р В°Р Р†РЎвЂљР С•Р СР В°РЎвЂљР С‘РЎвЂЎР ВµРЎРѓР С”Р С‘ Р Т‘Р С•Р В¶Р С‘Р Т‘Р В°Р ВµРЎвЂљРЎРѓРЎРЏ Р С–Р С•РЎвЂљР С•Р Р†Р Р…Р С•РЎРѓРЎвЂљР С‘ SDK.
     function notifyGameReady() {
       if (App.loadingReadySent) return;
-      if (!App.gameReadyMoment) return;     // СЃС‚Р°СЂС‚РѕРІС‹Р№ СЌРєСЂР°РЅ РµС‰С‘ РЅРµ РїРѕРєР°Р·Р°РЅ
-      if (!App.sdkReady || !App.ysdk) return; // SDK РµС‰С‘ РЅРµ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°Р»СЃСЏ вЂ” РїРѕРІС‚РѕСЂРёРј РїРѕР·Р¶Рµ
+      if (!App.gameReadyMoment) return;     // РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… Р ВµРЎвЂ°РЎвЂ Р Р…Р Вµ Р С—Р С•Р С”Р В°Р В·Р В°Р Р…
+      if (!App.sdkReady || !App.ysdk) return; // SDK Р ВµРЎвЂ°РЎвЂ Р Р…Р Вµ Р С‘Р Р…Р С‘РЎвЂ Р С‘Р В°Р В»Р С‘Р В·Р С‘РЎР‚Р С•Р Р†Р В°Р В»РЎРѓРЎРЏ РІР‚вЂќ Р С—Р С•Р Р†РЎвЂљР С•РЎР‚Р С‘Р С Р С—Р С•Р В·Р В¶Р Вµ
       try {
         const api = App.ysdk.features?.LoadingAPI;
         if (api && typeof api.ready === 'function') {
@@ -378,23 +381,23 @@ function showStartScreen() {
     }
 
     // -----------------------------------------------------------------------
-    // РџР°СѓР·Р° РїРѕ ESC.
-    // Р“Р»Р°РІРЅРѕРµ РїСЂР°РІРёР»Рѕ: РЅРµ РєРѕРЅС„Р»РёРєС‚РѕРІР°С‚СЊ СЃ Р°РІС‚РѕРїР°СѓР·Р°РјРё. ESC РёРіРЅРѕСЂРёСЂСѓРµС‚СЃСЏ,
-    // РµСЃР»Рё РёРіСЂР° Рё С‚Р°Рє РЅР° РїР°СѓР·Рµ РїРѕ РґСЂСѓРіРѕР№ РїСЂРёС‡РёРЅРµ (СЃС‚Р°СЂС‚РѕРІС‹Р№ СЌРєСЂР°РЅ,
-    // СЌРІРѕР»СЋС†РёСЏ, РѕРєРЅРѕ СЃРјРµСЂС‚Рё/РїРѕР±РµРґС‹, СЂРµРєР»Р°РјР°/СЃРІС‘СЂРЅСѓС‚Р°СЏ РІРєР»Р°РґРєР°). Р­С‚Рѕ
-    // РіР°СЂР°РЅС‚РёСЂСѓРµС‚, С‡С‚Рѕ СЃРЅСЏС‚РёРµ userPaused РЅРёРєРѕРіРґР° РЅРµ В«РѕР¶РёРІРёС‚В» РёРіСЂСѓ
-    // РІ СЃРёС‚СѓР°С†РёРё, РєРѕРіРґР° РїРѕРєР°Р·С‹РІР°РµС‚СЃСЏ РјРѕРґР°Р»РєР°.
+    // Р СџР В°РЎС“Р В·Р В° Р С—Р С• ESC.
+    // Р вЂњР В»Р В°Р Р†Р Р…Р С•Р Вµ Р С—РЎР‚Р В°Р Р†Р С‘Р В»Р С•: Р Р…Р Вµ Р С”Р С•Р Р…РЎвЂћР В»Р С‘Р С”РЎвЂљР С•Р Р†Р В°РЎвЂљРЎРЉ РЎРѓ Р В°Р Р†РЎвЂљР С•Р С—Р В°РЎС“Р В·Р В°Р СР С‘. ESC Р С‘Р С–Р Р…Р С•РЎР‚Р С‘РЎР‚РЎС“Р ВµРЎвЂљРЎРѓРЎРЏ,
+    // Р ВµРЎРѓР В»Р С‘ Р С‘Р С–РЎР‚Р В° Р С‘ РЎвЂљР В°Р С” Р Р…Р В° Р С—Р В°РЎС“Р В·Р Вµ Р С—Р С• Р Т‘РЎР‚РЎС“Р С–Р С•Р в„– Р С—РЎР‚Р С‘РЎвЂЎР С‘Р Р…Р Вµ (РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р…,
+    // РЎРЊР Р†Р С•Р В»РЎР‹РЎвЂ Р С‘РЎРЏ, Р С•Р С”Р Р…Р С• РЎРѓР СР ВµРЎР‚РЎвЂљР С‘/Р С—Р С•Р В±Р ВµР Т‘РЎвЂ№, РЎР‚Р ВµР С”Р В»Р В°Р СР В°/РЎРѓР Р†РЎвЂРЎР‚Р Р…РЎС“РЎвЂљР В°РЎРЏ Р Р†Р С”Р В»Р В°Р Т‘Р С”Р В°). Р В­РЎвЂљР С•
+    // Р С–Р В°РЎР‚Р В°Р Р…РЎвЂљР С‘РЎР‚РЎС“Р ВµРЎвЂљ, РЎвЂЎРЎвЂљР С• РЎРѓР Р…РЎРЏРЎвЂљР С‘Р Вµ userPaused Р Р…Р С‘Р С”Р С•Р С–Р Т‘Р В° Р Р…Р Вµ Р’В«Р С•Р В¶Р С‘Р Р†Р С‘РЎвЂљР’В» Р С‘Р С–РЎР‚РЎС“
+    // Р Р† РЎРѓР С‘РЎвЂљРЎС“Р В°РЎвЂ Р С‘Р С‘, Р С”Р С•Р С–Р Т‘Р В° Р С—Р С•Р С”Р В°Р В·РЎвЂ№Р Р†Р В°Р ВµРЎвЂљРЎРѓРЎРЏ Р СР С•Р Т‘Р В°Р В»Р С”Р В°.
     // -----------------------------------------------------------------------
     function canTogglePause() {
-      // РќР° СЃС‚Р°СЂС‚РѕРІРѕРј СЌРєСЂР°РЅРµ вЂ” РЅРµС‚ СЃРјС‹СЃР»Р°, С‚Р°Рј Рё С‚Р°Рє РїР°СѓР·Р°, Рё РµСЃС‚СЊ РєРЅРѕРїРєР° Play.
+      // Р СњР В° РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†Р С•Р С РЎРЊР С”РЎР‚Р В°Р Р…Р Вµ РІР‚вЂќ Р Р…Р ВµРЎвЂљ РЎРѓР СРЎвЂ№РЎРѓР В»Р В°, РЎвЂљР В°Р С Р С‘ РЎвЂљР В°Р С” Р С—Р В°РЎС“Р В·Р В°, Р С‘ Р ВµРЎРѓРЎвЂљРЎРЉ Р С”Р Р…Р С•Р С—Р С”Р В° Play.
       if (App.startScreenVisible) return false;
-      // РРіСЂР° РµС‰С‘ РЅРµ РЅР°С‡РёРЅР°Р»Р°СЃСЊ.
+      // Р ВР С–РЎР‚Р В° Р ВµРЎвЂ°РЎвЂ Р Р…Р Вµ Р Р…Р В°РЎвЂЎР С‘Р Р…Р В°Р В»Р В°РЎРѓРЎРЉ.
       if (!App.hasStarted) return false;
-      // РљРѕРЅРµС† РёРіСЂС‹ РёР»Рё РїРѕР±РµРґР° вЂ” РїРµСЂРµРєР»СЋС‡РµРЅРёРµ РїР°СѓР·С‹ РЅРµ РЅСѓР¶РЅРѕ.
+      // Р С™Р С•Р Р…Р ВµРЎвЂ  Р С‘Р С–РЎР‚РЎвЂ№ Р С‘Р В»Р С‘ Р С—Р С•Р В±Р ВµР Т‘Р В° РІР‚вЂќ Р С—Р ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР ВµР Р…Р С‘Р Вµ Р С—Р В°РЎС“Р В·РЎвЂ№ Р Р…Р Вµ Р Р…РЎС“Р В¶Р Р…Р С•.
       if (gameOver || victory) return false;
-      // Р­РІРѕР»СЋС†РёСЏ / С†РµРЅС‚СЂР°Р»СЊРЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ вЂ” РµСЃС‚СЊ СЃРІРѕРё СЌР»РµРјРµРЅС‚С‹ СѓРїСЂР°РІР»РµРЅРёСЏ.
+      // Р В­Р Р†Р С•Р В»РЎР‹РЎвЂ Р С‘РЎРЏ / РЎвЂ Р ВµР Р…РЎвЂљРЎР‚Р В°Р В»РЎРЉР Р…Р С•Р Вµ РЎРѓР С•Р С•Р В±РЎвЂ°Р ВµР Р…Р С‘Р Вµ РІР‚вЂќ Р ВµРЎРѓРЎвЂљРЎРЉ РЎРѓР Р†Р С•Р С‘ РЎРЊР В»Р ВµР СР ВµР Р…РЎвЂљРЎвЂ№ РЎС“Р С—РЎР‚Р В°Р Р†Р В»Р ВµР Р…Р С‘РЎРЏ.
       if (evolutionPending) return false;
-      // РџР»Р°С‚С„РѕСЂРјР° СЃР°РјР° РїРѕСЃС‚Р°РІРёР»Р° РЅР° РїР°СѓР·Сѓ (СЃРІС‘СЂРЅСѓС‚Р°СЏ РІРєР»Р°РґРєР°, СЂРµРєР»Р°РјР°).
+      // Р СџР В»Р В°РЎвЂљРЎвЂћР С•РЎР‚Р СР В° РЎРѓР В°Р СР В° Р С—Р С•РЎРѓРЎвЂљР В°Р Р†Р С‘Р В»Р В° Р Р…Р В° Р С—Р В°РЎС“Р В·РЎС“ (РЎРѓР Р†РЎвЂРЎР‚Р Р…РЎС“РЎвЂљР В°РЎРЏ Р Р†Р С”Р В»Р В°Р Т‘Р С”Р В°, РЎР‚Р ВµР С”Р В»Р В°Р СР В°).
       if (App.platformPaused) return false;
       return true;
     }
@@ -436,11 +439,11 @@ function showStartScreen() {
       if (next) {
         showPauseOverlay();
         try { pauseAmbientMusic(); } catch (e) {}
-        // РЎРѕРѕР±С‰Р°РµРј РЇРЅРґРµРєСЃСѓ: РіРµР№Рј-РїР»РµР№ РѕСЃС‚Р°РЅРѕРІР»РµРЅ (РІР°Р¶РЅРѕ РґР»СЏ РјРµС‚СЂРёРє SDK).
+        // Р РЋР С•Р С•Р В±РЎвЂ°Р В°Р ВµР С Р Р‡Р Р…Р Т‘Р ВµР С”РЎРѓРЎС“: Р С–Р ВµР в„–Р С-Р С—Р В»Р ВµР в„– Р С•РЎРѓРЎвЂљР В°Р Р…Р С•Р Р†Р В»Р ВµР Р… (Р Р†Р В°Р В¶Р Р…Р С• Р Т‘Р В»РЎРЏ Р СР ВµРЎвЂљРЎР‚Р С‘Р С” SDK).
         try { markGameplayStop(); } catch (e) {}
       } else {
         hidePauseOverlay();
-        // Р’РѕР·РѕР±РЅРѕРІР»СЏРµРј РјСѓР·С‹РєСѓ С‚РѕР»СЊРєРѕ РµСЃР»Рё РІ РєРѕРјРЅР°С‚Рµ РЅРµС‚ РґСЂСѓРіРёС… СЃС‚РѕРї-РїСЂРёС‡РёРЅ.
+        // Р вЂ™Р С•Р В·Р С•Р В±Р Р…Р С•Р Р†Р В»РЎРЏР ВµР С Р СРЎС“Р В·РЎвЂ№Р С”РЎС“ РЎвЂљР С•Р В»РЎРЉР С”Р С• Р ВµРЎРѓР В»Р С‘ Р Р† Р С”Р С•Р СР Р…Р В°РЎвЂљР Вµ Р Р…Р ВµРЎвЂљ Р Т‘РЎР‚РЎС“Р С–Р С‘РЎвЂ¦ РЎРѓРЎвЂљР С•Р С—-Р С—РЎР‚Р С‘РЎвЂЎР С‘Р Р….
         try { ensureAmbientMusic(); } catch (e) {}
         try { markGameplayStart(); } catch (e) {}
       }
@@ -448,7 +451,7 @@ function showStartScreen() {
 
     function togglePause() {
       if (App.userPaused) {
-        // РЎРЅСЏС‚СЊ РїР°СѓР·Сѓ вЂ” РІСЃРµРіРґР° СЂР°Р·СЂРµС€РµРЅРѕ, С‡С‚РѕР±С‹ РёРіСЂРѕРє РЅРёРєРѕРіРґР° РЅРµ В«Р·Р°СЃС‚СЂСЏР»В».
+        // Р РЋР Р…РЎРЏРЎвЂљРЎРЉ Р С—Р В°РЎС“Р В·РЎС“ РІР‚вЂќ Р Р†РЎРѓР ВµР С–Р Т‘Р В° РЎР‚Р В°Р В·РЎР‚Р ВµРЎв‚¬Р ВµР Р…Р С•, РЎвЂЎРЎвЂљР С•Р В±РЎвЂ№ Р С‘Р С–РЎР‚Р С•Р С” Р Р…Р С‘Р С”Р С•Р С–Р Т‘Р В° Р Р…Р Вµ Р’В«Р В·Р В°РЎРѓРЎвЂљРЎР‚РЎРЏР В»Р’В».
         setUserPaused(false);
         return;
       }
@@ -524,6 +527,18 @@ function showStartScreen() {
       showFullscreenAdBeforeMenu(returnToMainMenu);
     }
 
+    function startNextCampaignRound() {
+      if (App.gameMode !== 'campaign' || !App.campaignLevel) return;
+      const nextLevel = Math.max(1, Math.floor(Number(App.campaignLevel) || 1) + 1);
+      if (!window.JorCampaignLevels?.getLevel?.(nextLevel)) {
+        returnToMainMenuFromRoundEnd();
+        return;
+      }
+      App.campaignLevel = nextLevel;
+      App.campaignChapter = Math.max(0, Math.floor((nextLevel - 1) / 10));
+      retryCurrentCampaignRound();
+    }
+
     function retryCurrentCampaignRound() {
       if (App.gameMode !== 'campaign' || !App.campaignLevel) return;
       App.pendingCampaignStart = true;
@@ -566,8 +581,14 @@ function showStartScreen() {
 
     function hideCenterMessage() {
       hideElement(DOM.centerMessage);
-      DOM.centerMessage?.classList.remove('leaderboardDialog', 'levelFailedDialog');
+      DOM.centerMessage?.classList.remove('leaderboardDialog', 'levelFailedDialog', 'campaignCompleteDialog');
       if (DOM.messageRetryBtn) DOM.messageRetryBtn.hidden = true;
+      if (DOM.messageOurGamesBtn) {
+        DOM.messageOurGamesBtn.dataset.action = '';
+        DOM.messageOurGamesBtn.hidden = false;
+        DOM.messageOurGamesBtn.textContent = t('ourGames');
+      }
+      updateOurGamesButtonState();
     }
 
     function showMessage(title, text) {
@@ -579,8 +600,13 @@ function showStartScreen() {
       DOM.messageText.dataset.messageMode = 'text';
       DOM.messageTitle.dataset.messageKey = title === t('congratsTitle') ? 'congrats' : '';
       DOM.centerMessage.classList.toggle('leaderboardDialog', title === t('congratsTitle'));
-      DOM.centerMessage.classList.remove('levelFailedDialog');
+      DOM.centerMessage.classList.remove('levelFailedDialog', 'campaignCompleteDialog');
       if (DOM.messageRetryBtn) DOM.messageRetryBtn.hidden = true;
+      if (DOM.messageOurGamesBtn) {
+        DOM.messageOurGamesBtn.dataset.action = '';
+        DOM.messageOurGamesBtn.textContent = t('ourGames');
+      }
+      updateOurGamesButtonState();
       DOM.centerMessage.style.display = 'block';
     }
 
@@ -593,8 +619,13 @@ function showStartScreen() {
       DOM.messageText.dataset.messageMode = messageKey === 'congrats' ? 'leaderboard' : 'html';
       DOM.messageTitle.dataset.messageKey = messageKey;
       DOM.centerMessage.classList.toggle('leaderboardDialog', messageKey === 'congrats');
-      DOM.centerMessage.classList.remove('levelFailedDialog');
+      DOM.centerMessage.classList.remove('levelFailedDialog', 'campaignCompleteDialog');
       if (DOM.messageRetryBtn) DOM.messageRetryBtn.hidden = true;
+      if (DOM.messageOurGamesBtn) {
+        DOM.messageOurGamesBtn.dataset.action = '';
+        DOM.messageOurGamesBtn.textContent = t('ourGames');
+      }
+      updateOurGamesButtonState();
       DOM.centerMessage.style.display = 'block';
     }
 
@@ -742,7 +773,11 @@ function showStartScreen() {
     async function showGameOverWithLeaderboard() {
       const sessionId = runtimeSessionId;
       const finalScore = Math.max(0, Math.round(score || 0));
-
+      App.bestEndlessScore = Math.max(Math.floor(Number(App.bestEndlessScore || 0)), finalScore);
+      try {
+        const storedBest = Math.floor(Number(localStorage.getItem('jor-best-endless-score') || 0));
+        if (finalScore > storedBest) localStorage.setItem('jor-best-endless-score', String(finalScore));
+      } catch (error) {}
       App.localPause = true;
       markGameplayStop();
 
@@ -791,6 +826,188 @@ function showStartScreen() {
       return currentLang === 'en' ? 'GOAL NOT COMPLETED' : '\u0426\u0415\u041b\u042c \u041d\u0415 \u0412\u042b\u041f\u041e\u041b\u041d\u0415\u041d\u0410';
     }
 
+    function getCampaignCompleteTitle() {
+      return currentLang === 'en' ? 'ROUND COMPLETE' : '\u0420\u0410\u0423\u041d\u0414 \u0417\u0410\u0412\u0415\u0420\u0428\u0401\u041d';
+    }
+
+    function getCampaignCompleteTitleForLevel(levelNumber) {
+      const level = Math.max(1, Math.floor(Number(levelNumber) || 1));
+      return currentLang === 'en'
+        ? `ROUND ${level} COMPLETE`
+        : `\u0420\u0410\u0423\u041d\u0414 ${level} \u0417\u0410\u0412\u0415\u0420\u0428\u0401\u041d`;
+    }
+
+    function getCampaignNextButtonText() {
+      return currentLang === 'en' ? 'NEXT ROUND' : '\u0421\u041b\u0415\u0414\u0423\u042e\u0429\u0418\u0419 \u0420\u0410\u0423\u041d\u0414';
+    }
+
+    function buildCampaignStarRow(stars) {
+      const earned = Math.max(0, Math.min(3, Math.floor(Number(stars) || 0)));
+      let html = '';
+      for (let i = 1; i <= 3; i += 1) {
+        html += `<img class="campaignResultStar${i <= earned ? ' active' : ''}" src="sprites/ui/level_star.webp" alt="" aria-hidden="true">`;
+      }
+      return html;
+    }
+
+    function normalizeCampaignStarsEntries(entries, currentUserId) {
+      const rows = Array.isArray(entries?.entries) ? entries.entries : Array.isArray(entries) ? entries : [];
+      return rows
+        .map(entry => {
+          const rank = Number(entry?.rank);
+          if (!Number.isFinite(rank)) return null;
+          const uniqueId = entry?.player?.uniqueID || '';
+          return {
+            rank,
+            name: entry?.player?.publicName || entry?.name || getLeaderboardPlayerFallbackName(),
+            score: Math.max(0, Math.floor(entry?.score || 0)),
+            isPlayer: !!entry?.isUser || (!!uniqueId && !!currentUserId && uniqueId === currentUserId),
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.rank - b.rank);
+    }
+
+    function getCampaignStarsRows(entries, currentUserId, compact = false) {
+      const sorted = normalizeCampaignStarsEntries(entries, currentUserId);
+      const top = sorted.filter(entry => entry.rank <= 3).slice(0, 3);
+      const player = sorted.find(entry => entry.isPlayer);
+
+      if (compact) {
+        if (player) {
+          return sorted.filter(entry => Math.abs(entry.rank - player.rank) <= 1).slice(0, 3);
+        }
+        return top.length ? top : sorted.slice(0, 3);
+      }
+
+      const rows = top.slice();
+
+      if (player && !top.some(entry => entry.rank === player.rank)) {
+        const around = sorted.filter(entry => (
+          Math.abs(entry.rank - player.rank) <= 1 &&
+          !rows.some(row => row.rank === entry.rank)
+        ));
+        if (around.length) {
+          rows.push({ divider: true });
+          around.forEach(entry => rows.push(entry));
+        }
+      }
+
+      if (!rows.length && sorted.length) return sorted.slice(0, 3);
+      return rows.slice(0, 7);
+    }
+
+    function buildCampaignStarsLeaderboardRows(rows) {
+      if (!rows.length) {
+        return `<div class="campaignResultLeaderboardPending">${escapeHtml(getGameOverPendingText())}</div>`;
+      }
+
+      return rows.map(row => {
+        if (row.divider) return '<div class="campaignResultLeaderboardGap" aria-hidden="true">...</div>';
+        const rankClass = Number.isFinite(row.rank) && row.rank <= 3 ? ` top${row.rank}` : '';
+        return `
+          <div class="campaignResultLeaderboardRow${row.isPlayer ? ' currentUser' : ''}${rankClass}">
+            <div class="campaignResultLeaderboardRank">${escapeHtml(row.rank)}</div>
+            <div class="campaignResultLeaderboardName">${escapeHtml(row.name)}</div>
+            <div class="campaignResultLeaderboardScore">${formatCompactScore(row.score)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function buildCampaignStarsLeaderboardHtml(entries, state = 'loading') {
+      const currentUserId = App.player && typeof App.player.getUniqueID === 'function'
+        ? App.player.getUniqueID()
+        : '';
+      const rows = state === 'ready' ? getCampaignStarsRows(entries, currentUserId, false) : [];
+      const compactRows = state === 'ready' ? getCampaignStarsRows(entries, currentUserId, true) : [];
+      const title = currentLang === 'en' ? 'STARS RATING' : '\u0420\u0415\u0419\u0422\u0418\u041d\u0413 \u0417\u0412\u0401\u0417\u0414';
+      const content = state === 'loading'
+        ? `<div class="campaignResultLeaderboardPending">${escapeHtml(getGameOverLoadingText())}</div>`
+        : state === 'error'
+          ? `<div class="campaignResultLeaderboardPending">${escapeHtml(getLeaderboardUnavailableText())}</div>`
+          : buildCampaignStarsLeaderboardRows(rows);
+      const compactContent = state === 'ready' ? buildCampaignStarsLeaderboardRows(compactRows) : content;
+
+      return `
+        <div class="campaignResultLeaderboard">
+          <div class="campaignResultLeaderboardTitle">${escapeHtml(title)}</div>
+          <div class="campaignResultLeaderboardRows campaignResultLeaderboardRowsFull">${content}</div>
+          <div class="campaignResultLeaderboardRows campaignResultLeaderboardRowsCompact">${compactContent}</div>
+        </div>
+      `;
+    }
+
+    function buildCampaignCompleteHtml(level, stars, progressValue, elapsedFrames, leaderboardEntries = null, leaderboardState = 'loading') {
+      const levelNumber = level?.n || App.campaignLevel || 1;
+      const chapter = Math.max(0, Math.floor((levelNumber - 1) / 10));
+      const progress = window.JorCampaignUI?.getProgress?.() || {};
+      const hasNewTrophy = !!progress.pendingChapterTrophies?.[String(chapter)];
+      const trophyLabel = currentLang === 'en' ? 'Chapter trophy earned' : '\u041a\u0443\u0431\u043e\u043a \u0433\u043b\u0430\u0432\u044b \u043f\u043e\u043b\u0443\u0447\u0435\u043d';
+
+      return `
+        <div class="campaignResultPanel">
+          <div class="campaignResultStars">${buildCampaignStarRow(stars)}</div>
+          ${hasNewTrophy ? '<div class="campaignResultTrophy"><img src="sprites/ui/chapter_trophy.png" alt="" aria-hidden="true"><span>' + escapeHtml(trophyLabel) + '</span></div>' : ''}
+          ${buildCampaignStarsLeaderboardHtml(leaderboardEntries, leaderboardState)}
+        </div>
+      `;
+    }
+
+    async function loadCampaignStarsLeaderboard() {
+      const localValue = window.JorCampaignUI?.totalStars?.() || 0;
+      if (typeof window.JorMetaUI?.submitStars === 'function') {
+        await window.JorMetaUI.submitStars();
+      }
+      if (!App.sdkReady || !App.ysdk?.leaderboards) {
+        return localValue > 0
+          ? { entries: [{ rank: 1, name: getLeaderboardPlayerFallbackName(), score: localValue, isUser: true }], state: 'ready' }
+          : { entries: null, state: 'error' };
+      }
+
+      try {
+        const entries = await App.ysdk.leaderboards.getEntries('jorStars', {
+          quantityTop: 3,
+          includeUser: true,
+          quantityAround: 1,
+        });
+        return { entries, state: 'ready' };
+      } catch (error) {
+        return { entries: null, state: 'error' };
+      }
+    }
+
+    async function showCampaignCompleteMessage(level, stars, progressValue = 0, elapsedFrames = 0, leaderboardEntries = null, leaderboardState = 'loading') {
+      App.localPause = true;
+      markGameplayStop();
+      DOM.messageTitle.textContent = getCampaignCompleteTitleForLevel(level?.n || App.campaignLevel || 1);
+      DOM.messageTitle.dataset.messageKey = 'campaignComplete';
+      DOM.messageText.innerHTML = buildCampaignCompleteHtml(level, stars, progressValue, elapsedFrames, leaderboardEntries, leaderboardState);
+      DOM.messageText.className = 'campaignResultMessage';
+      DOM.messageText.dataset.messageMode = 'campaignComplete';
+      DOM.centerMessage.classList.remove('leaderboardDialog', 'levelFailedDialog');
+      DOM.centerMessage.classList.add('campaignCompleteDialog');
+      if (DOM.messageRetryBtn) {
+        DOM.messageRetryBtn.hidden = true;
+      }
+      if (DOM.restartBtn) DOM.restartBtn.textContent = currentLang === 'en' ? 'MAIN MENU' : '\u0413\u041b\u0410\u0412\u041d\u041e\u0415 \u041c\u0415\u041d\u042e';
+      if (DOM.messageOurGamesBtn) {
+        DOM.messageOurGamesBtn.hidden = false;
+        DOM.messageOurGamesBtn.disabled = false;
+        DOM.messageOurGamesBtn.removeAttribute('aria-disabled');
+        DOM.messageOurGamesBtn.dataset.action = 'nextCampaignRound';
+        DOM.messageOurGamesBtn.textContent = getCampaignNextButtonText();
+      }
+      DOM.centerMessage.style.display = 'block';
+      updateCampaignTimer();
+
+      if (leaderboardState === 'loading') {
+        const result = await loadCampaignStarsLeaderboard();
+        if (DOM.messageTitle?.dataset?.messageKey !== 'campaignComplete') return;
+        await showCampaignCompleteMessage(level, stars, progressValue, elapsedFrames, result.entries, result.state);
+      }
+    }
+
     function buildCampaignFailedHtml(level, progressValue) {
       const levelNumber = level?.n || App.campaignLevel || 1;
       const label = window.JorCampaignLevels?.label?.(level?.type) || '';
@@ -819,6 +1036,7 @@ function showStartScreen() {
       DOM.messageText.className = 'campaignFailedMessage';
       DOM.messageText.dataset.messageMode = 'campaignFailed';
       DOM.centerMessage.classList.remove('leaderboardDialog');
+      DOM.centerMessage.classList.remove('campaignCompleteDialog');
       DOM.centerMessage.classList.add('levelFailedDialog');
       if (DOM.messageRetryBtn) {
         DOM.messageRetryBtn.hidden = false;
@@ -867,21 +1085,30 @@ function showStartScreen() {
       const safeSeconds = Math.max(0, Math.ceil(Number(seconds) || 0));
       const minutes = Math.floor(safeSeconds / 60);
       const rest = safeSeconds % 60;
-      return minutes > 0 ? `${minutes}:${String(rest).padStart(2, '0')}` : String(rest);
+      return `${minutes} : ${String(rest).padStart(2, '0')}`;
+    }
+
+    function getCampaignTimeExpiredText() {
+      return currentLang === 'en' ? 'Time is up' : '\u0412\u0440\u0435\u043c\u044f \u0432\u044b\u0448\u043b\u043e';
     }
 
     function updateCampaignTimer() {
       if (!DOM.campaignTimer) return;
-      const info = typeof getCampaignTimeInfo === 'function' ? getCampaignTimeInfo() : null;
-      const visible = Boolean(info && App.hasStarted && !App.startScreenVisible && !gameOver && !victory);
+      const resultOpen = DOM.centerMessage?.classList?.contains('campaignCompleteDialog');
+      const liveInfo = typeof getCampaignTimeInfo === 'function' ? getCampaignTimeInfo() : null;
+      const resultInfo = resultOpen ? App.campaignResultTimeInfo : null;
+      const info = liveInfo || resultInfo;
+      const visible = Boolean(info && App.hasStarted && !App.startScreenVisible && (!victory || resultOpen));
       DOM.campaignTimer.classList.toggle('visible', visible);
       DOM.campaignTimer.setAttribute('aria-hidden', visible ? 'false' : 'true');
       if (!visible) {
-        DOM.campaignTimer.classList.remove('danger');
+        DOM.campaignTimer.classList.remove('danger', 'expired');
         return;
       }
-      DOM.campaignTimer.textContent = formatCampaignTimer(info.remainingSeconds);
-      DOM.campaignTimer.classList.toggle('danger', info.progress <= 0.1);
+      const expired = !!info.expired || info.remainingFrames <= 0 || info.remainingSeconds <= 0;
+      DOM.campaignTimer.textContent = expired ? getCampaignTimeExpiredText() : formatCampaignTimer(info.remainingSeconds);
+      DOM.campaignTimer.classList.toggle('danger', !expired && info.progress <= 0.1);
+      DOM.campaignTimer.classList.toggle('expired', expired);
     }
 
     function updateTopProgressBar() {
@@ -1122,5 +1349,3 @@ function showStartScreen() {
 
       markGameplayStart();
     }
-
-

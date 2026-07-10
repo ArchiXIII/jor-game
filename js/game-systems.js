@@ -20,6 +20,7 @@ let ambientParticles = [];
 
     let foods = [];
     let dnaOrbs = [];
+    let tomatoFoods = [];
     let remains = [];
     const spatialQueryScratch = [];
     let entitySpatialIndex = null;
@@ -53,6 +54,7 @@ let ambientParticles = [];
     let currentChoices = [];
     let spawnFoodTimer = 0;
     let spawnDnaTimer = 0;
+    let spawnTomatoTimer = 0;
     let runtimeSessionId = 0;
 
     
@@ -337,7 +339,7 @@ let ambientParticles = [];
     }
 
 function createEnemy(sizeFactor = 1) {
-      // Щитовик встречается реже обычного врага.
+      // Р В©Р С‘РЎвЂљР С•Р Р†Р С‘Р С” Р Р†РЎРѓРЎвЂљРЎР‚Р ВµРЎвЂЎР В°Р ВµРЎвЂљРЎРѓРЎРЏ РЎР‚Р ВµР В¶Р Вµ Р С•Р В±РЎвЂ№РЎвЂЎР Р…Р С•Р С–Р С• Р Р†РЎР‚Р В°Р С–Р В°.
       let shieldChance = 0.16;
       if (endlessMode && typeof getEndlessPressureState === 'function') {
         const endlessState = getEndlessPressureState();
@@ -368,6 +370,10 @@ function createEnemy(sizeFactor = 1) {
       const orb = new DNAOrb(x, y, endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_RADIUS : undefined, { deferSprite });
       orb.pulse = Math.random() * Math.PI * 2;
       return orb;
+    }
+
+    function createTomatoFoodAt(x, y, deferSprite = true) {
+      return new TomatoFood(x, y, { deferSprite, radius: endlessMode ? 14 : 12 });
     }
 
     function createEnemyAt(x, y, sizeFactor = 1) {
@@ -455,6 +461,11 @@ function createEnemy(sizeFactor = 1) {
       orb.sprite = orb.createSprite();
     }
 
+    function warmTomatoFoodSprite(tomato) {
+      if (!tomato || tomato.sprite) return;
+      tomato.sprite = tomato.createSprite();
+    }
+
     function warmEnemyBodySprite(enemy) {
       if (!enemy || typeof enemy.getCachedBodySprite !== 'function') return;
       if (enemy instanceof ShieldEnemy) {
@@ -488,6 +499,10 @@ function createEnemy(sizeFactor = 1) {
         scheduleRenderWarmupTask(() => warmDnaOrbSprite(orb));
       }
 
+      for (const tomato of tomatoFoods) {
+        scheduleRenderWarmupTask(() => warmTomatoFoodSprite(tomato));
+      }
+
       for (const food of foods) {
         scheduleRenderWarmupTask(() => warmFoodSprite(food));
       }
@@ -512,6 +527,14 @@ function createEnemy(sizeFactor = 1) {
         dnaOrbs[writeOrb++] = orb;
       }
       dnaOrbs.length = writeOrb;
+
+      let writeTomato = 0;
+      for (let i = 0; i < tomatoFoods.length; i++) {
+        const tomato = tomatoFoods[i];
+        if (isOutsideBounds(tomato, despawnBounds, tomato.radius + 28)) continue;
+        tomatoFoods[writeTomato++] = tomato;
+      }
+      tomatoFoods.length = writeTomato;
 
       for (let i = remains.length - 1; i >= 0; i--) {
         const chunk = remains[i];
@@ -590,19 +613,19 @@ function createEnemy(sizeFactor = 1) {
     }
 
     function spawnStreamFood(amount) {
-      // Спавн «пятнами»: вместо равномерного разброса еда появляется
-      // кластерами по 3–7 штук в одной точке. Это создаёт интересную
-      // карту мира — есть «пастбища» и есть «пустоши». Игрок принимает
-      // решения: идти на полную еды зону или быстро её защитить.
+      // Р РЋР С—Р В°Р Р†Р Р… Р’В«Р С—РЎРЏРЎвЂљР Р…Р В°Р СР С‘Р’В»: Р Р†Р СР ВµРЎРѓРЎвЂљР С• РЎР‚Р В°Р Р†Р Р…Р С•Р СР ВµРЎР‚Р Р…Р С•Р С–Р С• РЎР‚Р В°Р В·Р В±РЎР‚Р С•РЎРѓР В° Р ВµР Т‘Р В° Р С—Р С•РЎРЏР Р†Р В»РЎРЏР ВµРЎвЂљРЎРѓРЎРЏ
+      // Р С”Р В»Р В°РЎРѓРЎвЂљР ВµРЎР‚Р В°Р СР С‘ Р С—Р С• 3РІР‚вЂњ7 РЎв‚¬РЎвЂљРЎС“Р С” Р Р† Р С•Р Т‘Р Р…Р С•Р в„– РЎвЂљР С•РЎвЂЎР С”Р Вµ. Р В­РЎвЂљР С• РЎРѓР С•Р В·Р Т‘Р В°РЎвЂРЎвЂљ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р ВµРЎРѓР Р…РЎС“РЎР‹
+      // Р С”Р В°РЎР‚РЎвЂљРЎС“ Р СР С‘РЎР‚Р В° РІР‚вЂќ Р ВµРЎРѓРЎвЂљРЎРЉ Р’В«Р С—Р В°РЎРѓРЎвЂљР В±Р С‘РЎвЂ°Р В°Р’В» Р С‘ Р ВµРЎРѓРЎвЂљРЎРЉ Р’В«Р С—РЎС“РЎРѓРЎвЂљР С•РЎв‚¬Р С‘Р’В». Р ВР С–РЎР‚Р С•Р С” Р С—РЎР‚Р С‘Р Р…Р С‘Р СР В°Р ВµРЎвЂљ
+      // РЎР‚Р ВµРЎв‚¬Р ВµР Р…Р С‘РЎРЏ: Р С‘Р Т‘РЎвЂљР С‘ Р Р…Р В° Р С—Р С•Р В»Р Р…РЎС“РЎР‹ Р ВµР Т‘РЎвЂ№ Р В·Р С•Р Р…РЎС“ Р С‘Р В»Р С‘ Р В±РЎвЂ№РЎРѓРЎвЂљРЎР‚Р С• Р ВµРЎвЂ Р В·Р В°РЎвЂ°Р С‘РЎвЂљР С‘РЎвЂљРЎРЉ.
       let remaining = amount;
       while (remaining > 0) {
-        // Размер кластера зависит от того, сколько ещё нужно заспавнить.
+        // Р В Р В°Р В·Р СР ВµРЎР‚ Р С”Р В»Р В°РЎРѓРЎвЂљР ВµРЎР‚Р В° Р В·Р В°Р Р†Р С‘РЎРѓР С‘РЎвЂљ Р С•РЎвЂљ РЎвЂљР С•Р С–Р С•, РЎРѓР С”Р С•Р В»РЎРЉР С”Р С• Р ВµРЎвЂ°РЎвЂ Р Р…РЎС“Р В¶Р Р…Р С• Р В·Р В°РЎРѓР С—Р В°Р Р†Р Р…Р С‘РЎвЂљРЎРЉ.
         const clusterSize = Math.min(remaining, 3 + Math.floor(Math.random() * 5));
         const center = randomOffscreenWorldPosition({
           padding: 24,
           minDistanceFromPlayer: WORLD_CONFIG.SAFE_PLAYER_RADIUS,
         });
-        // Радиус кластера ~80px — еда в одной точке выглядит как «облако».
+        // Р В Р В°Р Т‘Р С‘РЎС“РЎРѓ Р С”Р В»Р В°РЎРѓРЎвЂљР ВµРЎР‚Р В° ~80px РІР‚вЂќ Р ВµР Т‘Р В° Р Р† Р С•Р Т‘Р Р…Р С•Р в„– РЎвЂљР С•РЎвЂЎР С”Р Вµ Р Р†РЎвЂ№Р С–Р В»РЎРЏР Т‘Р С‘РЎвЂљ Р С”Р В°Р С” Р’В«Р С•Р В±Р В»Р В°Р С”Р С•Р’В».
         for (let i = 0; i < clusterSize; i++) {
           const angle = Math.random() * Math.PI * 2;
           const offset = Math.random() * 80;
@@ -663,6 +686,7 @@ function resetGame() {
       camera.y = player.y - canvas.height * 0.5;
       foods = [];
       dnaOrbs = [];
+      tomatoFoods = [];
       remains = [];
       ambientParticles = [];
       backgroundGlows = [];
@@ -708,6 +732,7 @@ function resetGame() {
       if (typeof resetMobileStick === 'function') resetMobileStick();
       spawnFoodTimer = 0;
       spawnDnaTimer = 0;
+      spawnTomatoTimer = 240;
       dashRequested = false;
       simulationLoad = 0;
       fxShadowScale = 1;
@@ -723,8 +748,8 @@ function resetGame() {
       lastHudRenderFrame = -999;
       App.rewardedUsedThisEvolution = false;
       App.localPause = App.startScreenVisible;
-      // При полном сбросе всегда снимаем ручную паузу — нельзя начать новую
-      // игру в «застрявшем» паузном состоянии.
+      // Р СџРЎР‚Р С‘ Р С—Р С•Р В»Р Р…Р С•Р С РЎРѓР В±РЎР‚Р С•РЎРѓР Вµ Р Р†РЎРѓР ВµР С–Р Т‘Р В° РЎРѓР Р…Р С‘Р СР В°Р ВµР С РЎР‚РЎС“РЎвЂЎР Р…РЎС“РЎР‹ Р С—Р В°РЎС“Р В·РЎС“ РІР‚вЂќ Р Р…Р ВµР В»РЎРЉР В·РЎРЏ Р Р…Р В°РЎвЂЎР В°РЎвЂљРЎРЉ Р Р…Р С•Р Р†РЎС“РЎР‹
+      // Р С‘Р С–РЎР‚РЎС“ Р Р† Р’В«Р В·Р В°РЎРѓРЎвЂљРЎР‚РЎРЏР Р†РЎв‚¬Р ВµР СР’В» Р С—Р В°РЎС“Р В·Р Р…Р С•Р С РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘Р С‘.
       if (App.userPaused) {
         App.userPaused = false;
         hidePauseOverlay();
@@ -786,8 +811,8 @@ function resetGame() {
     }
 
     function playerCanEatTarget(target) {
-      // Spike и maw немного снижают порог доминирования, но не превращают
-      // игрока в «съешь всех» — потолок 0.08 (8% форы) сохраняется.
+      // Spike Р С‘ maw Р Р…Р ВµР СР Р…Р С•Р С–Р С• РЎРѓР Р…Р С‘Р В¶Р В°РЎР‹РЎвЂљ Р С—Р С•РЎР‚Р С•Р С– Р Т‘Р С•Р СР С‘Р Р…Р С‘РЎР‚Р С•Р Р†Р В°Р Р…Р С‘РЎРЏ, Р Р…Р С• Р Р…Р Вµ Р С—РЎР‚Р ВµР Р†РЎР‚Р В°РЎвЂ°Р В°РЎР‹РЎвЂљ
+      // Р С‘Р С–РЎР‚Р С•Р С”Р В° Р Р† Р’В«РЎРѓРЎР‰Р ВµРЎв‚¬РЎРЉ Р Р†РЎРѓР ВµРЎвЂ¦Р’В» РІР‚вЂќ Р С—Р С•РЎвЂљР С•Р В»Р С•Р С” 0.08 (8% РЎвЂћР С•РЎР‚РЎвЂ№) РЎРѓР С•РЎвЂ¦РЎР‚Р В°Р Р…РЎРЏР ВµРЎвЂљРЎРѓРЎРЏ.
       const mawModifier = player.mawLevel * 0.03;
       const spikeModifier = player.spikeLevel * 0.02;
       const combinedModifier = Math.min(0.08, mawModifier + spikeModifier);
@@ -817,6 +842,7 @@ function resetGame() {
         const exists =
           foods.includes(entity) ||
           dnaOrbs.includes(entity) ||
+          tomatoFoods.includes(entity) ||
           (enemies.includes(entity) && playerCanEatTarget(entity));
         if (!exists) return false;
 
@@ -863,6 +889,10 @@ function resetGame() {
 
         for (const orb of dnaOrbs) {
           tryRegisterTarget(orb);
+        }
+
+        for (const tomato of tomatoFoods) {
+          tryRegisterTarget(tomato);
         }
 
         const nearbyEnemies = getNearbyEnemies(mouth.x, mouth.y, pullRange, []);
@@ -918,9 +948,9 @@ function resetGame() {
     }
 
     function updateEnemyEvolution() {
-      // Не пересобираем индекс на входе — основной цикл это уже сделал
-      // после движения сущностей. Внутри индекс перестраивается только
-      // когда что-то реально удалилось (см. preyEaten ниже).
+      // Р СњР Вµ Р С—Р ВµРЎР‚Р ВµРЎРѓР С•Р В±Р С‘РЎР‚Р В°Р ВµР С Р С‘Р Р…Р Т‘Р ВµР С”РЎРѓ Р Р…Р В° Р Р†РЎвЂ¦Р С•Р Т‘Р Вµ РІР‚вЂќ Р С•РЎРѓР Р…Р С•Р Р†Р Р…Р С•Р в„– РЎвЂ Р С‘Р С”Р В» РЎРЊРЎвЂљР С• РЎС“Р В¶Р Вµ РЎРѓР Т‘Р ВµР В»Р В°Р В»
+      // Р С—Р С•РЎРѓР В»Р Вµ Р Т‘Р Р†Р С‘Р В¶Р ВµР Р…Р С‘РЎРЏ РЎРѓРЎС“РЎвЂ°Р Р…Р С•РЎРѓРЎвЂљР ВµР в„–. Р вЂ™Р Р…РЎС“РЎвЂљРЎР‚Р С‘ Р С‘Р Р…Р Т‘Р ВµР С”РЎРѓ Р С—Р ВµРЎР‚Р ВµРЎРѓРЎвЂљРЎР‚Р В°Р С‘Р Р†Р В°Р ВµРЎвЂљРЎРѓРЎРЏ РЎвЂљР С•Р В»РЎРЉР С”Р С•
+      // Р С”Р С•Р С–Р Т‘Р В° РЎвЂЎРЎвЂљР С•-РЎвЂљР С• РЎР‚Р ВµР В°Р В»РЎРЉР Р…Р С• РЎС“Р Т‘Р В°Р В»Р С‘Р В»Р С•РЎРѓРЎРЉ (РЎРѓР С. preyEaten Р Р…Р С‘Р В¶Р Вµ).
 
       if (!endlessMode) {
         for (const enemy of enemies) {
@@ -974,7 +1004,7 @@ function resetGame() {
     }
 
     // ------------------------------
-    // Основной игровой цикл
+    // Р С›РЎРѓР Р…Р С•Р Р†Р Р…Р С•Р в„– Р С‘Р С–РЎР‚Р С•Р Р†Р С•Р в„– РЎвЂ Р С‘Р С”Р В»
     // ------------------------------
     function updateGame() {
       if (gameOver || victory || evolutionPending || App.localPause || App.platformPaused || App.userPaused) return;
@@ -1021,6 +1051,9 @@ function resetGame() {
       for (const orb of dnaOrbs) {
         if (!shouldThrottleSecondary || !isEntityFarOutsideView(orb, 120)) orb.update();
       }
+      for (const tomato of tomatoFoods) {
+        if (!shouldThrottleSecondary || !isEntityFarOutsideView(tomato, 120)) tomato.update();
+      }
       for (const chunk of remains) {
         if (!shouldThrottleSecondary || !isEntityFarOutsideView(chunk, 120)) chunk.update();
       }
@@ -1053,7 +1086,7 @@ function resetGame() {
         }
       }
 
-      // Перестраиваем индекс только если что-то реально удалилось.
+      // Р СџР ВµРЎР‚Р ВµРЎРѓРЎвЂљРЎР‚Р В°Р С‘Р Р†Р В°Р ВµР С Р С‘Р Р…Р Т‘Р ВµР С”РЎРѓ РЎвЂљР С•Р В»РЎРЉР С”Р С• Р ВµРЎРѓР В»Р С‘ РЎвЂЎРЎвЂљР С•-РЎвЂљР С• РЎР‚Р ВµР В°Р В»РЎРЉР Р…Р С• РЎС“Р Т‘Р В°Р В»Р С‘Р В»Р С•РЎРѓРЎРЉ.
       if (foodsRemovedThisFrame) rebuildSpatialIndex();
       const nearbyPlayerFoods = getNearbyFoods(player.x, player.y, player.radius + 48, []);
       for (const food of nearbyPlayerFoods) {
@@ -1065,12 +1098,12 @@ function resetGame() {
         playEatingSound();
         spawnFoodEatEffect(food, player);
         if (food instanceof ShardFood) {
-          // Осколки — мелкая «закуска», ×3 меньше обычной еды.
+          // Р С›РЎРѓР С”Р С•Р В»Р С”Р С‘ РІР‚вЂќ Р СР ВµР В»Р С”Р В°РЎРЏ Р’В«Р В·Р В°Р С”РЎС“РЎРѓР С”Р В°Р’В», Р“вЂ”3 Р СР ВµР Р…РЎРЉРЎв‚¬Р Вµ Р С•Р В±РЎвЂ№РЎвЂЎР Р…Р С•Р в„– Р ВµР Т‘РЎвЂ№.
           player.grow(0.10);
           addScore(ENDLESS_CONFIG.SCORE_PER_SHARD);
         } else {
-          // Обычная еда — базовая единица прогресса. +28% к прежнему,
-          // чтобы фаза роста проходилась за разумное время.
+          // Р С›Р В±РЎвЂ№РЎвЂЎР Р…Р В°РЎРЏ Р ВµР Т‘Р В° РІР‚вЂќ Р В±Р В°Р В·Р С•Р Р†Р В°РЎРЏ Р ВµР Т‘Р С‘Р Р…Р С‘РЎвЂ Р В° Р С—РЎР‚Р С•Р С–РЎР‚Р ВµРЎРѓРЎРѓР В°. +28% Р С” Р С—РЎР‚Р ВµР В¶Р Р…Р ВµР СРЎС“,
+          // РЎвЂЎРЎвЂљР С•Р В±РЎвЂ№ РЎвЂћР В°Р В·Р В° РЎР‚Р С•РЎРѓРЎвЂљР В° Р С—РЎР‚Р С•РЎвЂ¦Р С•Р Т‘Р С‘Р В»Р В°РЎРѓРЎРЉ Р В·Р В° РЎР‚Р В°Р В·РЎС“Р СР Р…Р С•Р Вµ Р Р†РЎР‚Р ВµР СРЎРЏ.
           player.grow(0.32);
           addScore(ENDLESS_CONFIG.SCORE_PER_FOOD);
           if (typeof recordCampaignFood === 'function') recordCampaignFood();
@@ -1088,10 +1121,23 @@ function resetGame() {
           dnaOrbs.splice(i, 1);
           playEatingSound();
           player.dna += 1;
-          // DNA-орб = редкое событие, ×3 от обычной еды для ощущения «джекпот».
+          // DNA-Р С•РЎР‚Р В± = РЎР‚Р ВµР Т‘Р С”Р С•Р Вµ РЎРѓР С•Р В±РЎвЂ№РЎвЂљР С‘Р Вµ, Р“вЂ”3 Р С•РЎвЂљ Р С•Р В±РЎвЂ№РЎвЂЎР Р…Р С•Р в„– Р ВµР Т‘РЎвЂ№ Р Т‘Р В»РЎРЏ Р С•РЎвЂ°РЎС“РЎвЂ°Р ВµР Р…Р С‘РЎРЏ Р’В«Р Т‘Р В¶Р ВµР С”Р С—Р С•РЎвЂљР’В».
           player.grow(endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_GROWTH : 0.95);
           addScore(endlessMode ? ENDLESS_CONFIG.SCORE_PER_ENDLESS_DNA : ENDLESS_CONFIG.SCORE_PER_DNA);
           if (typeof recordCampaignDna === 'function') recordCampaignDna();
+          if (typeof recordCampaignFood === 'function') recordCampaignFood();
+        }
+      }
+
+      for (let i = tomatoFoods.length - 1; i >= 0; i--) {
+        const tomato = tomatoFoods[i];
+        if (isWithinDistance(player, tomato, player.radius + tomato.radius + 2)) {
+          tomatoFoods.splice(i, 1);
+          playEatingSound();
+          spawnFoodEatEffect(tomato, player, { particleCount: 10, ringCount: 2 });
+          player.grow(endlessMode ? ENDLESS_CONFIG.TOMATO_ENDLESS_GROWTH : ENDLESS_CONFIG.TOMATO_GROWTH);
+          addScore(ENDLESS_CONFIG.SCORE_PER_TOMATO);
+          if (typeof recordCampaignFood === 'function') recordCampaignFood();
         }
       }
 
@@ -1113,8 +1159,8 @@ function resetGame() {
             enemiesEatenThisRound += 1;
             if (typeof recordCampaignEnemy === 'function') recordCampaignEnemy();
             player.dna += endlessMode ? 1 : 3;
-            // Враг — крупная награда, ×5-6 от обычной еды. Игрок должен
-            // явно чувствовать выгоду от риска агрессии.
+            // Р вЂ™РЎР‚Р В°Р С– РІР‚вЂќ Р С”РЎР‚РЎС“Р С—Р Р…Р В°РЎРЏ Р Р…Р В°Р С–РЎР‚Р В°Р Т‘Р В°, Р“вЂ”5-6 Р С•РЎвЂљ Р С•Р В±РЎвЂ№РЎвЂЎР Р…Р С•Р в„– Р ВµР Т‘РЎвЂ№. Р ВР С–РЎР‚Р С•Р С” Р Т‘Р С•Р В»Р В¶Р ВµР Р…
+            // РЎРЏР Р†Р Р…Р С• РЎвЂЎРЎС“Р Р†РЎРѓРЎвЂљР Р†Р С•Р Р†Р В°РЎвЂљРЎРЉ Р Р†РЎвЂ№Р С–Р С•Р Т‘РЎС“ Р С•РЎвЂљ РЎР‚Р С‘РЎРѓР С”Р В° Р В°Р С–РЎР‚Р ВµРЎРѓРЎРѓР С‘Р С‘.
             player.grow((endlessMode ? 0.28 : 1.8) * (player.enemyGrowthBonus || 1));
             addScore(ENDLESS_CONFIG.SCORE_PER_ENEMY_BASE + enemy.radius * ENDLESS_CONFIG.SCORE_PER_ENEMY_RADIUS);
             if (dnaOrbs.length < SECONDARY_ENTITY_LIMITS.DNA_MAX) {
@@ -1134,10 +1180,10 @@ function resetGame() {
               spawnStreamEnemy((1 + Math.min(1.08, player.level * 0.06)) * endlessSizeFactor);
             }
           } else if (enemy.radius > player.radius * 1.02) {
-            // В late-game урон от врагов растёт: фикс 10 → до 18.
-            // Вкупе с тем, что в takeDamage урон масштабируется с размером
-            // атакующего, к финалу endless игрок становится по-настоящему
-            // уязвимым — что и нужно для нарастающей угрозы.
+            // Р вЂ™ late-game РЎС“РЎР‚Р С•Р Р… Р С•РЎвЂљ Р Р†РЎР‚Р В°Р С–Р С•Р Р† РЎР‚Р В°РЎРѓРЎвЂљРЎвЂРЎвЂљ: РЎвЂћР С‘Р С”РЎРѓ 10 РІвЂ вЂ™ Р Т‘Р С• 18.
+            // Р вЂ™Р С”РЎС“Р С—Р Вµ РЎРѓ РЎвЂљР ВµР С, РЎвЂЎРЎвЂљР С• Р Р† takeDamage РЎС“РЎР‚Р С•Р Р… Р СР В°РЎРѓРЎв‚¬РЎвЂљР В°Р В±Р С‘РЎР‚РЎС“Р ВµРЎвЂљРЎРѓРЎРЏ РЎРѓ РЎР‚Р В°Р В·Р СР ВµРЎР‚Р С•Р С
+            // Р В°РЎвЂљР В°Р С”РЎС“РЎР‹РЎвЂ°Р ВµР С–Р С•, Р С” РЎвЂћР С‘Р Р…Р В°Р В»РЎС“ endless Р С‘Р С–РЎР‚Р С•Р С” РЎРѓРЎвЂљР В°Р Р…Р С•Р Р†Р С‘РЎвЂљРЎРѓРЎРЏ Р С—Р С•-Р Р…Р В°РЎРѓРЎвЂљР С•РЎРЏРЎвЂ°Р ВµР СРЎС“
+            // РЎС“РЎРЏР В·Р Р†Р С‘Р СРЎвЂ№Р С РІР‚вЂќ РЎвЂЎРЎвЂљР С• Р С‘ Р Р…РЎС“Р В¶Р Р…Р С• Р Т‘Р В»РЎРЏ Р Р…Р В°РЎР‚Р В°РЎРѓРЎвЂљР В°РЎР‹РЎвЂ°Р ВµР в„– РЎС“Р С–РЎР‚Р С•Р В·РЎвЂ№.
             const endlessState = endlessMode && typeof getEndlessPressureState === 'function' ? getEndlessPressureState() : null;
             const lateGameScale = endlessState ? endlessState.lateGameScale : 0;
             const damageAmount = 10 + lateGameScale * 4;
@@ -1160,11 +1206,27 @@ function resetGame() {
         }
       }
 
+      spawnTomatoTimer -= 1;
+      if (spawnTomatoTimer <= 0) {
+        spawnTomatoTimer = endlessMode ? ENDLESS_CONFIG.TOMATO_ENDLESS_SPAWN_FRAMES : ENDLESS_CONFIG.TOMATO_SPAWN_FRAMES;
+        if (tomatoFoods.length < ENDLESS_CONFIG.TOMATO_MAX_COUNT) {
+          const spawn = randomOffscreenWorldPosition({
+            padding: 44,
+            minDistanceFromPlayer: WORLD_CONFIG.SAFE_PLAYER_RADIUS + 70,
+          });
+          const tomato = createTomatoFoodAt(spawn.x, spawn.y);
+          tomatoFoods.push(tomato);
+          if (typeof scheduleRenderWarmupTask === 'function') {
+            scheduleRenderWarmupTask(() => warmTomatoFoodSprite(tomato));
+          }
+        }
+      }
+
       spawnDnaTimer -= 1;
       if (spawnDnaTimer <= 0) {
-        // Реже стало: 180→240 (endless), 180→300 (фаза роста).
-        // DNA-орбы теперь ценнее (×3 рост) — должны быть событиями, а не
-        // фоновыми пикапами. 5 секунд между попытками спавна — норм.
+        // Р В Р ВµР В¶Р Вµ РЎРѓРЎвЂљР В°Р В»Р С•: 180РІвЂ вЂ™240 (endless), 180РІвЂ вЂ™300 (РЎвЂћР В°Р В·Р В° РЎР‚Р С•РЎРѓРЎвЂљР В°).
+        // DNA-Р С•РЎР‚Р В±РЎвЂ№ РЎвЂљР ВµР С—Р ВµРЎР‚РЎРЉ РЎвЂ Р ВµР Р…Р Р…Р ВµР Вµ (Р“вЂ”3 РЎР‚Р С•РЎРѓРЎвЂљ) РІР‚вЂќ Р Т‘Р С•Р В»Р В¶Р Р…РЎвЂ№ Р В±РЎвЂ№РЎвЂљРЎРЉ РЎРѓР С•Р В±РЎвЂ№РЎвЂљР С‘РЎРЏР СР С‘, Р В° Р Р…Р Вµ
+        // РЎвЂћР С•Р Р…Р С•Р Р†РЎвЂ№Р СР С‘ Р С—Р С‘Р С”Р В°Р С—Р В°Р СР С‘. 5 РЎРѓР ВµР С”РЎС“Р Р…Р Т‘ Р СР ВµР В¶Р Т‘РЎС“ Р С—Р С•Р С—РЎвЂ№РЎвЂљР С”Р В°Р СР С‘ РЎРѓР С—Р В°Р Р†Р Р…Р В° РІР‚вЂќ Р Р…Р С•РЎР‚Р С.
         spawnDnaTimer = endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_SPAWN_FRAMES : 300;
         if (dnaOrbs.length < getTargetDnaCount()) {
           spawnStreamDna(endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_SPAWN_BATCH : 1);
@@ -1236,6 +1298,7 @@ function resetGame() {
         enemyEatBursts.length * 0.45 +
         remains.length * 0.2 +
         dnaOrbs.length * 0.25 +
+        tomatoFoods.length * 0.22 +
         foods.length * 0.08;
 
       simulationLoad = activeLoad;
@@ -1509,6 +1572,10 @@ function resetGame() {
         if (isOutsideBounds(orb, renderBounds, orb.radius + 18)) continue;
         orb.draw();
       }
+      for (const tomato of tomatoFoods) {
+        if (isOutsideBounds(tomato, renderBounds, tomato.radius + 24)) continue;
+        tomato.draw();
+      }
       for (const chunk of remains) {
         if (isOutsideBounds(chunk, renderBounds, chunk.radius + 18)) continue;
         chunk.draw();
@@ -1540,14 +1607,14 @@ function resetGame() {
 
       if (false && hudDirty && simulationFrame - lastHudRenderFrame >= 6) {
         DOM.hudStats.innerHTML = `
-          Счёт: <b>${score}</b><br>
-          ДНК: <b>${player.dna}</b><br>
-          ${endlessMode ? `Режим: <b>Бесконечность</b><br>Волна: <b>${getEndlessWave() + 1}</b><br>Опасность: <b>${(1 + endlessDifficulty).toFixed(2)}x</b><br>Следующий endless-уровень: <b>${getNextEndlessLevelScoreThreshold() !== null ? Math.max(0, getNextEndlessLevelScoreThreshold() - endlessScoreBase) : 'MAX'}</b><br>Следующий перк: <b>${getNextEndlessRewardLevel() ?? 'MAX'} уровень</b><br>Прогресс endless: <b>${progressText}</b><br>` : `Фаза роста: <b>${progressText}</b><br>Следующий перк: <b>${getNextFirstPhaseRewardLevel() ?? 'MAX'} уровень</b><br>`}
-          Перки фазы роста: <b>${firstPhaseRewardLevel - 1} / ${getFirstPhaseRewardCap()}</b><br>
-          Перки endless: <b>${endlessRewardLevel - 1} / ${getEndlessRewardCap()}</b><br>
-          Размер: <b>${player.radius.toFixed(1)}</b><br>
-          Уровень фазы: <b>${getCurrentPhaseLevel()} / ${getCurrentPhaseLevelCap()}</b><br>
-          Общий ранг: <b>${getOverallLevel()} / ${PROGRESSION_CONFIG.FIRST_PHASE_LEVELS + PROGRESSION_CONFIG.ENDLESS_LEVELS}</b><br>
+          Р РЋРЎвЂЎРЎвЂРЎвЂљ: <b>${score}</b><br>
+          Р вЂќР СњР С™: <b>${player.dna}</b><br>
+          ${endlessMode ? `Р В Р ВµР В¶Р С‘Р С: <b>Р вЂР ВµРЎРѓР С”Р С•Р Р…Р ВµРЎвЂЎР Р…Р С•РЎРѓРЎвЂљРЎРЉ</b><br>Р вЂ™Р С•Р В»Р Р…Р В°: <b>${getEndlessWave() + 1}</b><br>Р С›Р С—Р В°РЎРѓР Р…Р С•РЎРѓРЎвЂљРЎРЉ: <b>${(1 + endlessDifficulty).toFixed(2)}x</b><br>Р РЋР В»Р ВµР Т‘РЎС“РЎР‹РЎвЂ°Р С‘Р в„– endless-РЎС“РЎР‚Р С•Р Р†Р ВµР Р…РЎРЉ: <b>${getNextEndlessLevelScoreThreshold() !== null ? Math.max(0, getNextEndlessLevelScoreThreshold() - endlessScoreBase) : 'MAX'}</b><br>Р РЋР В»Р ВµР Т‘РЎС“РЎР‹РЎвЂ°Р С‘Р в„– Р С—Р ВµРЎР‚Р С”: <b>${getNextEndlessRewardLevel() ?? 'MAX'} РЎС“РЎР‚Р С•Р Р†Р ВµР Р…РЎРЉ</b><br>Р СџРЎР‚Р С•Р С–РЎР‚Р ВµРЎРѓРЎРѓ endless: <b>${progressText}</b><br>` : `Р В¤Р В°Р В·Р В° РЎР‚Р С•РЎРѓРЎвЂљР В°: <b>${progressText}</b><br>Р РЋР В»Р ВµР Т‘РЎС“РЎР‹РЎвЂ°Р С‘Р в„– Р С—Р ВµРЎР‚Р С”: <b>${getNextFirstPhaseRewardLevel() ?? 'MAX'} РЎС“РЎР‚Р С•Р Р†Р ВµР Р…РЎРЉ</b><br>`}
+          Р СџР ВµРЎР‚Р С”Р С‘ РЎвЂћР В°Р В·РЎвЂ№ РЎР‚Р С•РЎРѓРЎвЂљР В°: <b>${firstPhaseRewardLevel - 1} / ${getFirstPhaseRewardCap()}</b><br>
+          Р СџР ВµРЎР‚Р С”Р С‘ endless: <b>${endlessRewardLevel - 1} / ${getEndlessRewardCap()}</b><br>
+          Р В Р В°Р В·Р СР ВµРЎР‚: <b>${player.radius.toFixed(1)}</b><br>
+          Р Р€РЎР‚Р С•Р Р†Р ВµР Р…РЎРЉ РЎвЂћР В°Р В·РЎвЂ№: <b>${getCurrentPhaseLevel()} / ${getCurrentPhaseLevelCap()}</b><br>
+          Р С›Р В±РЎвЂ°Р С‘Р в„– РЎР‚Р В°Р Р…Р С–: <b>${getOverallLevel()} / ${PROGRESSION_CONFIG.FIRST_PHASE_LEVELS + PROGRESSION_CONFIG.ENDLESS_LEVELS}</b><br>
         `;
         lastHudRenderFrame = simulationFrame;
         hudDirty = false;

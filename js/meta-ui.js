@@ -7,12 +7,12 @@
   const STARS_STORAGE = 'jor-stars-total';
 
   const rankThresholds = [
-    0, 10000, 25000, 45000, 75000,
-    120000, 180000, 260000, 365000, 500000,
-    675000, 900000, 1190000, 1560000, 2025000,
-    2600000, 3325000, 4225000, 5350000, 6750000,
-    8500000, 10700000, 13400000, 16800000, 21000000,
-    26200000, 32600000, 40500000, 50000000, 62000000
+    0, 2500, 6500, 12500, 22000,
+    36000, 55000, 82000, 120000, 170000,
+    235000, 320000, 430000, 580000, 780000,
+    1050000, 1400000, 1850000, 2450000, 3200000,
+    4200000, 5500000, 7200000, 9400000, 12200000,
+    15600000, 19600000, 24200000, 29200000, 35000000
   ];
 
   const rankNames = {
@@ -152,6 +152,7 @@
     dom.profileButton = document.getElementById('metaProfileButton');
     dom.leaderboardButton = document.getElementById('metaLeaderboardButton');
     dom.soundButton = document.getElementById('metaSoundToggleBtn');
+    dom.profileIcon = document.getElementById('metaProfileIcon');
     dom.playerName = document.getElementById('metaPlayerName');
     dom.rankName = document.getElementById('metaRankName');
     dom.rankFill = document.getElementById('metaRankFill');
@@ -163,6 +164,7 @@
     dom.leaderboardClose = document.getElementById('metaLeaderboardClose');
     dom.xpLeaderboardClose = document.getElementById('metaXpLeaderboardClose');
     dom.profileTitle = document.getElementById('metaProfileTitle');
+    dom.profileModalIcon = document.getElementById('metaProfileModalIcon');
     dom.profileRank = document.getElementById('metaProfileRank');
     dom.profileRankFill = document.getElementById('metaProfileRankFill');
     dom.profileXp = document.getElementById('metaProfileXp');
@@ -207,6 +209,9 @@
   function render() {
     const rank = rankInfo();
     if (dom.playerName) dom.playerName.textContent = playerName();
+    const profileIcon = window.JorProfileIcons?.getIcon?.(window.JorShopUI?.selectedProfileIconId?.() || 'base');
+    if (dom.profileIcon && profileIcon?.src) dom.profileIcon.style.backgroundImage = `url('${profileIcon.src}')`;
+    if (dom.profileModalIcon && profileIcon?.src) dom.profileModalIcon.style.backgroundImage = `url('${profileIcon.src}')`;
     syncSoundButton();
     if (dom.rankName) dom.rankName.textContent = rank.title;
     if (dom.rankFill) dom.rankFill.style.width = `${Math.round(rank.progress * 100)}%`;
@@ -242,13 +247,14 @@
     if (!dom.trophyShelf) return;
     const progress = window.JorCampaignUI?.getProgress?.() || {};
     const trophies = progress.chapterTrophies || {};
+    const chapterOverlayOpen = !!document.getElementById('campaignOverlay')?.classList.contains('active');
     dom.trophyShelf.replaceChildren();
     for (let chapter = 0; chapter < 10; chapter += 1) {
       const item = document.createElement('span');
       item.className = 'metaTrophyItem'
         + (trophies[String(chapter)] ? ' complete' : '')
         + (state.trophyAwards.has(chapter) ? ' awarding' : '')
-        + (state.highlightedChapter === chapter ? ' currentChapter' : '');
+        + (chapterOverlayOpen && state.highlightedChapter === chapter ? ' currentChapter' : '');
       const image = document.createElement('img');
       image.src = 'sprites/ui/chapter_trophy.png';
       image.alt = '';
@@ -502,8 +508,10 @@
   }
 
   async function awardXp(amount) {
-    const value = Math.max(0, Math.floor(amount || 0));
-    if (value <= 0) return;
+    const baseValue = Math.max(0, Math.floor(amount || 0));
+    if (baseValue <= 0) return;
+    const xpBonus = Math.max(0, Number(window.JorShopUI?.getBonuses?.().xp || 0));
+    const value = Math.max(0, Math.floor(baseValue * (1 + xpBonus)));
     state.fullXp += value;
     saveNumber(FULL_XP_STORAGE, state.fullXp);
     render();

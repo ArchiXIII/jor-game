@@ -3,10 +3,12 @@
 
   const STORAGE_KEY = 'jor-shop-v1';
   const CLOUD_KEY = 'jorShop';
+  const BEST_ENDLESS_SCORE_KEY = 'jor-best-endless-score';
   const state = {
     activeCategory: 'characters',
     owned: {},
     selected: { characters: '', effects: '', pets: '', icons: '' },
+    timed: {},
     catalog: {},
     payments: null,
     pendingId: '',
@@ -22,10 +24,38 @@
   function products() { return window.JorShopData?.products || []; }
   function categories() { return window.JorShopData?.categories || []; }
   function byId(id) { return products().find((item) => item.id === id) || null; }
-  function isOwned(id) { return !!state.owned[id]; }
+  function nowMs() { return Date.now(); }
+  function timedUntil(id) { return Math.max(0, Number(state.timed?.[id] || 0)); }
+  function isTimedActive(id) { return timedUntil(id) > nowMs(); }
+  function bestEndlessScore() {
+    let value = Math.max(0, Math.floor(Number(App?.bestEndlessScore || App?.lastLeaderboardScore || 0)));
+    try {
+      value = Math.max(value, Math.floor(Number(localStorage.getItem(BEST_ENDLESS_SCORE_KEY) || 0)));
+    } catch (error) {}
+    return value;
+  }
+
+  function isUnlockedByGameplay(item) {
+    return !!item?.unlockEndlessScore && bestEndlessScore() >= Number(item.unlockEndlessScore || 0);
+  }
+
+  function isOwned(id) {
+    const item = byId(id);
+    return !!state.owned[id] || isTimedActive(id) || isUnlockedByGameplay(item);
+  }
   function isSelectable(item) { return item && ['characters', 'effects', 'pets', 'icons'].includes(item.category); }
   function isAdItem(item) { return item?.category === 'ads' || !!item?.flags?.noRewardAd; }
-  function isMobileLayout() { return window.matchMedia?.('(max-width: 660px)')?.matches || false; }
+  function isTimedAdItem(item) { return item?.category === 'ads' && Number(item?.flags?.noSideAdsDays || 0) > 0; }
+  function isMobileLayout() {
+    if (!window.matchMedia) return false;
+    const vw = Math.floor(window.visualViewport?.width || window.innerWidth || 0);
+    const vh = Math.floor(window.visualViewport?.height || window.innerHeight || 0);
+    return window.matchMedia('(max-width: 820px), (max-height: 700px), (pointer: coarse)').matches || vw < 820 || vh < 700;
+  }
+  function isHorizontalShopLayout() {
+    if (!window.matchMedia) return false;
+    return window.matchMedia('(orientation: landscape) and (min-width: 560px)').matches;
+  }
   function activeItems() { return products().filter((item) => item.category === state.activeCategory); }
   function activePage() { return Math.max(0, Math.floor(Number(state.pages[state.activeCategory]) || 0)); }
   function setActivePage(page) { state.pages[state.activeCategory] = Math.max(0, Math.floor(Number(page) || 0)); }
@@ -39,9 +69,15 @@
     const selected = { characters: '', effects: '', pets: '', icons: '' };
     Object.keys(selected).forEach((category) => {
       const id = src.selected?.[category] || '';
-      if (id && byId(id) && owned[id]) selected[category] = id;
+      const item = byId(id);
+      if (id && item && (owned[id] || isUnlockedByGameplay(item))) selected[category] = id;
     });
-    return { owned, selected };
+    const timed = {};
+    Object.keys(src.timed || {}).forEach((id) => {
+      const until = Number(src.timed[id] || 0);
+      if (byId(id) && until > nowMs()) timed[id] = until;
+    });
+    return { owned, selected, timed };
   }
 
   function loadLocal() {
@@ -54,14 +90,14 @@
 
   function saveLocal() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ owned: state.owned, selected: state.selected }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ owned: state.owned, selected: state.selected, timed: state.timed }));
     } catch (error) {}
   }
 
   async function saveCloud() {
     if (!App?.player?.setData) return;
     try {
-      await App.player.setData({ [CLOUD_KEY]: { owned: state.owned, selected: state.selected } }, false);
+      await App.player.setData({ [CLOUD_KEY]: { owned: state.owned, selected: state.selected, timed: state.timed } }, false);
     } catch (error) {
       console.warn('Shop cloud save error:', error);
     }
@@ -74,6 +110,7 @@
       const data = await App.player.getData([CLOUD_KEY]);
       const cloud = normalizeSave(data?.[CLOUD_KEY]);
       state.owned = { ...state.owned, ...cloud.owned };
+      state.timed = { ...state.timed, ...cloud.timed };
       Object.keys(cloud.selected).forEach((category) => {
         if (cloud.selected[category]) state.selected[category] = cloud.selected[category];
       });
@@ -115,7 +152,7 @@
       if (payments.getPurchases) {
         try {
           const purchases = await payments.getPurchases();
-          applyPurchaseList(purchases);
+          await applyPurchaseList(purchases, payments);
         } catch (error) {
           console.warn('Payments purchases restore error:', error);
         }
@@ -127,17 +164,46 @@
   }
 
 
-  function applyPurchaseList(list) {
+  async function consumePurchase(payments, purchase) {
+    if (!payments?.consumePurchase) return;
+    const token = purchase?.purchaseToken || purchase?.token || purchase?.id;
+    if (!token) return;
+    try {
+      await payments.consumePurchase(token);
+    } catch (error) {
+      console.warn('Payments consume error:', error);
+    }
+  }
+
+  function grantTimed(item) {
+    const days = Number(item?.flags?.noSideAdsDays || 0);
+    if (days <= 0) return;
+    const duration = days * 24 * 60 * 60 * 1000;
+    const base = Math.max(nowMs(), timedUntil(item.id));
+    state.timed[item.id] = base + duration;
+    window.hideEvolutionBanner?.(true);
+  }
+
+  async function applyPurchaseList(list, payments = null) {
     let changed = false;
-    (Array.isArray(list) ? list : []).forEach((purchase) => {
+    for (const purchase of (Array.isArray(list) ? list : [])) {
       const id = purchase?.productID || purchase?.productId || purchase?.id;
       const item = byId(id);
-      if (!item || state.owned[item.id]) return;
+      if (!item) continue;
+      if (isTimedAdItem(item)) {
+        if (!isTimedActive(item.id)) {
+          grantTimed(item);
+          changed = true;
+        }
+        await consumePurchase(payments, purchase);
+        continue;
+      }
+      if (state.owned[item.id]) continue;
       state.owned[item.id] = true;
       if (isSelectable(item)) state.selected[item.category] = item.id;
       if (item.flags?.noRewardAd) state.selected.ads = item.id;
       changed = true;
-    });
+    }
     if (changed) {
       saveLocal();
       saveCloud();
@@ -146,6 +212,7 @@
   }
 
   function priceText(item) {
+    if (item?.unlockEndlessScore) return '';
     const product = state.catalog[item.id];
     if (product?.price) return String(product.price);
     return lang() === 'en' ? `${item.priceYan} YAN` : `${item.priceYan} \u044f\u043d`;
@@ -167,16 +234,27 @@
     let text = productDesc(item);
     if (item?.bonuses && Object.keys(item.bonuses).length) {
       text = text
-        .replace(/\s+и\s+(?=[+-]\d)/gi, '\n')
+        .replace(/\s+(?=[+-]\d)/g, '\n')
         .replace(/,\s*(?=[+-]\d)/g, '\n')
         .replace(/\.\s+(?=[+-]\d)/g, '.\n')
-        .replace(/,\s*(?=(?:рывок|starts with dash))/i, '\n');
+        .replace(/,\s*(?=(?:\u0420\u044b\u0432\u043e\u043a|starts with dash))/i, '\n');
     }
     return escapeHtml(text).replace(/\n+/g, '<br>');
+  }
+
+  function formatDate(timestamp) {
+    if (!timestamp) return '';
+    try {
+      return new Date(timestamp).toLocaleDateString(lang() === 'en' ? 'en-US' : 'ru-RU');
+    } catch (error) {
+      return '';
+    }
   }
   function isCharacterItem(item) { return item?.category === 'characters'; }
   function isGrowthEffectItem(item) { return item?.category === 'effects'; }
   function isPetItem(item) { return item?.category === 'pets'; }
+  function isIconItem(item) { return item?.category === 'icons'; }
+  function hasImageIcon(item) { return !!item?.iconSrc; }
   function selectedCharacterSkinId() {
     const item = byId(state.selected.characters);
     return item?.skinId || item?.id || 'default';
@@ -185,6 +263,11 @@
   function selectedPetId() {
     const item = byId(state.selected.pets);
     return item?.petId || item?.id || '';
+  }
+
+  function selectedProfileIconId() {
+    const item = byId(state.selected.icons);
+    return item?.iconId || item?.id || 'base';
   }
 
   function drawVisibleShopPreviews(time) {
@@ -230,9 +313,14 @@
   }
 
   function grant(item) {
-    state.owned[item.id] = true;
-    if (isSelectable(item)) state.selected[item.category] = item.id;
-    if (item.flags?.noRewardAd) state.selected.ads = item.id;
+    if (isTimedAdItem(item)) {
+      grantTimed(item);
+    } else {
+      state.owned[item.id] = true;
+      if (isSelectable(item)) state.selected[item.category] = item.id;
+      if (item.category === 'icons') window.JorMetaUI?.refreshPlayer?.();
+      if (item.flags?.noRewardAd) state.selected.ads = item.id;
+    }
     saveLocal();
     saveCloud();
   }
@@ -257,6 +345,7 @@
       const productId = purchase?.productID || purchase?.productId || purchase?.id || item.id;
       const bought = byId(productId) || item;
       grant(bought);
+      if (bought.flags?.consumePurchase && payments.consumePurchase) await consumePurchase(payments, purchase);
       state.status = tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0430', 'Purchase applied');
     } catch (error) {
       console.warn('Purchase error:', error);
@@ -272,6 +361,7 @@
     state.selected[item.category] = item.id;
     saveLocal();
     saveCloud();
+    if (item.category === 'icons') window.JorMetaUI?.refreshPlayer?.();
     render();
   }
 
@@ -307,27 +397,40 @@
 
   function createProductCard(item) {
     const owned = isOwned(item.id);
+    const gameplayLocked = !!item.unlockEndlessScore && !owned;
     const selected = isSelectable(item) && state.selected[item.category] === item.id;
     const card = document.createElement('article');
-    card.className = 'shopItem' + (isCharacterItem(item) || isGrowthEffectItem(item) || isPetItem(item) ? ' characterPreview' : '') + (owned ? ' owned' : '') + (selected ? ' selected' : '');
+    card.className = 'shopItem' + (isCharacterItem(item) || isGrowthEffectItem(item) || isPetItem(item) ? ' characterPreview' : '') + (isIconItem(item) ? ' profileIconPreview' : '') + (isAdItem(item) ? ' adPreview' : '') + (owned ? ' owned' : '') + (selected ? ' selected' : '') + (gameplayLocked ? ' gameplayLocked' : '');
     card.style.setProperty('--shop-accent', item.color || '#7af2ff');
+    const activeUntil = isTimedAdItem(item) ? timedUntil(item.id) : 0;
     const action = owned
-      ? (isAdItem(item) ? tr('\u041a\u0443\u043f\u043b\u0435\u043d\u043e', 'Owned') : (selected ? tr('\u0412\u044b\u0431\u0440\u0430\u043d\u043e', 'Selected') : tr('\u0412\u044b\u0431\u0440\u0430\u0442\u044c', 'Select')))
-      : priceText(item);
+      ? (isTimedAdItem(item) ? tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e', 'Active') : (isAdItem(item) ? tr('\u041a\u0443\u043f\u043b\u0435\u043d\u043e', 'Owned') : (selected ? tr('\u0412\u044b\u0431\u0440\u0430\u043d\u043e', 'Selected') : tr('\u0412\u044b\u0431\u0440\u0430\u0442\u044c', 'Select'))))
+      : (gameplayLocked ? '' : priceText(item));
+    const unlockHint = gameplayLocked
+      ? tr('\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043d\u0430\u0431\u0440\u0430\u043d\u043d\u044b\u0435 100 000 \u043e\u043f\u044b\u0442\u0430 \u0432 \u0431\u0435\u0441\u043a\u043e\u043d\u0435\u0447\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435', 'Unlocks at 100,000 endless mode score')
+      : '';
+    const descHtml = activeUntil > nowMs()
+      ? `${productDescHtml(item)}<br>${tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e \u0434\u043e: ', 'Active until: ')}${escapeHtml(formatDate(activeUntil))}`
+      : productDescHtml(item);
     const preview = isCharacterItem(item)
       ? `<canvas class="shopItemPreview" data-character-preview="1" data-item-id="${item.id}" aria-hidden="true"></canvas>`
       : isGrowthEffectItem(item)
         ? `<canvas class="shopItemPreview" data-growth-preview="1" data-item-id="${item.id}" aria-hidden="true"></canvas>`
         : isPetItem(item)
           ? `<canvas class="shopItemPreview" data-pet-preview="1" data-item-id="${item.id}" aria-hidden="true"></canvas>`
-          : '<div class="shopItemIcon" aria-hidden="true"></div>';
+          : isIconItem(item)
+            ? `<span class="shopProfileIconPreview" aria-hidden="true"><img src="${escapeHtml(window.JorProfileIcons?.getIcon?.(item.iconId || item.id)?.src || '')}" alt=""></span>`
+            : hasImageIcon(item)
+              ? `<span class="shopImageIconPreview" aria-hidden="true"><img src="${escapeHtml(item.iconSrc)}" alt=""></span>`
+              : '<div class="shopItemIcon" aria-hidden="true"></div>';
     card.innerHTML = `
       ${preview}
       <div class="shopItemBody">
         <h3>${productTitle(item)}</h3>
-        <p>${productDescHtml(item)}</p>
+        <p>${descHtml}</p>
       </div>
-      <button class="shopBuyBtn" type="button" ${(state.pendingId && state.pendingId !== item.id) || (owned && isAdItem(item)) ? 'disabled' : ''}>${state.pendingId === item.id ? tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430...', 'Purchasing...') : action}</button>
+      ${gameplayLocked ? '' : `<button class="shopBuyBtn" type="button" ${((state.pendingId && state.pendingId !== item.id) || (owned && isAdItem(item))) ? 'disabled' : ''}>${state.pendingId === item.id ? tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430...', 'Purchasing...') : action}</button>`}
+      ${unlockHint ? `<div class="shopUnlockHint">${escapeHtml(unlockHint)}</div>` : ''}
     `;
     const previewCanvas = card.querySelector('canvas[data-character-preview]');
     if (previewCanvas && window.JorPlayerSkins?.drawPreview) {
@@ -341,13 +444,16 @@
     if (effectCanvas && window.JorGrowthEffects?.drawPreview) {
       window.JorGrowthEffects.drawPreview(effectCanvas, item, selectedCharacterSkinId(), performance.now());
     }
-    card.querySelector('button').addEventListener('click', () => {
-      if (owned) {
-        if (!isAdItem(item)) select(item);
-        return;
-      }
-      buy(item);
-    });
+    const actionButton = card.querySelector('button');
+    if (actionButton) {
+      actionButton.addEventListener('click', () => {
+        if (owned) {
+          if (!isAdItem(item)) select(item);
+          return;
+        }
+        buy(item);
+      });
+    }
     return card;
   }
 
@@ -364,8 +470,8 @@
     prev.className = 'shopPageArrow';
     next.className = 'shopPageArrow';
     label.className = 'shopPageLabel';
-    prev.textContent = '‹';
-    next.textContent = '›';
+    prev.textContent = '\u2039';
+    next.textContent = '\u203a';
     label.textContent = `${page + 1}/${totalPages}`;
     prev.disabled = page <= 0;
     next.disabled = page >= totalPages - 1;
@@ -379,7 +485,16 @@
     dom.grid.replaceChildren();
     const items = activeItems();
     const mobile = isMobileLayout();
-    const perPage = mobile ? 2 : items.length || 1;
+    const horizontal = mobile && isHorizontalShopLayout();
+    dom.panel?.classList.toggle('shopPaged', mobile);
+    dom.panel?.classList.toggle('shopPagedHorizontal', horizontal);
+    const gridRect = dom.grid.getBoundingClientRect();
+    const cardGap = 10;
+    const cardAspect = 2.05;
+    const twoColumnCardHeight = ((gridRect.width - cardGap) / 2) / cardAspect;
+    const canFitFour = horizontal && gridRect.height >= twoColumnCardHeight * 2 + cardGap + 2;
+    dom.panel?.classList.toggle('shopPagedFour', canFitFour);
+    const perPage = mobile ? (canFitFour ? 4 : 2) : items.length || 1;
     const totalPages = Math.max(1, Math.ceil(items.length / perPage));
     const page = Math.min(activePage(), totalPages - 1);
     if (page !== activePage()) setActivePage(page);
@@ -397,7 +512,7 @@
   }
 
   function getBonuses() {
-    const total = { speed: 0, growth: 0, defense: 0, hunt: 0, enemyGrowth: 0, startDashLevel: 0 };
+    const total = { speed: 0, growth: 0, defense: 0, hunt: 0, enemyGrowth: 0, startDashLevel: 0, xp: 0 };
     ['characters', 'effects', 'pets'].forEach((category) => {
       const item = byId(state.selected[category]);
       if (!item?.bonuses) return;
@@ -410,16 +525,22 @@
 
   function getGrowthVisual() {
     const item = byId(state.selected.effects);
-    return window.JorGrowthEffects?.resolveVisual?.(item) || window.JorGrowthEffectSkins?.getEffect?.('default') || null;
+    if (item) return window.JorGrowthEffects?.resolveVisual?.(item) || null;
+    return window.JorGrowthEffectSkins?.getEffect?.('default') || null;
   }
 
   function hasNoRewardAds() {
     return products().some((item) => item.flags?.noRewardAd && isOwned(item.id));
   }
 
+  function hasNoSideAds() {
+    return products().some((item) => isTimedAdItem(item) && isTimedActive(item.id));
+  }
+
   function init() {
     Object.assign(state, loadLocal());
     dom.overlay = document.getElementById('shopOverlay');
+    dom.panel = document.getElementById('shopPanel') || dom.overlay?.querySelector('.shopPanel');
     dom.close = document.getElementById('shopCloseBtn');
     dom.tabs = document.getElementById('shopTabs');
     dom.grid = document.getElementById('shopGrid');
@@ -434,10 +555,8 @@
     render();
   }
 
-  window.JorShopUI = { init, open, close, refreshPayments, getBonuses, getGrowthVisual, hasNoRewardAds, selectedCharacterSkinId, selectedPetId };
+  window.JorShopUI = { init, open, close, refreshPayments, getBonuses, getGrowthVisual, hasNoRewardAds, hasNoSideAds, selectedCharacterSkinId, selectedPetId, selectedProfileIconId, bestEndlessScore };
 })();
-
-
 
 
 

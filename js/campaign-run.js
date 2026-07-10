@@ -29,6 +29,7 @@ function startCampaignRunIfNeeded() {
   const level = getActiveCampaignLevel();
   if (!level) {
     campaignRun = null;
+    if (typeof App === 'object') App.campaignResultTimeInfo = null;
     return;
   }
 
@@ -42,6 +43,7 @@ function startCampaignRunIfNeeded() {
     completed: false,
   };
   App.campaignRun = campaignRun;
+  App.campaignResultTimeInfo = null;
 }
 
 function getCampaignProgressValue() {
@@ -98,15 +100,39 @@ function getCampaignTopProgressText() {
   return `${label}: ${Math.min(value, goal)}/${goal}`;
 }
 
+function getCampaignXpReward(level, stars, previousStars) {
+  const levelNumber = Math.max(1, Math.floor(Number(level?.n) || 1));
+  const safeStars = Math.max(0, Math.min(3, Math.floor(Number(stars) || 0)));
+  const oldStars = Math.max(0, Math.min(3, Math.floor(Number(previousStars) || 0)));
+  const newStars = Math.max(0, safeStars - oldStars);
+  if (safeStars <= 0 || (oldStars > 0 && newStars <= 0)) return 0;
+  const firstWinBonus = oldStars <= 0 ? 180 + levelNumber * 35 : 0;
+  const starBonus = newStars * (140 + levelNumber * 25);
+  return Math.max(0, Math.round(firstWinBonus + starBonus));
+}
+
 function completeCampaignRun(stars) {
   if (!campaignRun || campaignRun.completed) return;
 
   const safeStars = Math.max(0, Math.min(3, Math.floor(Number(stars) || 0)));
+  const completedLevel = campaignRun.level;
+  const completedFrames = Math.max(0, Math.floor(Number(campaignRun.frames) || 0));
+  const completedProgress = getCampaignProgressValue();
+  const previousStars = window.JorCampaignUI?.levelStarsFor?.(completedLevel.n) || 0;
+  const xpReward = getCampaignXpReward(completedLevel, safeStars, previousStars);
+  const gameplayXpReward = Math.max(0, Math.round(typeof score === 'number' ? score : 0));
+  const totalXpReward = gameplayXpReward + xpReward;
+  const timeInfo = typeof getCampaignTimeInfo === 'function' ? getCampaignTimeInfo() : null;
+  App.campaignResultTimeInfo = safeStars > 0 && timeInfo
+    ? Object.assign({}, timeInfo, { expired: timeInfo.remainingFrames <= 0 })
+    : null;
   campaignRun.completed = true;
   victory = safeStars > 0;
   gameOver = safeStars <= 0;
   App.localPause = true;
   markGameplayStop();
+
+  if (totalXpReward > 0) window.JorMetaUI?.awardXp?.(totalXpReward);
 
   if (safeStars > 0) {
     window.JorCampaignUI?.completeLevel?.(campaignRun.level.n, safeStars);
@@ -121,13 +147,13 @@ function completeCampaignRun(stars) {
     return;
   }
 
-  const title = window.JorCampaignLevels?.label?.('winTitle') || t('congratsTitle');
-  const text = window.JorCampaignLevels?.label?.('winText', campaignRun.level.n, safeStars) || '';
-
-  showMessage(title, text);
-  DOM.centerMessage?.classList.remove('leaderboardDialog', 'levelFailedDialog');
-  if (DOM.messageTitle) DOM.messageTitle.dataset.messageKey = '';
-  if (DOM.messageText) DOM.messageText.dataset.messageMode = 'text';
+  if (typeof showCampaignCompleteMessage === 'function') {
+    showCampaignCompleteMessage(completedLevel, safeStars, completedProgress, completedFrames);
+  } else {
+    const title = window.JorCampaignLevels?.label?.('winTitle') || t('congratsTitle');
+    const text = window.JorCampaignLevels?.label?.('winText', completedLevel.n, safeStars) || '';
+    showMessage(title, text);
+  }
 }
 
 function updateCampaignRun() {

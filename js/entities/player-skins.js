@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   'use strict';
 
   const SKINS = {
@@ -22,8 +22,8 @@
       belly: '#e9fff1',
       fin: '#5fd09f',
       fin2: '#2c997a',
-      eye: '#f5fff7',
-      pupil: '#073326',
+      eye: '#d8ffe4',
+      pupil: '#0a4b3a',
       mouth: '#135944',
       pattern: 'shell',
       eyeStyle: 'calm',
@@ -36,8 +36,8 @@
       belly: '#e9ffff',
       fin: '#47d8ff',
       fin2: '#1d9fd4',
-      eye: '#f6ffff',
-      pupil: '#053645',
+      eye: '#fff3a8',
+      pupil: '#075776',
       mouth: '#05546a',
       pattern: 'speed',
       eyeStyle: 'alert',
@@ -64,13 +64,13 @@
       belly: '#fff0e8',
       fin: '#ff6e62',
       fin2: '#b43b40',
-      eye: '#fff7ef',
-      pupil: '#4a1518',
+      eye: '#2a0b12',
+      pupil: '#ffcf45',
       mouth: '#6b1d22',
       pattern: 'hunter',
       eyeStyle: 'hunter',
       finStyle: 'sharp',
-      hasTail: false
+      hasTail: true
     },
     jor_char_abyssal: {
       id: 'jor_char_abyssal',
@@ -78,13 +78,28 @@
       belly: '#c8b5ff',
       fin: '#2bd8c8',
       fin2: '#5d38a6',
-      eye: '#dffff9',
-      pupil: '#110b2b',
+      eye: '#050409',
+      pupil: '#ff334c',
       mouth: '#1b1242',
       pattern: 'abyss',
       eyeStyle: 'deep',
       finStyle: 'deep',
       hasTail: false
+    },
+    jor_char_goldfish: {
+      id: 'jor_char_goldfish',
+      body: '#ffd456',
+      belly: '#fff2a6',
+      fin: '#ffd875',
+      fin2: '#d99118',
+      eye: 'rgba(255,255,255,0.98)',
+      pupil: '#0a4b3a',
+      eyeOutline: 'rgba(126,72,12,0.55)',
+      mouth: '#7a2f0a',
+      pattern: 'goldfish',
+      eyeStyle: 'calm',
+      finStyle: 'swift',
+      hasTail: true
     }
   };
 
@@ -252,6 +267,11 @@
       gradient.addColorStop(0, '#edfff9');
       gradient.addColorStop(0.45, '#71ffd8');
       gradient.addColorStop(1, '#1f9e93');
+    } else if (skin.pattern === 'goldfish') {
+      gradient.addColorStop(0, '#fff9c9');
+      gradient.addColorStop(0.2, '#ffd456');
+      gradient.addColorStop(0.62, '#e89b1e');
+      gradient.addColorStop(1, '#8f4a0c');
     } else {
       gradient.addColorStop(0, '#f2fffb');
       gradient.addColorStop(0.18, skin.body);
@@ -266,10 +286,12 @@
   function drawBody(ctx, skin, width, height, radius, time) {
     drawBodyBase(ctx, skin, width, height);
 
-    ctx.fillStyle = skin.id === 'default' ? 'rgba(255,255,255,0.12)' : skin.belly;
-    ctx.beginPath();
-    ctx.ellipse(-width * 0.14, 0, width * 0.28, height * 0.32, Math.sin(time * 0.003) * 0.22, 0, Math.PI * 2);
-    ctx.fill();
+    if (skin.id === 'default') {
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.beginPath();
+      ctx.ellipse(-width * 0.14, 0, width * 0.28, height * 0.32, Math.sin(time * 0.003) * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    }
     if (skin.id === 'default') {
       ctx.fillStyle = 'rgba(18, 78, 67, 0.18)';
       ctx.beginPath();
@@ -292,22 +314,33 @@
     const offsetX = 0;
     if (skin.pattern === 'shell') {
       ctx.strokeStyle = 'rgba(5,48,39,0.42)';
-      ctx.lineWidth = 1.35 * detailScale;
+      ctx.lineWidth = 1.55 * detailScale;
       for (let i = -1; i <= 1; i++) {
         ctx.beginPath();
-        ctx.moveTo(offsetX - px * 0.08 + i * px * 0.18, -py * 0.36);
-        ctx.quadraticCurveTo(offsetX - px * 0.1 + i * px * 0.14, 0, offsetX - px * 0.08 + i * px * 0.18, py * 0.36);
+        ctx.moveTo(offsetX - px * 0.112 + i * px * 0.252, -py * 0.504);
+        ctx.quadraticCurveTo(offsetX - px * 0.14 + i * px * 0.196, 0, offsetX - px * 0.112 + i * px * 0.252, py * 0.504);
         ctx.stroke();
       }
     } else if (skin.pattern === 'speed') {
-      ctx.strokeStyle = 'rgba(235,255,255,0.5)';
-      ctx.lineWidth = 1.15 * detailScale;
-      [-0.14, 0.14].forEach((offset) => {
+      ctx.strokeStyle = 'rgba(238,255,255,0.68)';
+      ctx.lineWidth = Math.max(1.8, 1.95 * detailScale);
+      ctx.lineCap = 'round';
+      [-1, 1].forEach((side) => {
         ctx.beginPath();
-        ctx.moveTo(offsetX - px * 0.38, py * offset * 1.2);
-        ctx.quadraticCurveTo(offsetX - px * 0.12, py * offset * 0.7, offsetX + px * 0.18, py * offset * 0.9);
+        ctx.moveTo(offsetX - px * 0.644, side * py * 0.308);
+        ctx.bezierCurveTo(
+          offsetX - px * 0.308, side * py * 0.588,
+          offsetX + px * 0.252, side * py * 0.504,
+          offsetX + px * 0.588, side * py * 0.168
+        );
         ctx.stroke();
       });
+      ctx.strokeStyle = 'rgba(16,112,142,0.26)';
+      ctx.lineWidth = Math.max(1.2, 1.28 * detailScale);
+      ctx.beginPath();
+      ctx.moveTo(offsetX - px * 0.476, 0);
+      ctx.quadraticCurveTo(offsetX - px * 0.028, -py * 0.084, offsetX + px * 0.504, 0);
+      ctx.stroke();
     } else if (skin.pattern === 'glutton') {
       ctx.fillStyle = 'rgba(52,105,30,0.3)';
       const spots = [
@@ -323,27 +356,56 @@
     } else if (skin.pattern === 'hunter') {
       ctx.fillStyle = 'rgba(118,24,32,0.36)';
       ctx.beginPath();
-      ctx.moveTo(offsetX - px * 0.42, -py * 0.34);
-      ctx.lineTo(offsetX - px * 0.1, -py * 0.1);
-      ctx.lineTo(offsetX - px * 0.3, py * 0.12);
+      ctx.moveTo(offsetX - px * 0.588, -py * 0.476);
+      ctx.lineTo(offsetX - px * 0.14, -py * 0.14);
+      ctx.lineTo(offsetX - px * 0.42, py * 0.168);
       ctx.closePath();
       ctx.fill();
       ctx.beginPath();
-      ctx.moveTo(offsetX - px * 0.04, -py * 0.3);
-      ctx.lineTo(offsetX + px * 0.25, -py * 0.06);
-      ctx.lineTo(offsetX + px * 0.02, py * 0.2);
+      ctx.moveTo(offsetX - px * 0.056, -py * 0.42);
+      ctx.lineTo(offsetX + px * 0.35, -py * 0.084);
+      ctx.lineTo(offsetX + px * 0.028, py * 0.28);
       ctx.closePath();
       ctx.fill();
+    } else if (skin.pattern === 'goldfish') {
+      ctx.lineCap = 'round';
+      const drawScaleArc = (x, y, s, side) => {
+        const cx = offsetX + px * x;
+        const cy = py * y * side;
+        const r = py * 0.2 * s;
+        ctx.strokeStyle = 'rgba(116,62,10,0.18)';
+        ctx.lineWidth = Math.max(0.8, 0.86 * detailScale);
+        ctx.beginPath();
+        ctx.arc(cx, cy + side * py * 0.018, r, Math.PI * (side > 0 ? 0.1 : 1.9), Math.PI * (side > 0 ? 0.9 : 1.1), side < 0);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,250,196,0.56)';
+        ctx.lineWidth = Math.max(1, 1.0 * detailScale);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, Math.PI * (side > 0 ? 0.1 : 1.9), Math.PI * (side > 0 ? 0.9 : 1.1), side < 0);
+        ctx.stroke();
+      };
+      [-1, 1].forEach((side) => {
+        drawScaleArc(-0.3, 0.24, 0.9, side);
+        drawScaleArc(0.03, 0.3, 0.78, side);
+        drawScaleArc(-0.14, 0.12, 0.74, side);
+        drawScaleArc(0.18, 0.17, 0.62, side);
+      });
     } else if (skin.pattern === 'abyss') {
-      ctx.strokeStyle = 'rgba(87,255,229,0.56)';
-      ctx.lineWidth = 1.45 * detailScale;
+      ctx.strokeStyle = 'rgba(26,208,196,0.72)';
+      ctx.lineWidth = Math.max(2, 2.15 * detailScale);
+      ctx.lineCap = 'round';
+      [-0.392, -0.056, 0.28].forEach((x, index) => {
+        const segmentHeight = py * (0.42 - index * 0.049);
+        ctx.beginPath();
+        ctx.moveTo(offsetX + px * x, -segmentHeight);
+        ctx.quadraticCurveTo(offsetX + px * (x + 0.14), 0, offsetX + px * x, segmentHeight);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = 'rgba(86,64,180,0.34)';
+      ctx.lineWidth = Math.max(1.1, 1.15 * detailScale);
       ctx.beginPath();
-      ctx.moveTo(offsetX - px * 0.5, -py * 0.16);
-      ctx.quadraticCurveTo(offsetX - px * 0.15, -py * 0.34, offsetX + px * 0.28, -py * 0.1);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(offsetX - px * 0.44, py * 0.26);
-      ctx.quadraticCurveTo(offsetX - px * 0.08, py * 0.38, offsetX + px * 0.3, py * 0.16);
+      ctx.moveTo(offsetX - px * 0.56, -py * 0.308);
+      ctx.quadraticCurveTo(offsetX - px * 0.14, -py * 0.504, offsetX + px * 0.336, -py * 0.28);
       ctx.stroke();
     }
   }
@@ -420,18 +482,17 @@
     const style = skin.eyeStyle || 'round';
     const eyeScale = Math.max(0.85, radius / 18);
     const rawShape = {
-      calm: { rx: 4.8, ry: 2.7, tilt: -0.04, pupil: 1.25, lid: 0.34, pupilScaleY: 0.82 },
-      alert: { rx: 5.2, ry: 2.35, tilt: -0.28, pupil: 1.25, lid: 0.12, pupilScaleY: 0.72 },
-      round: { rx: 5.0, ry: 4.25, tilt: 0, pupil: 1.85, lid: 0, pupilScaleY: 1 },
-      hunter: { rx: 5.4, ry: 1.9, tilt: -0.42, pupil: 1.08, lid: 0.42, pupilScaleY: 0.55 },
-      deep: { rx: 4.65, ry: 2.05, tilt: -0.16, pupil: 0.95, lid: 0.22, pupilScaleY: 0.62 }
-    }[style] || { rx: 4.2, ry: 3.25, tilt: 0, pupil: 1.55, lid: 0, pupilScaleY: 1 };
+      calm: { rx: 4.8, ry: 2.7, tilt: -0.04, pupil: 1.25, pupilScaleY: 0.82 },
+      alert: { rx: 5.4, ry: 2.25, tilt: 0, pupil: 1.22, pupilScaleY: 0.72 },
+      round: { rx: 5.0, ry: 4.25, tilt: 0, pupil: 1.85, pupilScaleY: 1 },
+      hunter: { rx: 5.5, ry: 1.95, tilt: 0, pupil: 1.08, pupilScaleY: 0.55 },
+      deep: { rx: 5.7, ry: 2.55, tilt: -0.16, pupil: 1.22, pupilScaleY: 0.62 }
+    }[style] || { rx: 4.2, ry: 3.25, tilt: 0, pupil: 1.55, pupilScaleY: 1 };
     const shape = {
       rx: rawShape.rx * eyeScale,
       ry: rawShape.ry * eyeScale,
       tilt: rawShape.tilt,
       pupil: rawShape.pupil * eyeScale,
-      lid: rawShape.lid,
       pupilScaleY: rawShape.pupilScaleY
     };
 
@@ -443,13 +504,12 @@
       ctx.ellipse(0, 0, shape.rx, shape.ry, 0, 0, Math.PI * 2);
       ctx.fillStyle = skin.eye;
       ctx.fill();
-
-      if (shape.lid > 0) {
-        ctx.fillStyle = 'rgba(3,16,22,0.26)';
-        ctx.beginPath();
-        ctx.ellipse(-0.4, -shape.ry * 0.75, shape.rx * 1.04, shape.ry * shape.lid, 0, 0, Math.PI * 2);
-        ctx.fill();
+      if (skin.eyeOutline) {
+        ctx.strokeStyle = skin.eyeOutline;
+        ctx.lineWidth = Math.max(0.8, 0.85 * eyeScale);
+        ctx.stroke();
       }
+
 
       ctx.save();
       ctx.translate(shape.rx * 0.22, 0);
@@ -467,6 +527,7 @@
         ctx.ellipse(0, 0, shape.rx + 0.9 * eyeScale, shape.ry + 0.4 * eyeScale, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
+
       ctx.restore();
     });
   }
@@ -487,23 +548,3 @@
 
   window.JorPlayerSkins = { getSkin, getPreviewMetrics, drawPreview, drawPreviewContent, drawGameBody, drawGameEyes, hasVisualTail };
 })();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

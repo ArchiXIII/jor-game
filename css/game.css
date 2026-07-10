@@ -74,7 +74,7 @@
       transform: none;
       user-select: none;
       pointer-events: none;
-      z-index: 9;
+      z-index: 32;
       display: flex;
       align-items: center;
       justify-content: flex-start;
@@ -116,17 +116,18 @@
       left: 50%;
       top: calc(var(--safe-top) + var(--ui-gap));
       transform: translateX(-50%);
-      z-index: 10;
+      z-index: 32;
       display: none;
-      min-width: 78px;
-      padding: 7px 14px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(122, 242, 255, 0.28);
-      background: rgba(4, 18, 25, 0.74);
-      color: rgba(232, 255, 248, 0.98);
-      font-size: 24px;
+      min-width: 0;
+      padding: 0;
+      border-radius: 0;
+      border: none;
+      background: transparent;
+      color: rgba(245, 255, 232, 0.99);
+      font-size: 28px;
       line-height: 1;
       font-weight: 900;
+      letter-spacing: 0.02em;
       text-align: center;
       pointer-events: none;
       user-select: none;
@@ -138,8 +139,12 @@
     }
 
     .campaignTimer.danger {
-      border-color: rgba(255, 88, 88, 0.62);
       color: rgba(255, 90, 90, 0.98);
+      filter: none;
+    }
+
+    .campaignTimer.expired {
+      color: rgba(245, 255, 232, 0.99);
       filter: none;
     }
 
@@ -1129,9 +1134,9 @@
       }
 
       .campaignTimer {
-        min-width: 68px;
-        padding: 6px 12px 7px;
-        font-size: 21px;
+        min-width: 0;
+        padding: 0;
+        font-size: 24px;
       }
 
       .statusBadge {
@@ -1223,9 +1228,9 @@
       }
 
       .campaignTimer {
-        min-width: 60px;
-        padding: 5px 10px 6px;
-        font-size: 18px;
+        min-width: 0;
+        padding: 0;
+        font-size: 21px;
       }
 
       .statusBadge {
@@ -2056,6 +2061,319 @@
   color: #eafff8;
   background: linear-gradient(180deg, rgba(31, 55, 64, 0.94), rgba(6, 18, 25, 0.96));
   border-color: rgba(122, 242, 255, 0.52);
+}
+
+.centerMessage.campaignCompleteDialog {
+  left: calc(var(--safe-left) + (100vw - var(--safe-left) - var(--safe-right)) / 2);
+  right: auto;
+  top: calc(var(--safe-top) + (100dvh - var(--safe-top) - var(--safe-bottom)) / 2);
+  transform: translate(-50%, -50%);
+  width: min(540px, calc(100vw - var(--safe-left) - var(--safe-right) - 32px));
+  padding: 24px 22px 22px;
+  border-radius: 22px;
+  overflow: hidden;
+  color: #eafff8;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(142, 248, 255, 0.23), rgba(122, 242, 255, 0.04) 58%),
+    linear-gradient(180deg, rgba(23, 88, 102, 0.98), rgba(10, 43, 56, 0.99));
+  border: 2px solid rgba(135, 237, 255, 0.48);
+  animation: gameOverPanelIn 0.24s cubic-bezier(.18,.86,.28,1.08) both;
+}
+
+.centerMessage.campaignCompleteDialog::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 20, 29, 0.42);
+  z-index: -1;
+  animation: gameOverShadeIn 0.18s ease-out both;
+}
+
+.centerMessage.campaignCompleteDialog h2 {
+  margin: 0 0 10px;
+  color: #eafff8;
+  font-size: 26px;
+  line-height: 1.08;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+#messageText.campaignResultMessage {
+  margin: 0 0 14px;
+  opacity: 1;
+  text-align: center;
+}
+
+.campaignResultPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.campaignResultStars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 64px;
+}
+
+.campaignResultStar {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  opacity: 0.28;
+  filter: grayscale(1) brightness(0.55);
+  transform: scale(0.8);
+  animation: campaignResultStarIn 0.58s cubic-bezier(.18,.86,.26,1) 0.18s both;
+}
+
+.campaignResultStar:nth-child(2) {
+  animation-delay: 0.34s;
+}
+
+.campaignResultStar:nth-child(3) {
+  animation-delay: 0.50s;
+}
+
+.campaignResultStar.active {
+  opacity: 1;
+  filter: none;
+}
+
+.campaignResultTrophy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  color: #9af7ff;
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  animation: campaignResultStarIn 0.34s ease-out 0.22s both;
+}
+
+.campaignResultTrophy img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+@keyframes campaignResultStarIn {
+  0% { opacity: 0; transform: translateY(10px) scale(0.42) rotate(-5deg); }
+  62% { opacity: 1; transform: translateY(-2px) scale(1.12) rotate(2deg); }
+  100% { transform: translateY(0) scale(1) rotate(0); }
+}
+
+.campaignResultLeaderboard {
+  width: 100%;
+}
+
+.campaignResultLeaderboardTitle {
+  margin: 0 0 6px;
+  color: #77e9ff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.campaignResultLeaderboardRows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: clamp(84px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 300px), 196px);
+  min-height: 84px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.campaignResultLeaderboardRowsCompact {
+  display: none;
+}
+
+.campaignResultLeaderboardRow {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 24px;
+  padding: 4px 9px;
+  border-radius: 9px;
+  color: #eafff8;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  animation: gameOverRowIn 0.22s ease-out both;
+}
+
+@media (max-height: 560px) {
+  .campaignResultLeaderboardRowsFull {
+    display: none;
+  }
+
+  .campaignResultLeaderboardRowsCompact {
+    display: flex;
+  }
+}
+
+.campaignResultLeaderboardRow.currentUser {
+  background: rgba(122, 242, 255, 0.16);
+  border-color: rgba(154, 247, 255, 0.54);
+}
+
+.campaignResultLeaderboardRank,
+.campaignResultLeaderboardName,
+.campaignResultLeaderboardScore {
+  min-width: 0;
+  color: #eafff8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.campaignResultLeaderboardName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.campaignResultLeaderboardScore {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.campaignResultLeaderboardRow.top1 .campaignResultLeaderboardName { color: #ffd86a; }
+.campaignResultLeaderboardRow.top2 .campaignResultLeaderboardName { color: #d9e6ef; }
+.campaignResultLeaderboardRow.top3 .campaignResultLeaderboardName { color: #d99a62; }
+
+.campaignResultLeaderboardRow.currentUser .campaignResultLeaderboardRank,
+.campaignResultLeaderboardRow.currentUser .campaignResultLeaderboardName,
+.campaignResultLeaderboardRow.currentUser .campaignResultLeaderboardScore {
+  color: #bffcff;
+}
+
+.campaignResultLeaderboardGap {
+  min-height: 20px;
+  color: rgba(154, 247, 255, 0.66);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 20px;
+  text-align: center;
+}
+
+.campaignResultLeaderboardPending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+  padding: 10px 14px;
+  color: rgba(232, 252, 255, 0.76);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.centerMessage.campaignCompleteDialog .messageButtons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 0;
+}
+
+.centerMessage.campaignCompleteDialog button {
+  width: min(238px, calc(50% - 5px));
+  min-height: 46px;
+  padding: 10px 18px;
+  border-radius: 16px;
+  border: 2px solid rgba(230, 255, 252, 0.72);
+  color: #04141b;
+  background: linear-gradient(180deg, #d9ffff 0%, #7aefff 48%, #1395b4 100%);
+  font-size: 15px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.centerMessage.campaignCompleteDialog #restartBtn {
+  color: #eafff8;
+  background: linear-gradient(180deg, rgba(31, 55, 64, 0.94), rgba(6, 18, 25, 0.96));
+  border-color: rgba(122, 242, 255, 0.52);
+}
+
+.centerMessage.campaignCompleteDialog #messageOurGamesBtn {
+  display: block;
+}
+
+@media (max-width: 520px), (max-height: 620px) {
+  .centerMessage.campaignCompleteDialog {
+    width: min(470px, calc(100vw - var(--safe-left) - var(--safe-right) - 28px));
+    padding: 18px 16px 16px;
+    border-radius: 20px;
+  }
+
+  .centerMessage.campaignCompleteDialog h2 {
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+
+  .campaignResultPanel {
+    gap: 8px;
+  }
+
+  .campaignResultStars {
+    min-height: 54px;
+  }
+
+  .campaignResultStar {
+    width: 50px;
+    height: 50px;
+  }
+
+  .campaignResultTrophy {
+    min-height: 36px;
+    font-size: 12px;
+  }
+
+  .campaignResultTrophy img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .campaignResultLeaderboardTitle {
+    margin-bottom: 5px;
+    font-size: 12px;
+  }
+
+  .campaignResultLeaderboardRows {
+    max-height: clamp(78px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 270px), 180px);
+    min-height: 78px;
+    gap: 3px;
+  }
+
+  .campaignResultLeaderboardRow {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    min-height: 23px;
+    padding: 3px 8px;
+    gap: 7px;
+  }
+
+  .campaignResultLeaderboardPending {
+    min-height: 78px;
+    font-size: 12px;
+  }
+
+  .centerMessage.campaignCompleteDialog button {
+    min-height: 42px;
+    padding-left: 12px;
+    padding-right: 12px;
+    font-size: 13px;
+  }
 }
 
 

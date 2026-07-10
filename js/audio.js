@@ -6,6 +6,10 @@ const AUDIO = {
       unlocked: false,
       muted: false,
     };
+    const AUDIO_MUTED_STORAGE_KEY = 'jorAudioMuted';
+    try {
+      AUDIO.muted = window.localStorage.getItem(AUDIO_MUTED_STORAGE_KEY) === '1';
+    } catch (error) {}
     AUDIO.button.preload = 'auto';
     AUDIO.death.preload = 'auto';
     AUDIO.eating.preload = 'auto';
@@ -470,6 +474,9 @@ const AUDIO = {
 
     function setAudioMuted(value) {
       AUDIO.muted = Boolean(value);
+      try {
+        window.localStorage.setItem(AUDIO_MUTED_STORAGE_KEY, AUDIO.muted ? '1' : '0');
+      } catch (error) {}
       if (AUDIO.muted) {
         pauseAmbientMusic();
       } else {

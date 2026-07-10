@@ -83,7 +83,13 @@ const FIXED_STEP_MS = 1000 / 60;
 
 DOM.startPlayBtn.addEventListener('click', startGameFromMenu);
       DOM.startOurGamesBtn?.addEventListener('click', openOurGames);
-      DOM.messageOurGamesBtn?.addEventListener('click', openOurGames);
+      DOM.messageOurGamesBtn?.addEventListener('click', () => {
+        if (DOM.messageOurGamesBtn?.dataset?.action === 'nextCampaignRound') {
+          startNextCampaignRound();
+          return;
+        }
+        openOurGames();
+      });
 
       DOM.restartBtn.addEventListener('click', () => {
         returnToMainMenuFromRoundEnd();

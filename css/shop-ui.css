@@ -113,6 +113,7 @@
 
 .shopItem {
   --shop-accent: #7af2ff;
+  position: relative;
   display: grid;
   grid-template-columns: 50px minmax(0, 1fr);
   grid-template-rows: auto auto;
@@ -125,15 +126,46 @@
 
 .shopItem.selected {  }
 .shopItem.characterPreview { grid-template-columns: 104px minmax(0, 1fr); }
+.shopItem.profileIconPreview { grid-template-columns: 86px minmax(0, 1fr); }
+.shopItem.adPreview { grid-template-columns: 84px minmax(0, 1fr); grid-template-rows: minmax(92px, 1fr) 34px; min-height: 158px; }
+.shopItem:not(.adPreview) { grid-template-rows: minmax(67px, 1fr) 34px; min-height: 133px; }
 .shopItemIcon { grid-row: 1 / span 2; width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle at 35% 25%, #fff, var(--shop-accent) 42%, rgba(5,24,32,0.88) 100%);  }
+.shopImageIconPreview { grid-row: 1 / span 2; width: 58px; height: 58px; align-self: center; justify-self: center; display: block; background: transparent; }
+.shopImageIconPreview img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.shopItem.adPreview .shopImageIconPreview { width: 82px; height: 82px; }
+.shopProfileIconPreview { grid-row: 1 / span 2; width: 86px; height: 86px; align-self: center; justify-self: center; border-radius: 50%; border: 1px solid rgba(174,245,255,0.58); background: transparent; }
+.shopProfileIconPreview img { width: 100%; height: 100%; display: block; object-fit: contain; }
 .shopItemPreview { grid-row: 1 / span 2; width: 104px; height: 74px; align-self: center; justify-self: center; display: block; background: transparent; }
 .shopItemPreview[data-growth-preview] { width: 118px; height: 104px; margin: -15px -7px; }
+.shopItemBody { min-width: 0; }
+.shopItem:not(.adPreview) .shopItemBody { align-self: start; min-height: 67px; }
+.shopItem.adPreview .shopItemBody { align-self: start; min-height: 92px; }
 .shopItem h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.1; }
 .shopItem p { margin: 0; color: rgba(234,255,248,0.76); font-size: 12px; line-height: 1.28; }
 .shopBuyBtn { grid-column: 2; min-height: 34px; border-radius: 12px; border: 1px solid rgba(230,255,252,0.7); background: linear-gradient(180deg, #d9ffff 0%, #7aefff 52%, #1395b4 100%); color: #04141b; font-weight: 900; cursor: pointer; }
+.shopItem:not(.adPreview) .shopBuyBtn { grid-row: 2; width: 136px; height: 34px; justify-self: start; align-self: end; }
+.shopItem.adPreview .shopBuyBtn { grid-row: 2; width: 136px; height: 34px; justify-self: start; align-self: end; }
 .shopBuyBtn:disabled { opacity: 0.62; cursor: default; }
+.shopItem.gameplayLocked .shopBuyBtn {
+  background: linear-gradient(180deg, rgba(127,166,176,0.28), rgba(17,42,50,0.42));
+  border-color: rgba(152,206,218,0.26);
+  color: transparent;
+  cursor: default;
+}
+.shopUnlockHint {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  color: rgba(255,232,132,0.94);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.18;
+  text-align: center;
+  pointer-events: none;
+}
 
-@media (max-width: 660px) {
+@media (max-width: 660px), (pointer: coarse) {
   .shopOverlay { padding: calc(var(--safe-top) + 8px) calc(var(--safe-right) + 8px) calc(var(--safe-bottom) + 8px) calc(var(--safe-left) + 8px); }
   .shopPanel {
     height: min(500px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 16px));
@@ -146,18 +178,369 @@
   .shopTabs { width: 96px; border-radius: 20px 0 0 20px; }
   .shopTabs button { min-height: 0; padding: 0 5px; font-size: 9px; }
   .shopContent { position: relative; display: flex; flex-direction: column; min-height: 0; padding-bottom: 36px; }
-  .shopGrid { grid-template-columns: 1fr; gap: 8px; max-height: none; overflow: hidden; padding-right: 0; align-content: stretch; min-height: 0; }
+  .shopGrid { grid-template-columns: 1fr; gap: 8px; max-height: none; overflow: hidden; padding-right: 0; align-content: start; min-height: 0; }
   .shopItem { min-height: 0; grid-template-columns: 42px minmax(0, 1fr); gap: 7px 8px; padding: 10px; border-radius: 14px; }
   .shopItem.characterPreview { grid-template-columns: 82px minmax(0, 1fr); }
+  .shopItem.profileIconPreview { grid-template-columns: 70px minmax(0, 1fr); }
+  .shopItem.adPreview { grid-template-columns: 68px minmax(0, 1fr); grid-template-rows: minmax(72px, 1fr) 30px; min-height: 122px; }
+  .shopItem:not(.adPreview) { grid-template-rows: minmax(60px, 1fr) 30px; min-height: 110px; }
   .shopItemIcon { width: 42px; height: 42px; }
+  .shopImageIconPreview { width: 48px; height: 48px; }
+  .shopItem.adPreview .shopImageIconPreview { width: 66px; height: 66px; }
+  .shopProfileIconPreview { width: 70px; height: 70px; }
   .shopItemPreview { width: 82px; height: 58px; }
   .shopItemPreview[data-growth-preview] { width: 94px; height: 84px; margin: -13px -6px; }
   .shopItem h3 { font-size: 13px; }
   .shopItem p { font-size: 11px; line-height: 1.22; }
+  .shopItem:not(.adPreview) .shopItemBody { min-height: 60px; }
+  .shopItem.adPreview .shopItemBody { min-height: 72px; }
   .shopBuyBtn { min-height: 30px; border-radius: 10px; font-size: 12px; }
+  .shopItem:not(.adPreview) .shopBuyBtn { width: 126px; height: 30px; }
+  .shopItem.adPreview .shopBuyBtn { width: 126px; height: 30px; }
   .shopPager { position: absolute; left: 0; right: 0; bottom: -12px; display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 34px; margin-top: 0; }
   .shopPageArrow { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(122,242,255,0.28); background: rgba(255,255,255,0.055); color: rgba(234,255,248,0.88); font-size: 22px; font-weight: 900; line-height: 1; }
   .shopPageArrow:disabled { opacity: 0.28; }
   .shopPageLabel { min-width: 42px; color: rgba(234,255,248,0.78); font-size: 18px; font-weight: 900; text-align: center; }
+}
+
+@media (max-width: 660px), (pointer: coarse) {
+  .shopContent { padding-bottom: 42px; }
+  .shopGrid {
+    height: 100%;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    align-content: stretch;
+  }
+  .shopItem {
+    height: 100%;
+    overflow: hidden;
+  }
+  .shopItemBody { overflow: hidden; }
+  .shopItem p { max-height: 44px; overflow: hidden; }
+  .shopPager { bottom: 0; }
+}
+
+@media (max-height: 520px) and (min-width: 560px), (pointer: coarse) and (orientation: landscape) {
+  .shopPanel {
+    height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 16px);
+  }
+  .shopHeader { margin-top: 12px; margin-bottom: 8px; }
+  .shopBody { height: calc(100% - 54px); min-height: 0; }
+  .shopContent { position: relative; display: flex; flex-direction: column; min-height: 0; padding-bottom: 40px; }
+  .shopGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+  .shopItem {
+    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 30px;
+    gap: 6px 7px;
+    padding: 9px;
+  }
+  .shopItem.characterPreview { grid-template-columns: 68px minmax(0, 1fr); }
+  .shopItem.profileIconPreview { grid-template-columns: 58px minmax(0, 1fr); }
+  .shopItem.adPreview { grid-template-columns: 58px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 30px; min-height: 0; }
+  .shopItem:not(.adPreview) { grid-template-rows: minmax(0, 1fr) 30px; min-height: 0; }
+  .shopItemIcon { width: 40px; height: 40px; }
+  .shopImageIconPreview { width: 44px; height: 44px; }
+  .shopItem.adPreview .shopImageIconPreview { width: 54px; height: 54px; }
+  .shopProfileIconPreview { width: 58px; height: 58px; }
+  .shopItemPreview { width: 68px; height: 50px; }
+  .shopItemPreview[data-growth-preview] { width: 78px; height: 70px; margin: -10px -5px; }
+  .shopItem h3 { font-size: 12px; line-height: 1.08; margin-bottom: 3px; }
+  .shopItem p { font-size: 10px; line-height: 1.16; max-height: 46px; }
+  .shopItem:not(.adPreview) .shopItemBody,
+  .shopItem.adPreview .shopItemBody { min-height: 0; }
+  .shopBuyBtn { font-size: 11px; }
+  .shopItem:not(.adPreview) .shopBuyBtn,
+  .shopItem.adPreview .shopBuyBtn { width: 104px; height: 30px; justify-self: start; }
+  .shopUnlockHint { left: 8px; right: 8px; bottom: 7px; font-size: 9px; line-height: 1.08; }
+  .shopPager { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; min-height: 30px; gap: 10px; margin-top: 0; }
+  .shopPageArrow { width: 28px; height: 28px; font-size: 20px; }
+  .shopPageLabel { font-size: 16px; }
+}
+
+@media (max-width: 420px) {
+  .shopPanel { padding-right: 8px; }
+  .shopBody { grid-template-columns: 84px minmax(0, 1fr); gap: 8px; }
+  .shopTabs { width: 84px; }
+  .shopTabs button { font-size: 8px; }
+  .shopHeader { margin-left: 98px; }
+  .shopItem.characterPreview { grid-template-columns: 72px minmax(0, 1fr); }
+  .shopItemPreview { width: 72px; height: 52px; }
+  .shopBuyBtn { max-width: 100%; }
+}
+
+
+
+
+.shopPanel.shopPaged .shopContent {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 42px;
+}
+
+.shopPanel.shopPaged .shopGrid {
+  height: 100%;
+  overflow: hidden;
+  align-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.shopPanel.shopPaged:not(.shopPagedHorizontal) .shopGrid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.shopPanel.shopPaged.shopPagedHorizontal .shopGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.shopPanel.shopPaged .shopItem {
+  width: 100%;
+  height: min(148px, 100%);
+  min-height: 0;
+  align-self: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  grid-template-rows: minmax(0, 1fr) 32px;
+}
+
+.shopPanel.shopPaged.shopPagedHorizontal .shopItem {
+  height: min(154px, 100%);
+}
+
+.shopPanel.shopPaged .shopItem.characterPreview {
+  grid-template-columns: minmax(72px, 92px) minmax(0, 1fr);
+}
+
+.shopPanel.shopPaged .shopItem.profileIconPreview {
+  grid-template-columns: minmax(58px, 76px) minmax(0, 1fr);
+}
+
+.shopPanel.shopPaged .shopItem.adPreview {
+  grid-template-columns: minmax(58px, 76px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 32px;
+  min-height: 0;
+}
+
+.shopPanel.shopPaged .shopItem:not(.adPreview) {
+  grid-template-rows: minmax(0, 1fr) 32px;
+  min-height: 0;
+}
+
+.shopPanel.shopPaged .shopItemBody {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shopPanel.shopPaged .shopItem h3 {
+  font-size: clamp(12px, 2.1dvh, 15px);
+  line-height: 1.08;
+}
+
+.shopPanel.shopPaged .shopItem p {
+  font-size: clamp(10px, 1.75dvh, 12px);
+  line-height: 1.18;
+  max-height: 54px;
+  overflow: hidden;
+}
+
+.shopPanel.shopPaged .shopItemPreview {
+  width: min(92px, 100%);
+  height: 66px;
+}
+
+.shopPanel.shopPaged .shopItemPreview[data-growth-preview] {
+  width: min(104px, 100%);
+  height: 86px;
+  margin: -10px -4px;
+}
+
+.shopPanel.shopPaged .shopProfileIconPreview {
+  width: 72px;
+  height: 72px;
+}
+
+.shopPanel.shopPaged .shopImageIconPreview {
+  width: 54px;
+  height: 54px;
+}
+
+.shopPanel.shopPaged .shopItem.adPreview .shopImageIconPreview {
+  width: 70px;
+  height: 70px;
+}
+
+.shopPanel.shopPaged .shopBuyBtn {
+  height: 32px;
+  min-height: 32px;
+  max-width: 100%;
+  font-size: 12px;
+}
+
+.shopPanel.shopPaged .shopItem:not(.adPreview) .shopBuyBtn,
+.shopPanel.shopPaged .shopItem.adPreview .shopBuyBtn {
+  width: min(136px, 100%);
+  height: 32px;
+  justify-self: start;
+}
+
+.shopPanel.shopPaged .shopUnlockHint {
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  font-size: clamp(9px, 1.65dvh, 11px);
+  line-height: 1.1;
+}
+
+.shopPanel.shopPaged .shopPager {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 34px;
+  margin-top: 0;
+}
+
+.shopPanel.shopPaged .shopPageArrow {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(122,242,255,0.34);
+  background: rgba(255,255,255,0.07);
+  color: rgba(234,255,248,0.9);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.shopPanel.shopPaged .shopPageArrow:disabled {
+  opacity: 0.34;
+  cursor: default;
+}
+
+.shopPanel.shopPaged .shopPageLabel {
+  min-width: 44px;
+  color: rgba(234,255,248,0.82);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.shopItem {
+  aspect-ratio: 2.05 / 1;
+  box-sizing: border-box;
+  container-type: inline-size;
+}
+
+.shopPanel.shopPaged .shopGrid {
+  align-content: center;
+  align-items: center;
+  justify-items: center;
+}
+
+.shopPanel.shopPaged:not(.shopPagedHorizontal) .shopGrid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(2, auto);
+}
+
+.shopPanel.shopPaged.shopPagedHorizontal:not(.shopPagedFour) .shopGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto;
+}
+
+.shopPanel.shopPaged.shopPagedHorizontal.shopPagedFour .shopGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, auto);
+}
+
+.shopPanel.shopPaged .shopItem {
+  height: auto;
+  min-height: 0;
+  max-height: 100%;
+  width: min(100%, 340px);
+  align-self: center;
+  justify-self: center;
+  grid-template-rows: minmax(0, 1fr) 32px;
+}
+
+.shopPanel.shopPaged.shopPagedHorizontal .shopItem {
+  width: 100%;
+  height: auto;
+}
+
+.shopPanel.shopPaged .shopItem.characterPreview {
+  grid-template-columns: 34% minmax(0, 1fr);
+}
+
+.shopPanel.shopPaged .shopItem.profileIconPreview,
+.shopPanel.shopPaged .shopItem.adPreview {
+  grid-template-columns: 30% minmax(0, 1fr);
+}
+
+.shopPanel.shopPaged .shopItemPreview {
+  width: 86%;
+  height: auto;
+  aspect-ratio: 104 / 74;
+  max-height: 78%;
+}
+
+.shopPanel.shopPaged .shopItemPreview[data-growth-preview] {
+  width: 96%;
+  height: auto;
+  aspect-ratio: 118 / 104;
+  max-height: 90%;
+  margin: 0;
+}
+
+.shopPanel.shopPaged .shopProfileIconPreview {
+  width: 82%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.shopPanel.shopPaged .shopImageIconPreview {
+  width: 72%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.shopPanel.shopPaged .shopItem.adPreview .shopImageIconPreview {
+  width: 84%;
+  height: auto;
+}
+
+.shopPanel.shopPaged .shopItem h3 {
+  font-size: clamp(12px, 3.8cqw, 15px);
+}
+
+.shopPanel.shopPaged .shopItem p {
+  font-size: clamp(10px, 3.1cqw, 12px);
+  max-height: 3.55em;
+}
+
+.shopPanel.shopPaged .shopBuyBtn {
+  height: 32px;
+  min-height: 32px;
+  font-size: clamp(11px, 3.3cqw, 12px);
+}
+
+.shopPanel.shopPaged .shopUnlockHint {
+  font-size: clamp(9px, 2.9cqw, 11px);
 }
 

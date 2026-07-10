@@ -34,11 +34,12 @@
   }
 
   function drawWorldEffect(ctx, effect, phase, width, height, radius, rotation = 0, previewBoost = 1) {
+    if (!effect) return;
     const visual = resolveVisual(effect);
     const t = Math.max(0, Math.min(1, phase));
     const ease = 1 - Math.pow(1 - t, 2.1);
     const fade = Math.pow(1 - t, 1.3);
-    const ringCount = Math.max(1, Math.min(4, visual.rings || 1));
+    const ringCount = Math.max(0, Math.min(4, Number(visual.rings || 0)));
     const alphaBase = 0.42 * (visual.alpha || 1) * previewBoost;
     ctx.save();
     ctx.rotate(rotation);

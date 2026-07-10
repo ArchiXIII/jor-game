@@ -5,7 +5,7 @@
     jor_pet_medusa: { id: 'jor_pet_medusa', body: '#91eaff', dark: '#2f75c8', accent: '#e6fcff', eye: '#f6ffff', pupil: '#06334b', style: 'medusa', motion: 'float' },
     jor_pet_kaplik: { id: 'jor_pet_kaplik', body: '#8cff62', dark: '#2c8c36', accent: '#e7ffc7', eye: '#f9fff5', pupil: '#214018', style: 'kaplik', motion: 'bounce' },
     jor_pet_reef_clown: { id: 'jor_pet_reef_clown', body: '#ff8b2a', dark: '#1d1511', accent: '#fff2d8', eye: '#fff8ec', pupil: '#28110c', style: 'clown', motion: 'waggle' },
-    jor_pet_toothlet: { id: 'jor_pet_toothlet', body: '#cf3140', dark: '#4c1420', accent: '#74cf4a', eye: '#fff8ec', pupil: '#3d1114', style: 'toothlet', motion: 'snap' },
+    jor_pet_toothlet: { id: 'jor_pet_toothlet', body: '#a83bd6', dark: '#5d168a', accent: '#61cf45', eye: '#fff8ec', pupil: '#171008', style: 'toothlet', motion: 'snap' },
     jor_pet_pink_glutton: { id: 'jor_pet_pink_glutton', body: '#ff7fbd', dark: '#b73680', accent: '#db4d68', eye: '#162032', pupil: '#162032', style: 'pink_glutton', motion: 'puff' },
     jor_pet_ancient: { id: 'jor_pet_ancient', body: '#ffd83d', dark: '#c98912', accent: '#62f1e6', eye: '#10151a', pupil: '#10151a', style: 'ancient', motion: 'chomp' }
   };
@@ -191,50 +191,94 @@
     ctx.stroke();
   }
   function drawToothlet(ctx, pet, radius, phase) {
-    const snap = 0.5 + (Math.sin(phase * 2.0) * 0.5 + 0.5) * 0.12;
-    ctx.fillStyle = pet.accent;
+    const open = 0.54 + (Math.sin(phase * 2.1) * 0.5 + 0.5) * 0.14;
+    const tailWave = Math.sin(phase * 1.35) * radius * 0.16;
+    const hingeX = radius * 0.04;
+    const upperY = -Math.sin(open) * radius * 0.88;
+    const lowerY = Math.sin(open) * radius * 0.88;
+    const frontX = Math.cos(open) * radius * 0.92;
+    ctx.strokeStyle = '#5a1686';
+    ctx.lineWidth = Math.max(4, radius * 0.32);
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(-radius * 0.42, -radius * 0.56);
-    ctx.lineTo(-radius * 0.82, -radius * 1.02);
-    ctx.lineTo(-radius * 0.22, -radius * 0.74);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-radius * 0.5, radius * 0.48);
-    ctx.lineTo(-radius * 0.96, radius * 0.86);
-    ctx.lineTo(-radius * 0.28, radius * 0.68);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = bodyGradient(ctx, pet, radius, -0.18, -0.38);
-    ctx.beginPath();
-    ctx.moveTo(radius * 1.02, 0);
-    ctx.bezierCurveTo(radius * 0.72, -radius * 0.92, -radius * 0.28, -radius * 1.08, -radius * 0.96, -radius * 0.38);
-    ctx.quadraticCurveTo(-radius * 0.58, 0, -radius * 0.96, radius * 0.38);
-    ctx.bezierCurveTo(-radius * 0.28, radius * 1.08, radius * 0.72, radius * 0.92, radius * 1.02, 0);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,200,188,0.88)';
-    ctx.lineWidth = Math.max(1.4, radius * 0.075);
+    ctx.moveTo(-radius * 0.78, radius * 0.16);
+    ctx.bezierCurveTo(-radius * 1.24, radius * 0.36 + tailWave, -radius * 1.48, radius * 0.98 + tailWave, -radius * 0.5, radius * 1.08);
     ctx.stroke();
-    ctx.fillStyle = '#13070b';
+    ctx.strokeStyle = '#351052';
+    ctx.lineWidth = Math.max(1, radius * 0.06);
+    ctx.stroke();
+    ctx.fillStyle = bodyGradient(ctx, pet, radius, -0.32, -0.36);
     ctx.beginPath();
-    ctx.moveTo(radius * 0.98, 0);
-    ctx.lineTo(radius * 0.12, -radius * snap);
-    ctx.quadraticCurveTo(-radius * 0.12, 0, radius * 0.12, radius * snap);
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, radius, open, Math.PI * 2 - open, false);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#fff2d8';
-    for (let i = 0; i < 5; i++) {
-      const y = (-0.42 + i * 0.21) * radius;
+    ctx.strokeStyle = '#4e127b';
+    ctx.lineWidth = Math.max(1.3, radius * 0.065);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(132,32,176,0.55)';
+    ellipse(ctx, -radius * 0.36, -radius * 0.34, radius * 0.14, radius * 0.1, -0.18);
+    ellipse(ctx, -radius * 0.18, radius * 0.34, radius * 0.12, radius * 0.09, 0.2);
+    ellipse(ctx, radius * 0.1, -radius * 0.28, radius * 0.1, radius * 0.075, -0.05);
+    ctx.fillStyle = '#d8d7cb';
+    ctx.strokeStyle = '#607b59';
+    ctx.lineWidth = Math.max(1, radius * 0.045);
+    const horns = [
+      [-0.58, -0.68, 0.15, 0.42],
+      [-0.18, -0.88, 0.105, 0.32],
+      [0.22, -0.8, 0.07, 0.22]
+    ];
+    for (let i = 0; i < horns.length; i += 1) {
+      const h = horns[i];
       ctx.beginPath();
-      ctx.moveTo(radius * 0.17, y);
-      ctx.lineTo(radius * 0.5, y * 0.22);
-      ctx.lineTo(radius * 0.18, y + radius * 0.12);
+      ctx.moveTo(radius * h[0], radius * h[1]);
+      ctx.lineTo(radius * (h[0] + h[2]), radius * (h[1] - h[3]));
+      ctx.lineTo(radius * (h[0] + h[2] * 2.2), radius * (h[1] + 0.04));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#11120b';
+    ctx.beginPath();
+    ctx.moveTo(hingeX, 0);
+    ctx.bezierCurveTo(radius * 0.34, -radius * 0.38, radius * 0.62, upperY, frontX, upperY);
+    ctx.lineTo(frontX, lowerY);
+    ctx.bezierCurveTo(radius * 0.62, lowerY, radius * 0.34, radius * 0.38, hingeX, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fff4db';
+    for (let i = 0; i < 3; i += 1) {
+      const t = i / 2;
+      const x = radius * (0.34 + t * 0.38);
+      const y = upperY * (0.5 + t * 0.32);
+      ctx.beginPath();
+      ctx.moveTo(x - radius * 0.08, y);
+      ctx.lineTo(x + radius * 0.08, y + radius * 0.24);
+      ctx.lineTo(x + radius * 0.14, y - radius * 0.02);
       ctx.closePath();
       ctx.fill();
     }
-    drawEye(ctx, pet, radius, -radius * 0.22, -radius * 0.38, 0.13);
+    for (let i = 0; i < 3; i += 1) {
+      const t = i / 2;
+      const x = radius * (0.34 + t * 0.38);
+      const y = lowerY * (0.5 + t * 0.32);
+      ctx.beginPath();
+      ctx.moveTo(x - radius * 0.08, y);
+      ctx.lineTo(x + radius * 0.08, y - radius * 0.24);
+      ctx.lineTo(x + radius * 0.14, y + radius * 0.02);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.strokeStyle = pet.accent;
+    ctx.lineWidth = Math.max(2.2, radius * 0.17);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(hingeX, 0);
+    ctx.bezierCurveTo(radius * 0.34, -radius * 0.38, radius * 0.62, upperY, frontX, upperY);
+    ctx.moveTo(hingeX, 0);
+    ctx.bezierCurveTo(radius * 0.34, radius * 0.38, radius * 0.62, lowerY, frontX, lowerY);
+    ctx.stroke();
   }
-
   function drawPinkGlutton(ctx, pet, radius, phase) {
     const puff = 1 + Math.sin(phase * 1.6) * 0.05;
     ctx.save();
@@ -242,8 +286,8 @@
     ctx.fillStyle = pet.accent;
     ellipse(ctx, -radius * 0.57, radius * 0.67, radius * 0.29, radius * 0.19, -0.34);
     ellipse(ctx, radius * 0.57, radius * 0.66, radius * 0.3, radius * 0.19, 0.34);
-    ellipse(ctx, -radius * 0.72, -radius * 0.04, radius * 0.18, radius * 0.14, -0.2);
-    ellipse(ctx, radius * 0.72, -radius * 0.04, radius * 0.18, radius * 0.14, 0.2);
+    ellipse(ctx, -radius * 0.78, -radius * 0.02, radius * 0.19, radius * 0.18, -0.08);
+    ellipse(ctx, radius * 0.78, -radius * 0.02, radius * 0.19, radius * 0.18, 0.08);
     ctx.fillStyle = bodyGradient(ctx, pet, radius, -0.28, -0.32);
     ellipse(ctx, 0, 0, radius * 0.92, radius * 0.88, 0);
     ctx.fillStyle = 'rgba(255,214,236,0.82)';
@@ -312,6 +356,18 @@
 
   window.JorPetSkins = { getPet, getPetRadius, drawPet, drawPreview };
 })();
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

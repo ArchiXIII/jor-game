@@ -337,6 +337,105 @@ class Particle {
       }
     }
 
+
+    class TomatoFood {
+      constructor(x, y, options = {}) {
+        this.x = x;
+        this.y = y;
+        this.radius = options.radius || 11;
+        this.pulse = Math.random() * Math.PI * 2;
+        this.spin = Math.random() * Math.PI * 2;
+        this.spinSpeed = randomRange(-0.018, 0.018);
+        if (!options.deferSprite) {
+          const baked = this.createSprite();
+          this.sprite = baked;
+        }
+      }
+
+      createSprite() {
+        const spriteRadius = 18;
+        const size = 58;
+        const c = size * 0.5;
+        return getCachedEffectSprite('tomato-food:v1', size, size, (spriteCtx) => {
+          spriteCtx.save();
+          const glow = spriteCtx.createRadialGradient(c, c, 0, c, c, 25);
+          glow.addColorStop(0, 'rgba(255,118,70,0.38)');
+          glow.addColorStop(0.58, 'rgba(255,62,42,0.16)');
+          glow.addColorStop(1, 'rgba(255,62,42,0)');
+          spriteCtx.fillStyle = glow;
+          spriteCtx.beginPath();
+          spriteCtx.arc(c, c, 25, 0, Math.PI * 2);
+          spriteCtx.fill();
+
+          const body = spriteCtx.createRadialGradient(c - 6, c - 8, 2, c, c, spriteRadius);
+          body.addColorStop(0, '#ffb05f');
+          body.addColorStop(0.22, '#ff4f32');
+          body.addColorStop(0.74, '#e71922');
+          body.addColorStop(1, '#980713');
+          spriteCtx.fillStyle = body;
+          spriteCtx.beginPath();
+          spriteCtx.ellipse(c + 1, c + 3, 15.8, 16.6, -0.18, 0, Math.PI * 2);
+          spriteCtx.fill();
+
+          spriteCtx.strokeStyle = 'rgba(255,245,220,0.65)';
+          spriteCtx.lineWidth = 1.2;
+          spriteCtx.beginPath();
+          spriteCtx.ellipse(c + 1, c + 3, 15.8, 16.6, -0.18, 0, Math.PI * 2);
+          spriteCtx.stroke();
+
+          spriteCtx.fillStyle = 'rgba(255,255,255,0.86)';
+          spriteCtx.beginPath();
+          spriteCtx.ellipse(c + 7, c - 7, 5.3, 3.8, -0.55, 0, Math.PI * 2);
+          spriteCtx.fill();
+
+          const leafGradient = spriteCtx.createLinearGradient(c - 10, c - 19, c + 9, c - 8);
+          leafGradient.addColorStop(0, '#baff7d');
+          leafGradient.addColorStop(0.45, '#38d866');
+          leafGradient.addColorStop(1, '#087d3c');
+          spriteCtx.fillStyle = leafGradient;
+          const leaves = [
+            [-0.1, -10, -23, 0.48],
+            [0.6, 2, -22, 0.45],
+            [-0.9, -5, -17, 0.42],
+            [1.25, 8, -16, 0.38]
+          ];
+          for (let i = 0; i < leaves.length; i++) {
+            const leaf = leaves[i];
+            spriteCtx.save();
+            spriteCtx.translate(c - 1, c - 10);
+            spriteCtx.rotate(leaf[0]);
+            spriteCtx.beginPath();
+            spriteCtx.moveTo(0, 0);
+            spriteCtx.quadraticCurveTo(leaf[1] * 0.35, leaf[2] * 0.35, leaf[1], leaf[2]);
+            spriteCtx.quadraticCurveTo(leaf[1] * leaf[3], leaf[2] * 0.62, 0, 0);
+            spriteCtx.fill();
+            spriteCtx.restore();
+          }
+
+          spriteCtx.fillStyle = '#ffe27a';
+          spriteCtx.beginPath();
+          spriteCtx.arc(c - 1, c - 10, 2.4, 0, Math.PI * 2);
+          spriteCtx.fill();
+          spriteCtx.restore();
+        });
+      }
+
+      update() {
+        this.pulse += 0.07;
+        this.spin += this.spinSpeed;
+      }
+
+      draw() {
+        if (!this.sprite) this.sprite = this.createSprite();
+        const pulseScale = 1 + Math.sin(this.pulse) * 0.08;
+        const size = this.sprite.width * (this.radius / 18) * pulseScale;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.spin + Math.sin(this.pulse * 0.7) * 0.06);
+        drawSpriteCentered(this.sprite, 0, 0, size, size);
+        ctx.restore();
+      }
+    }
     class DNAOrb {
       constructor(x, y, radius = 6, options = {}) {
         this.x = x;

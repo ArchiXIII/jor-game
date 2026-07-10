@@ -449,15 +449,23 @@
     right: 28px;
     top: 84px;
     bottom: 78px;
-    gap: 12px;
-    grid-template-columns: repeat(5, minmax(58px, 86px));
-    grid-template-rows: repeat(2, minmax(74px, 92px));
+    gap: clamp(6px, 2.2dvh, 12px);
+    grid-template-columns: repeat(5, minmax(50px, 86px));
+    grid-template-rows: repeat(2, minmax(0, min(86px, calc((100% - clamp(6px, 2.2dvh, 12px)) / 2))));
+  }
+
+  .campaignLevelShape {
+    width: min(100%, 94px);
+  }
+
+  .campaignLevelNumber {
+    font-size: clamp(17px, 3.6dvh, 24px);
   }
 
   .campaignStarsBadge {
-    min-width: 60px;
-    height: 23px;
-    bottom: 4px;
+    min-width: min(58px, 82%);
+    height: clamp(19px, 5dvh, 23px);
+    bottom: 3px;
   }
 
   .campaignSmallStar {
@@ -512,76 +520,129 @@
   .campaignOverlay {
     padding:
       calc(var(--safe-top) + 72px)
-      max(14px, env(safe-area-inset-right))
-      calc(var(--safe-bottom) + 20px)
-      max(14px, env(safe-area-inset-left));
+      max(12px, env(safe-area-inset-right))
+      calc(var(--safe-bottom) + 14px)
+      max(12px, env(safe-area-inset-left));
   }
 
   .campaignPanel {
-    height: min(500px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 92px));
-    min-height: min(340px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 92px));
+    height: min(500px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 86px));
+    min-height: min(340px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 86px));
     border-width: 4px;
     border-radius: 22px;
   }
 
   .campaignHeader {
-    top: 12px;
-    height: 48px;
+    top: 7px;
+    height: 42px;
   }
 
+  .campaignTitle { font-size: 12px; }
+  .campaignName { font-size: 15px; }
+
   .campaignStars {
-    top: 14px;
+    top: 8px;
+    font-size: 14px;
+  }
+
+  .campaignStarIcon {
+    width: 22px;
+    height: 22px;
   }
 
   .campaignTrophy {
-    top: 7px;
-    transform: scale(0.68);
+    top: -7px;
+    transform: scale(0.58);
   }
 
   .campaignTrophy.complete {
-    transform: scale(0.78);
+    transform: scale(0.68);
   }
 
   .campaignGrid {
-    top: 72px;
-    bottom: 66px;
-    gap: 8px 12px;
-    grid-template-columns: repeat(5, minmax(54px, 82px));
-    grid-template-rows: repeat(2, minmax(68px, 84px));
+    left: 32px;
+    right: 32px;
+    top: 56px;
+    bottom: 58px;
+    gap: 5px 0;
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(72px, 82px));
+  }
+  .campaignLevelBtn {
+    justify-self: center;
+    width: var(--campaign-chip-size);
+  }
+
+  .campaignLevelBtn:nth-child(1) { grid-column: 1 / span 2; grid-row: 1; }
+  .campaignLevelBtn:nth-child(2) { grid-column: 3 / span 2; grid-row: 1; }
+  .campaignLevelBtn:nth-child(3) { grid-column: 5 / span 2; grid-row: 1; }
+  .campaignLevelBtn:nth-child(4) { grid-column: 7 / span 2; grid-row: 1; }
+  .campaignLevelBtn:nth-child(5) { grid-column: 9 / span 2; grid-row: 1; }
+  .campaignLevelBtn:nth-child(6) { grid-column: 2 / span 2; grid-row: 2; }
+  .campaignLevelBtn:nth-child(7) { grid-column: 4 / span 2; grid-row: 2; }
+  .campaignLevelBtn:nth-child(8) { grid-column: 6 / span 2; grid-row: 2; }
+  .campaignLevelBtn:nth-child(9) { grid-column: 8 / span 2; grid-row: 2; }
+  .campaignLevelBtn:nth-child(10) { grid-column: 10 / span 2; grid-row: 2; }
+
+  .campaignLevelBtn:not(.locked):hover {
+    transform: translateY(-1px);
+  }
+
+.campaignLevelBtn {
+    --campaign-chip-size: min(100%, 76px);
+    --campaign-chip-height: calc(var(--campaign-chip-size) * 1.046875);
   }
 
   .campaignLevelShape {
-    width: min(100%, 98px);
+    top: 0;
+    width: var(--campaign-chip-size);
+  }
+
+  .campaignLevelNumber {
+    top: calc(var(--campaign-chip-height) * 0.45);
+    font-size: clamp(16px, 5dvh, 21px);
   }
 
   .campaignStarsBadge {
+    top: calc(var(--campaign-chip-height) * 0.7);
+    bottom: auto;
     height: 21px;
-    min-width: 56px;
-    bottom: 2px;
+    min-width: min(60px, calc(var(--campaign-chip-size) * 0.82));
   }
 
   .campaignSmallStar {
-    width: 17px;
-    height: 17px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .campaignLevelBtn.selected:not(.locked)::after {
+    top: -4px;
+    width: calc(var(--campaign-chip-size) * 1.12);
+    height: calc(var(--campaign-chip-height) + 8px);
+    border-width: 4px;
+    border-radius: 14px;
   }
 
   .campaignActions {
-    bottom: 14px;
+    left: 24px;
+    right: 24px;
+    bottom: 8px;
   }
 
   .campaignBackBtn,
   .campaignPlayBtn {
-    height: 40px;
-    border-radius: 15px;
+    height: 34px;
+    border-radius: 13px;
+    font-size: 14px;
   }
 
   .campaignMessage {
-    bottom: 54px;
+    bottom: 44px;
   }
 
   .campaignPanel::after {
-    bottom: -20px;
-    width: min(164px, 34%);
+    bottom: -17px;
+    width: min(132px, 28%);
   }
 }
 
