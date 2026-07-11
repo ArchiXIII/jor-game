@@ -2,6 +2,7 @@
   'use strict';
 
   const STORAGE_KEY = 'jor-campaign-progress-v1';
+  const CLOUD_KEY = 'jorCampaign';
   const CHAPTER_COUNT = 10;
   const LEVELS_PER_CHAPTER = 10;
   const TOTAL_LEVELS = CHAPTER_COUNT * LEVELS_PER_CHAPTER;
@@ -64,6 +65,7 @@
   const dom = {};
   let initialized = false;
   let messageTimer = 0;
+  let cloudLoaded = false;
   let progress = normalizeProgress(loadProgress());
   let state = {
     open: false,
@@ -163,6 +165,58 @@
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     } catch (error) {}
+    saveCloud();
+  }
+
+  function mergeProgress(local, cloud) {
+    const base = normalizeProgress(local);
+    const server = normalizeProgress(cloud);
+    const merged = normalizeProgress(base);
+    Object.keys(server.stars || {}).forEach((key) => {
+      merged.stars[key] = Math.max(Math.floor(Number(merged.stars[key]) || 0), Math.floor(Number(server.stars[key]) || 0));
+    });
+    Object.keys(server.unlockedLevels || {}).forEach((key) => {
+      if (server.unlockedLevels[key]) merged.unlockedLevels[key] = true;
+    });
+    Object.keys(server.chapterTrophies || {}).forEach((key) => {
+      if (server.chapterTrophies[key]) merged.chapterTrophies[key] = true;
+    });
+    Object.keys(server.pendingChapterTrophies || {}).forEach((key) => {
+      if (server.pendingChapterTrophies[key]) merged.pendingChapterTrophies[key] = true;
+    });
+    merged.highestUnlockedLevel = Math.max(merged.highestUnlockedLevel || 1, server.highestUnlockedLevel || 1);
+    return normalizeProgress(merged);
+  }
+
+  async function saveCloud() {
+    if (!App?.player?.setData) return false;
+    try {
+      await App.player.setData({ [CLOUD_KEY]: progress }, false);
+      return true;
+    } catch (error) {
+      console.warn('Campaign cloud save error:', error);
+      return false;
+    }
+  }
+
+  async function loadCloud() {
+    if (cloudLoaded || !App?.player?.getData) return false;
+    cloudLoaded = true;
+    try {
+      const data = await App.player.getData([CLOUD_KEY]);
+      const next = mergeProgress(progress, data?.[CLOUD_KEY]);
+      progress = next;
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+      } catch (error) {}
+      await saveCloud();
+      window.JorMetaUI?.setStars?.(totalStars());
+      render();
+      return true;
+    } catch (error) {
+      console.warn('Campaign cloud load error:', error);
+      return false;
+    }
   }
 
   function levelStarsFor(levelNumber) {
@@ -421,6 +475,7 @@
     bindEvents();
     window.JorMetaUI?.setStars?.(totalStars());
     render();
+    loadCloud();
   }
 
   window.JorCampaignUI = {
@@ -428,6 +483,7 @@
     render,
     open,
     close,
+    syncCloud: loadCloud,
     completeLevel,
     levelStarsFor,
     isLevelUnlocked,

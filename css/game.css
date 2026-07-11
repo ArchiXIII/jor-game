@@ -171,7 +171,7 @@
       position: fixed;
       inset:
         auto
-        calc(var(--safe-right) + 16px)
+        calc(var(--safe-right) + 39px)
         calc(var(--safe-bottom) + 18px)
         calc(var(--safe-left) + 16px);
       display: none;
@@ -1307,7 +1307,7 @@
       .mobileControls {
         inset:
           auto
-          calc(var(--safe-right) + 12px)
+          calc(var(--safe-right) + 31px)
           calc(var(--safe-bottom) + 12px)
           calc(var(--safe-left) + 12px);
       }
@@ -1662,6 +1662,21 @@
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
+@keyframes goldfishUnlockIn {
+  0% {
+    transform: translateY(6px) scale(0.86);
+    opacity: 0;
+  }
+  62% {
+    transform: translateY(0) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
 .centerMessage.leaderboardDialog h2 {
   display: block;
   margin: 0 0 12px;
@@ -1698,6 +1713,18 @@
   font-size: 26px;
   line-height: 1.05;
   font-weight: 900;
+}
+
+.gameOverPanel .goldfishUnlockNotice {
+  display: inline-block;
+  margin-top: 8px;
+  color: #ffe174;
+  font-size: 18px;
+  line-height: 1.05;
+  font-weight: 1000;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 #7d4700, 0 0 10px rgba(255, 211, 66, 0.42);
+  animation: goldfishUnlockIn 0.7s cubic-bezier(.18,.86,.28,1.08) both;
 }
 
 .gameOverPanel .leaderboardRunStat {
@@ -2423,3 +2450,332 @@
   }
 }
 
+
+@media (max-width: 520px), (max-height: 620px), (pointer: coarse) {
+  .centerMessage.campaignCompleteDialog {
+    top: calc(var(--safe-top) + 64px);
+    bottom: calc(var(--safe-bottom) + 8px);
+    transform: translateX(-50%);
+    height: auto;
+    max-height: none;
+    padding-top: 14px;
+    padding-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .centerMessage.campaignCompleteDialog h2 {
+    flex: 0 0 auto;
+    margin-bottom: 8px;
+    font-size: 20px;
+  }
+
+  #messageText.campaignResultMessage {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .campaignResultPanel {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 7px;
+  }
+
+  .campaignResultStars {
+    flex: 0 0 auto;
+    min-height: 46px;
+  }
+
+  .campaignResultStar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .campaignResultTrophy {
+    flex: 0 0 auto;
+    min-height: 30px;
+  }
+
+  .campaignResultLeaderboard {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .campaignResultLeaderboardRows {
+    flex: 1 1 auto;
+    min-height: 72px;
+    max-height: none;
+  }
+
+  .centerMessage.campaignCompleteDialog .messageButtons {
+    flex: 0 0 auto;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .centerMessage.campaignCompleteDialog button {
+    min-height: 42px;
+    height: 42px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .centerMessage.campaignCompleteDialog {
+    top: calc(var(--safe-top) + 54px);
+    bottom: calc(var(--safe-bottom) + 6px);
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .centerMessage.campaignCompleteDialog h2 {
+    margin-bottom: 5px;
+    font-size: 18px;
+  }
+
+  .campaignResultStars {
+    min-height: 38px;
+  }
+
+  .campaignResultStar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .campaignResultLeaderboardTitle {
+    margin-bottom: 3px;
+    font-size: 11px;
+  }
+
+  .campaignResultLeaderboardRows {
+    min-height: 66px;
+  }
+
+  .campaignResultLeaderboardRow {
+    min-height: 21px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+
+  .centerMessage.campaignCompleteDialog button {
+    min-height: 38px;
+    height: 38px;
+    font-size: 12px;
+  }
+}
+
+@keyframes campaignCompleteMobileIn {
+  from { opacity: 0; transform: translateX(-50%) scale(0.96); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+@media (max-width: 520px), (max-height: 620px), (pointer: coarse) {
+  .centerMessage.campaignCompleteDialog {
+    left: calc(var(--safe-left) + (100vw - var(--safe-left) - var(--safe-right)) / 2);
+    top: calc(var(--safe-top) + 64px);
+    bottom: calc(var(--safe-bottom) + 8px);
+    transform: translateX(-50%);
+    animation: campaignCompleteMobileIn 0.2s cubic-bezier(.18,.86,.28,1.08) both;
+    width: min(500px, calc(100vw - var(--safe-left) - var(--safe-right) - 20px));
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow: hidden;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .centerMessage.campaignCompleteDialog {
+    top: calc(var(--safe-top) + 50px);
+    bottom: calc(var(--safe-bottom) + 6px);
+  }
+}
+
+
+.centerMessage.campaignCompleteDialog {
+  display: flex;
+  flex-direction: column;
+}
+
+.centerMessage.campaignCompleteDialog #messageText.campaignResultMessage {
+  flex: 1 1 auto;
+}
+
+.centerMessage.campaignCompleteDialog .messageButtons {
+  margin-top: auto;
+}
+
+.centerMessage.campaignCompleteDialog {
+  display: flex !important;
+  flex-direction: column;
+}
+
+.centerMessage.campaignCompleteDialog .messageButtons {
+  margin-top: auto !important;
+}
+
+.centerMessage.campaignCompleteDialog #messageText.campaignResultMessage,
+.centerMessage.campaignCompleteDialog .campaignResultPanel,
+.centerMessage.campaignCompleteDialog .campaignResultLeaderboard {
+  min-height: 0;
+}
+
+.centerMessage.campaignCompleteDialog .campaignResultLeaderboardRows {
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+
+.centerMessage.campaignCompleteDialog .campaignResultStars,
+.centerMessage.campaignCompleteDialog .campaignResultTrophy,
+.centerMessage.campaignCompleteDialog .campaignResultLeaderboardTitle,
+.centerMessage.campaignCompleteDialog .messageButtons {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 520px), (max-height: 620px), (pointer: coarse) {
+  .centerMessage.campaignCompleteDialog .campaignResultStars {
+    min-height: clamp(56px, 12dvh, 69px);
+  }
+
+  .centerMessage.campaignCompleteDialog .campaignResultStar {
+    width: clamp(56px, 12dvh, 69px);
+    height: clamp(56px, 12dvh, 69px);
+  }
+
+  .centerMessage.campaignCompleteDialog .campaignResultTrophy {
+    min-height: clamp(42px, 10dvh, 54px);
+    font-size: clamp(12px, 2.8dvh, 14px);
+  }
+
+  .centerMessage.campaignCompleteDialog .campaignResultTrophy img {
+    width: clamp(42px, 10dvh, 54px);
+    height: clamp(42px, 10dvh, 54px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .centerMessage.campaignCompleteDialog .campaignResultStars {
+    min-height: 57px;
+  }
+
+  .centerMessage.campaignCompleteDialog .campaignResultStar {
+    width: 57px;
+    height: 57px;
+  }
+
+  .centerMessage.campaignCompleteDialog .campaignResultTrophy {
+    min-height: 48px;
+  }
+
+  .centerMessage.campaignCompleteDialog .campaignResultTrophy img {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+.centerMessage.leaderboardDialog {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(142, 248, 255, 0.23), rgba(122, 242, 255, 0.04) 58%),
+    linear-gradient(180deg, rgba(23, 88, 102, 0.98), rgba(10, 43, 56, 0.99));
+  border-color: rgba(135, 237, 255, 0.52);
+  scrollbar-width: none;
+}
+
+.centerMessage.leaderboardDialog::before {
+  background: rgba(4, 20, 29, 0.42);
+}
+
+.gameOverPanel .leaderboardListCard {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.gameOverPanel .leaderboardListCard::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.centerMessage.leaderboardDialog::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.centerMessage.levelFailedDialog {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(142, 248, 255, 0.23), rgba(122, 242, 255, 0.04) 58%),
+    linear-gradient(180deg, rgba(23, 88, 102, 0.98), rgba(10, 43, 56, 0.99));
+  border-color: rgba(135, 237, 255, 0.52);
+  display: flex !important;
+  flex-direction: column;
+}
+
+.centerMessage.levelFailedDialog::before {
+  background: rgba(4, 20, 29, 0.42);
+}
+
+.centerMessage.levelFailedDialog h2 {
+  margin-bottom: 14px;
+}
+
+.centerMessage.levelFailedDialog .campaignFailedLevel {
+  display: none;
+}
+
+.centerMessage.levelFailedDialog .messageButtons {
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.centerMessage.levelFailedDialog button {
+  width: min(238px, calc(50% - 5px));
+  min-height: 46px;
+  white-space: nowrap;
+}
+
+.centerMessage.levelFailedDialog button.secondary {
+  display: none;
+}
+
+@media (max-width: 520px), (max-height: 620px), (pointer: coarse) {
+  .centerMessage.levelFailedDialog {
+    width: min(500px, calc(100vw - var(--safe-left) - var(--safe-right) - 20px));
+    min-height: min(300px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px));
+    padding: 18px 16px 16px;
+  }
+
+  .centerMessage.levelFailedDialog h2 {
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+
+  .centerMessage.levelFailedDialog .messageButtons {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .centerMessage.levelFailedDialog button {
+    width: min(238px, calc(50% - 5px));
+    min-height: 42px;
+    padding-left: 12px;
+    padding-right: 12px;
+    font-size: 13px;
+  }
+}
+
+.centerMessage.levelFailedDialog #restartBtn {
+  order: 1;
+}
+
+.centerMessage.levelFailedDialog #messageRetryBtn {
+  order: 2;
+}

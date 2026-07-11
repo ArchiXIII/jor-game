@@ -294,6 +294,7 @@
   function openProfile() {
     render();
     setModal('profile');
+    syncFullXpWithServer();
   }
 
   async function openLeaderboard(tab = 'stars') {
@@ -327,14 +328,14 @@
     render();
     setModal('xpLeaderboard');
 
-    if (state.fullXp > 0) {
-      await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
-    }
+    await syncFullXpWithServer(false);
     const result = await loadLeaderboardRows(FULL_XP_LEADERBOARD, state.fullXp, 30, 1);
     state.xpLeaderboardLoading = false;
     state.xpLeaderboardEntries = result.entries;
     state.xpLeaderboardError = result.error;
+    syncFullXpFromEntries(result.entries);
     renderXpLeaderboard();
+    render();
   }
 
   function renderLeaderboard() {
@@ -490,12 +491,40 @@
   }
 
   function mapEntries(result) {
-    return (result?.entries || []).map((entry) => ({
-      rank: Number(entry.rank),
-      name: entry.player?.publicName || entry.player?.uniqueID || tr('player'),
-      score: Math.max(0, Math.floor(entry.score || 0)),
-      isPlayer: !!entry.isUser
-    })).filter((entry) => Number.isFinite(entry.rank));
+    let currentUserId = '';
+    try {
+      currentUserId = App?.player?.getUniqueID?.() || '';
+    } catch (error) {}
+    return (result?.entries || []).map((entry) => {
+      const uniqueId = entry.player?.uniqueID || '';
+      return {
+        rank: Number(entry.rank),
+        name: entry.player?.publicName || uniqueId || tr('player'),
+        score: Math.max(0, Math.floor(entry.score || 0)),
+        isPlayer: !!entry.isUser || (!!uniqueId && !!currentUserId && uniqueId === currentUserId)
+      };
+    }).filter((entry) => Number.isFinite(entry.rank));
+  }
+
+  function setFullXp(value) {
+    const next = Math.max(0, Math.floor(value || 0));
+    if (next <= state.fullXp) return false;
+    state.fullXp = next;
+    saveNumber(FULL_XP_STORAGE, state.fullXp);
+    return true;
+  }
+
+  function syncFullXpFromEntries(entries) {
+    const playerEntry = (entries || []).find((entry) => entry?.isPlayer);
+    return playerEntry ? setFullXp(playerEntry.score) : false;
+  }
+
+  async function syncFullXpWithServer(renderAfter = true) {
+    const result = await loadLeaderboardRows(FULL_XP_LEADERBOARD, state.fullXp, 1, 1);
+    const updated = syncFullXpFromEntries(result.entries);
+    if (!updated && state.fullXp > 0) await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
+    if (updated && renderAfter) render();
+    return updated;
   }
 
   function escapeHtml(value) {
@@ -512,8 +541,7 @@
     if (baseValue <= 0) return;
     const xpBonus = Math.max(0, Number(window.JorShopUI?.getBonuses?.().xp || 0));
     const value = Math.max(0, Math.floor(baseValue * (1 + xpBonus)));
-    state.fullXp += value;
-    saveNumber(FULL_XP_STORAGE, state.fullXp);
+    setFullXp(state.fullXp + value);
     render();
     await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
   }
@@ -545,6 +573,7 @@
     state.initialized = true;
     bindEvents();
     render();
+    syncFullXpWithServer();
   }
 
   window.JorMetaUI = {

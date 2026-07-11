@@ -95,11 +95,13 @@
   }
 
   async function saveCloud() {
-    if (!App?.player?.setData) return;
+    if (!App?.player?.setData) return false;
     try {
       await App.player.setData({ [CLOUD_KEY]: { owned: state.owned, selected: state.selected, timed: state.timed } }, false);
+      return true;
     } catch (error) {
       console.warn('Shop cloud save error:', error);
+      return false;
     }
   }
 
@@ -110,11 +112,14 @@
       const data = await App.player.getData([CLOUD_KEY]);
       const cloud = normalizeSave(data?.[CLOUD_KEY]);
       state.owned = { ...state.owned, ...cloud.owned };
-      state.timed = { ...state.timed, ...cloud.timed };
+      Object.keys(cloud.timed).forEach((id) => {
+        state.timed[id] = Math.max(timedUntil(id), cloud.timed[id]);
+      });
       Object.keys(cloud.selected).forEach((category) => {
         if (cloud.selected[category]) state.selected[category] = cloud.selected[category];
       });
       saveLocal();
+      await saveCloud();
       render();
     } catch (error) {
       console.warn('Shop cloud load error:', error);
@@ -186,6 +191,7 @@
 
   async function applyPurchaseList(list, payments = null) {
     let changed = false;
+    const purchasesToConsume = [];
     for (const purchase of (Array.isArray(list) ? list : [])) {
       const id = purchase?.productID || purchase?.productId || purchase?.id;
       const item = byId(id);
@@ -195,7 +201,7 @@
           grantTimed(item);
           changed = true;
         }
-        await consumePurchase(payments, purchase);
+        purchasesToConsume.push(purchase);
         continue;
       }
       if (state.owned[item.id]) continue;
@@ -204,9 +210,11 @@
       if (item.flags?.noRewardAd) state.selected.ads = item.id;
       changed = true;
     }
-    if (changed) {
-      saveLocal();
-      saveCloud();
+    if (changed || purchasesToConsume.length) {
+      const saved = await persistShopState();
+      if (saved) {
+        for (const purchase of purchasesToConsume) await consumePurchase(payments, purchase);
+      }
     }
     return changed;
   }
@@ -312,7 +320,12 @@
     state.previewFrame = 0;
   }
 
-  function grant(item) {
+  async function persistShopState() {
+    saveLocal();
+    return await saveCloud();
+  }
+
+  async function grant(item) {
     if (isTimedAdItem(item)) {
       grantTimed(item);
     } else {
@@ -321,14 +334,13 @@
       if (item.category === 'icons') window.JorMetaUI?.refreshPlayer?.();
       if (item.flags?.noRewardAd) state.selected.ads = item.id;
     }
-    saveLocal();
-    saveCloud();
+    return await persistShopState();
   }
 
   async function buy(item) {
     if (!item || state.pendingId) return;
     if (isOwned(item.id)) {
-      select(item);
+      await select(item);
       return;
     }
     const payments = await getPayments();
@@ -344,9 +356,11 @@
       const purchase = await payments.purchase({ id: item.id });
       const productId = purchase?.productID || purchase?.productId || purchase?.id || item.id;
       const bought = byId(productId) || item;
-      grant(bought);
-      if (bought.flags?.consumePurchase && payments.consumePurchase) await consumePurchase(payments, purchase);
-      state.status = tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0430', 'Purchase applied');
+      const saved = await grant(bought);
+      if (saved && bought.flags?.consumePurchase && payments.consumePurchase) await consumePurchase(payments, purchase);
+      state.status = saved
+        ? tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0430', 'Purchase applied')
+        : tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430 \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e', 'Purchase saved locally');
     } catch (error) {
       console.warn('Purchase error:', error);
       state.status = tr('\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0440\u0438\u043c\u0435\u043d\u0438\u0442\u044c \u043f\u043e\u043a\u0443\u043f\u043a\u0443', 'Purchase failed');
@@ -356,11 +370,10 @@
     }
   }
 
-  function select(item) {
+  async function select(item) {
     if (!item || !isSelectable(item) || !isOwned(item.id)) return;
     state.selected[item.category] = item.id;
-    saveLocal();
-    saveCloud();
+    await persistShopState();
     if (item.category === 'icons') window.JorMetaUI?.refreshPlayer?.();
     render();
   }
@@ -407,7 +420,7 @@
       ? (isTimedAdItem(item) ? tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e', 'Active') : (isAdItem(item) ? tr('\u041a\u0443\u043f\u043b\u0435\u043d\u043e', 'Owned') : (selected ? tr('\u0412\u044b\u0431\u0440\u0430\u043d\u043e', 'Selected') : tr('\u0412\u044b\u0431\u0440\u0430\u0442\u044c', 'Select'))))
       : (gameplayLocked ? '' : priceText(item));
     const unlockHint = gameplayLocked
-      ? tr('\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043d\u0430\u0431\u0440\u0430\u043d\u043d\u044b\u0435 100 000 \u043e\u043f\u044b\u0442\u0430 \u0432 \u0431\u0435\u0441\u043a\u043e\u043d\u0435\u0447\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435', 'Unlocks at 100,000 endless mode score')
+      ? tr('\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043d\u0430\u0431\u0440\u0430\u043d\u043d\u044b\u0435 70 000 \u043e\u043f\u044b\u0442\u0430 \u0432 \u0431\u0435\u0441\u043a\u043e\u043d\u0435\u0447\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435', 'Unlocks at 70,000 endless mode score')
       : '';
     const descHtml = activeUntil > nowMs()
       ? `${productDescHtml(item)}<br>${tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e \u0434\u043e: ', 'Active until: ')}${escapeHtml(formatDate(activeUntil))}`
@@ -446,12 +459,12 @@
     }
     const actionButton = card.querySelector('button');
     if (actionButton) {
-      actionButton.addEventListener('click', () => {
+      actionButton.addEventListener('click', async () => {
         if (owned) {
-          if (!isAdItem(item)) select(item);
+          if (!isAdItem(item)) await select(item);
           return;
         }
-        buy(item);
+        await buy(item);
       });
     }
     return card;
@@ -484,9 +497,10 @@
     if (!dom.grid) return;
     dom.grid.replaceChildren();
     const items = activeItems();
-    const mobile = isMobileLayout();
-    const horizontal = mobile && isHorizontalShopLayout();
-    dom.panel?.classList.toggle('shopPaged', mobile);
+    const compact = isMobileLayout();
+    const paged = compact;
+    const horizontal = paged && isHorizontalShopLayout();
+    dom.panel?.classList.toggle('shopPaged', paged);
     dom.panel?.classList.toggle('shopPagedHorizontal', horizontal);
     const gridRect = dom.grid.getBoundingClientRect();
     const cardGap = 10;
@@ -494,11 +508,11 @@
     const twoColumnCardHeight = ((gridRect.width - cardGap) / 2) / cardAspect;
     const canFitFour = horizontal && gridRect.height >= twoColumnCardHeight * 2 + cardGap + 2;
     dom.panel?.classList.toggle('shopPagedFour', canFitFour);
-    const perPage = mobile ? (canFitFour ? 4 : 2) : items.length || 1;
+    const perPage = paged ? (canFitFour ? 4 : 2) : items.length || 1;
     const totalPages = Math.max(1, Math.ceil(items.length / perPage));
     const page = Math.min(activePage(), totalPages - 1);
     if (page !== activePage()) setActivePage(page);
-    const visibleItems = mobile ? items.slice(page * perPage, page * perPage + perPage) : items;
+    const visibleItems = paged ? items.slice(page * perPage, page * perPage + perPage) : items;
     visibleItems.forEach((item) => dom.grid.appendChild(createProductCard(item)));
     renderPager(totalPages, page);
     startPreviewAnimation();
@@ -557,6 +571,8 @@
 
   window.JorShopUI = { init, open, close, refreshPayments, getBonuses, getGrowthVisual, hasNoRewardAds, hasNoSideAds, selectedCharacterSkinId, selectedPetId, selectedProfileIconId, bestEndlessScore };
 })();
+
+
 
 
 

@@ -251,9 +251,9 @@
       const bloomScale = isTouch ? 0.16 : 0.54;
       const lowQualityBloomScale = quality < 0.78 ? clamp((quality - 0.55) / 0.23, 0, 1) : 1;
       const baseTargets = {
-        ambient: Math.max(isTouch ? 16 : 30, Math.min(BACKGROUND_EFFECT_LIMITS.AMBIENT_MAX, Math.round(72 * density * quality * ambientScale))),
+        ambient: Math.max(isTouch ? 22 : 34, Math.min(BACKGROUND_EFFECT_LIMITS.AMBIENT_MAX, Math.round(72 * density * quality * ambientScale))),
         glow: isTouch ? 0 : Math.max(7, Math.min(BACKGROUND_EFFECT_LIMITS.GLOW_MAX, Math.round(24 * density * quality * glowScale))),
-        bubble: Math.max(isTouch ? 6 : 12, Math.min(BACKGROUND_EFFECT_LIMITS.BUBBLE_MAX, Math.round(34 * density * quality * bubbleScale))),
+        bubble: Math.max(isTouch ? 10 : 14, Math.min(BACKGROUND_EFFECT_LIMITS.BUBBLE_MAX, Math.round(34 * density * quality * bubbleScale))),
         bloom: Math.max(isTouch ? 0 : 4, Math.min(BACKGROUND_EFFECT_LIMITS.BLOOM_MAX, Math.round(20 * density * quality * bloomScale * lowQualityBloomScale))),
       };
 
@@ -265,9 +265,9 @@
 
       const scale = totalMax / total;
       return {
-        ambient: Math.max(isTouch ? 16 : 30, Math.min(BACKGROUND_EFFECT_LIMITS.AMBIENT_MAX, Math.round(baseTargets.ambient * scale))),
+        ambient: Math.max(isTouch ? 22 : 34, Math.min(BACKGROUND_EFFECT_LIMITS.AMBIENT_MAX, Math.round(baseTargets.ambient * scale))),
         glow: isTouch ? 0 : Math.max(7, Math.min(BACKGROUND_EFFECT_LIMITS.GLOW_MAX, Math.round(baseTargets.glow * scale))),
-        bubble: Math.max(isTouch ? 6 : 12, Math.min(BACKGROUND_EFFECT_LIMITS.BUBBLE_MAX, Math.round(baseTargets.bubble * scale))),
+        bubble: Math.max(isTouch ? 10 : 14, Math.min(BACKGROUND_EFFECT_LIMITS.BUBBLE_MAX, Math.round(baseTargets.bubble * scale))),
         bloom: Math.max(isTouch ? 0 : 4, Math.min(BACKGROUND_EFFECT_LIMITS.BLOOM_MAX, Math.round(baseTargets.bloom * scale))),
       };
     }

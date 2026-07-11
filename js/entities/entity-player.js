@@ -3,7 +3,15 @@ class Player {
         this.x = 0;
         this.y = 0;
         this.radius = GROWTH_CONFIG.START_RADIUS;
-        const shopBonuses = (typeof window !== 'undefined' && window.JorShopUI?.getBonuses?.()) || {};
+        const rawShopBonuses = (typeof window !== 'undefined' && window.JorShopUI?.getBonuses?.()) || {};
+        const shopBonuses = {
+          speed: Math.max(0, Number(rawShopBonuses.speed) || 0),
+          growth: Math.max(0, Number(rawShopBonuses.growth) || 0),
+          defense: Math.max(0, Number(rawShopBonuses.defense) || 0),
+          hunt: Math.max(0, Number(rawShopBonuses.hunt) || 0),
+          enemyGrowth: Math.max(0, Number(rawShopBonuses.enemyGrowth) || 0),
+          startDashLevel: Math.max(0, Math.floor(Number(rawShopBonuses.startDashLevel) || 0)),
+        };
         this.shopBonuses = shopBonuses;
         this.skinId = (typeof window !== 'undefined' && window.JorShopUI?.selectedCharacterSkinId?.()) || 'default';
         // Чуть быстрее: 2.6 вместо 2.5, штраф за размер мягче (0.012 вместо
