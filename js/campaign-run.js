@@ -13,6 +13,10 @@ function isCampaignRunCompleted() {
   return !!campaignRun?.completed;
 }
 
+function isCampaignRunFinishing() {
+  return !!campaignRun?.finishing;
+}
+
 function recordCampaignFood(amount = 1) {
   if (campaignRun && !campaignRun.completed) campaignRun.food += amount;
 }
@@ -23,6 +27,10 @@ function recordCampaignDna(amount = 1) {
 
 function recordCampaignEnemy(amount = 1) {
   if (campaignRun && !campaignRun.completed) campaignRun.enemies += amount;
+}
+
+function recordCampaignTomato(amount = 1) {
+  if (campaignRun && !campaignRun.completed) campaignRun.tomatoes += amount;
 }
 
 function startCampaignRunIfNeeded() {
@@ -39,7 +47,12 @@ function startCampaignRunIfNeeded() {
     food: 0,
     dna: 0,
     enemies: 0,
+    tomatoes: 0,
     bestSize: 1,
+    startGrowthStage: Math.max(0, player?.growthStage || 0),
+    goalReachedFrames: 0,
+    finishDelay: 0,
+    finishing: false,
     completed: false,
   };
   App.campaignRun = campaignRun;
@@ -53,7 +66,10 @@ function getCampaignProgressValue() {
     case 'food': return campaignRun.food;
     case 'dna': return campaignRun.dna;
     case 'enemy': return campaignRun.enemies;
+    case 'tomato': return campaignRun.tomatoes;
+    case 'score': return Math.max(0, Math.floor(Number(score) || 0));
     case 'size': return campaignRun.bestSize;
+    case 'growth': return Math.max(0, (player.growthStage || 0) - campaignRun.startGrowthStage);
     case 'survive': return Math.floor(campaignRun.frames / 60);
     default: return 0;
   }
@@ -61,12 +77,22 @@ function getCampaignProgressValue() {
 
 function getCampaignTimeLimitFrames() {
   if (!campaignRun) return 0;
+  if (campaignRun.level.timeLimit) return Math.max(1, campaignRun.level.timeLimit) * 60;
   if (campaignRun.level.type === 'survive') return campaignRun.level.stars[2] * 60;
   return Math.max(75, 50 + campaignRun.level.n * 5) * 60;
 }
 
 function getCampaignStars() {
   if (!campaignRun) return 0;
+  if (campaignRun.level.starMode === 'completionTime') {
+    if (getCampaignProgressValue() < campaignRun.level.target) return 0;
+    const elapsedSeconds = (campaignRun.goalReachedFrames || campaignRun.frames) / 60;
+    const thresholds = campaignRun.level.timeStars || [];
+    if (elapsedSeconds <= thresholds[2]) return 3;
+    if (elapsedSeconds <= thresholds[1]) return 2;
+    if (elapsedSeconds <= thresholds[0]) return 1;
+    return 0;
+  }
   return window.JorCampaignLevels?.getStarCount?.(campaignRun.level, getCampaignProgressValue()) || 0;
 }
 
@@ -159,13 +185,32 @@ function completeCampaignRun(stars) {
 function updateCampaignRun() {
   if (!campaignRun || campaignRun.completed || !player) return;
 
+  if (campaignRun.finishing) {
+    campaignRun.finishDelay -= 1;
+    if (campaignRun.finishDelay <= 0) {
+      completeCampaignRun(campaignRun.pendingStars);
+    }
+    return;
+  }
+
   campaignRun.frames += 1;
   campaignRun.bestSize = Math.max(campaignRun.bestSize, player.level || 1);
 
   const value = getCampaignProgressValue();
-  const threeStarTarget = campaignRun.level.stars[2] || campaignRun.level.target;
+  const threeStarTarget = campaignRun.level.starMode === 'completionTime'
+    ? campaignRun.level.target
+    : campaignRun.level.stars[2] || campaignRun.level.target;
   if (value >= threeStarTarget) {
-    completeCampaignRun(3);
+    campaignRun.goalReachedFrames = campaignRun.frames;
+    const stars = getCampaignStars();
+    const finishDelay = Math.max(0, Math.floor(campaignRun.level.finishDelayFrames || 0));
+    if (finishDelay > 0) {
+      campaignRun.finishing = true;
+      campaignRun.finishDelay = finishDelay;
+      campaignRun.pendingStars = stars;
+    } else {
+      completeCampaignRun(stars || 3);
+    }
     return;
   }
 

@@ -124,7 +124,10 @@
   background: linear-gradient(180deg, rgba(255,255,255,0.052), rgba(4,18,26,0.28));
 }
 
-.shopItem.selected {  }
+.shopItem.selected {
+  border-color: rgba(118, 255, 168, 0.9);
+  background: linear-gradient(180deg, rgba(91,255,157,0.1), rgba(4,18,26,0.28));
+}
 .shopItem.characterPreview { grid-template-columns: 104px minmax(0, 1fr); }
 .shopItem.profileIconPreview { grid-template-columns: 86px minmax(0, 1fr); }
 .shopItem.adPreview { grid-template-columns: 84px minmax(0, 1fr); grid-template-rows: minmax(92px, 1fr) 34px; min-height: 158px; }
@@ -142,7 +145,27 @@
 .shopItem.adPreview .shopItemBody { align-self: start; min-height: 92px; }
 .shopItem h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.1; }
 .shopItem p { margin: 0; color: rgba(234,255,248,0.76); font-size: 12px; line-height: 1.28; }
-.shopBuyBtn { grid-column: 2; min-height: 34px; border-radius: 12px; border: 1px solid rgba(230,255,252,0.7); background: linear-gradient(180deg, #d9ffff 0%, #7aefff 52%, #1395b4 100%); color: #04141b; font-weight: 900; cursor: pointer; }
+.shopItem p.shopBonusDesc { color: #bfffea; }
+.shopItem .shopBonusValue { color: #ffe071; }
+.shopBuyBtn { position: relative; grid-column: 2; min-height: 34px; border-radius: 12px; border: 1px solid rgba(230,255,252,0.7); background: linear-gradient(180deg, #d9ffff 0%, #7aefff 52%, #1395b4 100%); color: #04141b; font-weight: 900; cursor: pointer; }
+.shopItem.selected .shopBuyBtn::after {
+  content: '\2713';
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #eaffef;
+  border-radius: 50%;
+  background: #2cdd72;
+  color: #052414;
+  font-size: 16px;
+  font-weight: 1000;
+  line-height: 1;
+  pointer-events: none;
+}
 .shopItem:not(.adPreview) .shopBuyBtn { grid-row: 2; width: 136px; height: 34px; justify-self: start; align-self: end; }
 .shopItem.adPreview .shopBuyBtn { grid-row: 2; width: 136px; height: 34px; justify-self: start; align-self: end; }
 .shopBuyBtn:disabled { opacity: 0.62; cursor: default; }

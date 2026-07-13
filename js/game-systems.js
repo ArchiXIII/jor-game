@@ -228,6 +228,8 @@
     }
 
     function applyRandomEnemyPerks(enemy) {
+      const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
+      if (campaignLevel?.enemyPerks === false) return enemy;
       const perkPool = getEnemyPerkPool();
       const perkCount = Math.min(ENEMY_PERK_CONFIG.MAX_PERKS, getEnemySpawnPerkCount());
 
@@ -273,12 +275,55 @@ if (endlessMode) {
 
 function createEnemy(sizeFactor = 1) {
       let shieldChance = 0.16;
+      const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
+      if (campaignLevel && Number.isFinite(Number(campaignLevel.shieldChance))) {
+        shieldChance = clamp(Number(campaignLevel.shieldChance), 0, 1);
+      }
       if (endlessMode && typeof getEndlessPressureState === 'function') {
         const endlessState = getEndlessPressureState();
         shieldChance = Math.min(0.28, 0.12 + endlessState.pressure * 0.05 + endlessState.doomProgress * 0.03);
       }
       const enemy = Math.random() < shieldChance ? new ShieldEnemy(sizeFactor) : new Enemy(sizeFactor);
+      if (campaignLevel?.preyShare > 0 && Math.random() < campaignLevel.preyShare) {
+        const stage = Math.max(1, Math.floor(campaignLevel.preyGrowthStage || 1));
+        const huntRadius = GROWTH_CONFIG.START_RADIUS + stage * GROWTH_CONFIG.GROWTH_STAGE_RADIUS_STEP;
+        const edibleRadius = huntRadius / ENEMY_EVOLUTION_CONFIG.DOMINANCE_RATIO;
+        enemy.radius = randomRange(Math.max(10, edibleRadius * 0.84), edibleRadius * 0.97);
+        enemy.level = calculateLevelFromRadius(enemy.radius);
+      }
       return applyRandomEnemyPerks(enemy);
+    }
+
+    function applyCampaignStartConditions() {
+      const level = getCampaignLevelBalance();
+      if (!level || !player) return;
+
+      const stage = clamp(
+        Math.floor(Number(level.startGrowthStage) || 0),
+        0,
+        GROWTH_CONFIG.VISUAL_GROWTH_STAGES - 1
+      );
+      if (stage > 0) {
+        player.growthStage = stage;
+        player.radius = Math.min(
+          GROWTH_CONFIG.TARGET_MAX_RADIUS,
+          GROWTH_CONFIG.START_RADIUS + stage * GROWTH_CONFIG.GROWTH_STAGE_RADIUS_STEP
+        );
+        player.cameraRadius = player.radius;
+        player.level = calculateLevelFromRadius(player.radius);
+      }
+
+      const mutations = Array.isArray(level.startingMutations) ? level.startingMutations : [];
+      for (let i = 0; i < mutations.length; i++) {
+        player.applyMutation(mutations[i]);
+      }
+
+      while (
+        firstPhaseRewardLevel <= getFirstPhaseRewardCap() &&
+        firstPhaseRewardLevel * PROGRESSION_CONFIG.REWARD_EVERY_LEVELS <= player.level
+      ) {
+        firstPhaseRewardLevel += 1;
+      }
     }
 
     function addScore(amount) {
@@ -344,7 +389,8 @@ function resetGame() {
       if (typeof resetMobileStick === 'function') resetMobileStick();
       spawnFoodTimer = 0;
       spawnDnaTimer = 0;
-      spawnTomatoTimer = 240;
+      const campaignLevel = getCampaignLevelBalance();
+      spawnTomatoTimer = Math.max(1, Math.floor(Number(campaignLevel?.tomatoFirstSpawnFrames) || 240));
       dashRequested = false;
       simulationLoad = 0;
       fxShadowScale = 1;
@@ -394,6 +440,7 @@ function resetGame() {
         markGameplayStop();
       }
 
+      applyCampaignStartConditions();
       if (typeof startCampaignRunIfNeeded === 'function') startCampaignRunIfNeeded();
       setupAmbient();
       seedInitialEntities();
@@ -505,10 +552,16 @@ function resetGame() {
         }
       }
 
-      spawnTomatoTimer -= 1;
-      if (spawnTomatoTimer <= 0) {
-        spawnTomatoTimer = endlessMode ? ENDLESS_CONFIG.TOMATO_ENDLESS_SPAWN_FRAMES : ENDLESS_CONFIG.TOMATO_SPAWN_FRAMES;
-        if (tomatoFoods.length < ENDLESS_CONFIG.TOMATO_MAX_COUNT) {
+      const campaignLevel = getCampaignLevelBalance();
+      const tomatoMaxCount = endlessMode
+        ? ENDLESS_CONFIG.TOMATO_MAX_COUNT
+        : Math.max(1, Math.floor(Number(campaignLevel?.tomatoMaxCount) || ENDLESS_CONFIG.TOMATO_MAX_COUNT));
+      if (tomatoFoods.length < tomatoMaxCount) {
+        spawnTomatoTimer -= 1;
+        if (spawnTomatoTimer <= 0) {
+          spawnTomatoTimer = endlessMode
+            ? ENDLESS_CONFIG.TOMATO_ENDLESS_SPAWN_FRAMES
+            : Math.max(1, Math.floor(Number(campaignLevel?.tomatoRespawnFrames) || ENDLESS_CONFIG.TOMATO_SPAWN_FRAMES));
           const spawn = randomOffscreenWorldPosition({
             padding: 44,
             minDistanceFromPlayer: WORLD_CONFIG.SAFE_PLAYER_RADIUS + 70,

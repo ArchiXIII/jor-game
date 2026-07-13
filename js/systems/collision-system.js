@@ -221,6 +221,7 @@ function handlePlayerCollisions() {
           spawnFoodEatEffect(tomato, player, { particleCount: 10, ringCount: 2 });
           player.grow(endlessMode ? ENDLESS_CONFIG.TOMATO_ENDLESS_GROWTH : ENDLESS_CONFIG.TOMATO_GROWTH);
           addScore(ENDLESS_CONFIG.SCORE_PER_TOMATO);
+          if (typeof recordCampaignTomato === 'function') recordCampaignTomato();
           if (typeof recordCampaignFood === 'function') recordCampaignFood();
         }
       }

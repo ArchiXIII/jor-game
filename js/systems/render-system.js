@@ -115,6 +115,58 @@ function drawMobileEnemyEdgeIndicators() {
       ctx.restore();
     }
 
+    function drawCampaignTomatoEdgeIndicator() {
+      if (!player || !tomatoFoods.length || App.gameMode !== 'campaign') return;
+      const level = typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel() : null;
+      if (level?.type !== 'tomato') return;
+
+      const tomato = tomatoFoods[0];
+      const zoom = camera.zoom || 1;
+      const screenX = (tomato.x - camera.x) * zoom;
+      const screenY = (tomato.y - camera.y) * zoom;
+      const screenRadius = Math.max(10, tomato.radius * zoom);
+      if (
+        screenX + screenRadius > 0 &&
+        screenX - screenRadius < canvas.width &&
+        screenY + screenRadius > 0 &&
+        screenY - screenRadius < canvas.height
+      ) return;
+
+      const centerX = canvas.width * 0.5;
+      const centerY = canvas.height * 0.5;
+      const dx = screenX - centerX;
+      const dy = screenY - centerY;
+      const margin = 30;
+      const scaleX = Math.abs(dx) > 0.001 ? (centerX - margin) / Math.abs(dx) : Infinity;
+      const scaleY = Math.abs(dy) > 0.001 ? (centerY - margin) / Math.abs(dy) : Infinity;
+      const edgeScale = Math.min(scaleX, scaleY);
+      const x = centerX + dx * edgeScale;
+      const y = centerY + dy * edgeScale;
+      const angle = Math.atan2(dy, dx);
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = 'rgba(255, 68, 61, 0.96)';
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.lineTo(2, -10);
+      ctx.lineTo(2, 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(-4, 0, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(105, 225, 103, 0.98)';
+      ctx.beginPath();
+      ctx.moveTo(-8, -8);
+      ctx.lineTo(-2, -16);
+      ctx.lineTo(1, -7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
     function drawGame() {
       if (typeof ctx.resetTransform === 'function') {
         ctx.resetTransform();
@@ -166,6 +218,7 @@ function drawMobileEnemyEdgeIndicators() {
       ctx.restore();
       updateTopProgressBar();
       if (!player) return;
+      drawCampaignTomatoEdgeIndicator();
       drawMobileEnemyEdgeIndicators();
 
     }

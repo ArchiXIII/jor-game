@@ -79,7 +79,7 @@ function escapeHtml(value) {
 
     function getGoldfishUnlockScore() {
       const item = (window.JorShopCharacterItems || []).find(entry => entry?.id === 'jor_char_goldfish');
-      return Math.max(1, Math.floor(Number(item?.unlockEndlessScore) || 70000));
+      return Math.max(1, Math.floor(Number(item?.unlockEndlessScore) || 50000));
     }
 
     function getGoldfishUnlockText() {
@@ -155,14 +155,13 @@ function escapeHtml(value) {
       const sessionId = runtimeSessionId;
       const finalScore = Math.max(0, Math.round(score || 0));
       const unlockScore = getGoldfishUnlockScore();
-      let previousBest = Math.max(0, Math.floor(Number(App.bestEndlessScore || 0)), Math.floor(Number(App.lastLeaderboardScore || 0)));
-      try {
-        const storedBest = Math.floor(Number(localStorage.getItem('jor-best-endless-score') || 0));
-        previousBest = Math.max(previousBest, storedBest);
-        if (finalScore > storedBest) localStorage.setItem('jor-best-endless-score', String(finalScore));
-      } catch (error) {}
+      const savedMeta = window.JorSaveManager?.getSection?.('meta', {}) || {};
+      const previousBest = Math.max(0, Math.floor(Number(App.bestEndlessScore || 0)), Math.floor(Number(App.lastLeaderboardScore || 0)), Math.floor(Number(savedMeta.bestEndlessScore || 0)));
       const goldfishUnlocked = previousBest < unlockScore && finalScore >= unlockScore;
       App.bestEndlessScore = Math.max(previousBest, finalScore);
+      if (App.bestEndlessScore > Math.floor(Number(savedMeta.bestEndlessScore || 0))) {
+        window.JorSaveManager?.updateSection?.('meta', (meta) => ({ ...meta, bestEndlessScore: App.bestEndlessScore }), true);
+      }
       App.localPause = true;
       markGameplayStop();
 
@@ -390,7 +389,8 @@ function escapeHtml(value) {
       if (leaderboardState === 'loading') {
         const result = await loadCampaignStarsLeaderboard();
         if (DOM.messageTitle?.dataset?.messageKey !== 'campaignComplete') return;
-        await showCampaignCompleteMessage(level, stars, progressValue, elapsedFrames, result.entries, result.state);
+        const leaderboard = DOM.messageText.querySelector('.campaignResultLeaderboard');
+        if (leaderboard) leaderboard.outerHTML = buildCampaignStarsLeaderboardHtml(result.entries, result.state);
       }
     }
 

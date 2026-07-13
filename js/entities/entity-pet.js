@@ -6,6 +6,7 @@
     this.vx = 0;
     this.vy = 0;
     this.angle = player?.angle || 0;
+    this.followAngle = this.angle;
     this.phase = Math.random() * Math.PI * 2;
     this.side = Math.random() < 0.5 ? -1 : 1;
   }
@@ -17,10 +18,14 @@
     const motion = skin?.motion || '';
     const followDistance = player.radius + radius * (motion === 'float' ? 1.95 : 1.7);
     const sideOffset = radius * (motion === 'snap' ? 0.82 : 1.05) * this.side;
-    const backX = Math.cos(player.angle + Math.PI);
-    const backY = Math.sin(player.angle + Math.PI);
-    const sideX = Math.cos(player.angle + Math.PI * 0.5);
-    const sideY = Math.sin(player.angle + Math.PI * 0.5);
+    let followDiff = player.angle - this.followAngle;
+    while (followDiff > Math.PI) followDiff -= Math.PI * 2;
+    while (followDiff < -Math.PI) followDiff += Math.PI * 2;
+    this.followAngle += followDiff * (motion === 'float' ? 0.025 : 0.035);
+    const backX = Math.cos(this.followAngle + Math.PI);
+    const backY = Math.sin(this.followAngle + Math.PI);
+    const sideX = Math.cos(this.followAngle + Math.PI * 0.5);
+    const sideY = Math.sin(this.followAngle + Math.PI * 0.5);
     const bob = motion === 'bounce' ? Math.abs(Math.sin(this.phase * 1.35)) * radius * 0.42 : motion === 'float' ? Math.sin(this.phase * 0.8) * radius * 0.32 : 0;
     const tx = player.x + backX * followDistance + sideX * sideOffset + sideX * bob;
     const ty = player.y + backY * followDistance + sideY * sideOffset + sideY * bob;
@@ -42,11 +47,12 @@
       this.vx = 0;
       this.vy = 0;
     }
-    const targetAngle = Math.atan2(player.y - this.y, player.x - this.x);
+    const speedSq = this.vx * this.vx + this.vy * this.vy;
+    const targetAngle = speedSq > 0.04 ? Math.atan2(this.vy, this.vx) : this.angle;
     let diff = targetAngle - this.angle;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
-    this.angle += diff * (motion === 'float' ? 0.08 : motion === 'snap' ? 0.18 : 0.12);
+    this.angle += diff * (motion === 'float' ? 0.055 : motion === 'snap' ? 0.12 : 0.08);
     this.phase += (motion === 'snap' ? 0.105 : motion === 'float' ? 0.055 : 0.075) + Math.min(0.04, dist * 0.0008);
   }
 

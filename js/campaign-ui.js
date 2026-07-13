@@ -1,8 +1,6 @@
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'jor-campaign-progress-v1';
-  const CLOUD_KEY = 'jorCampaign';
   const CHAPTER_COUNT = 10;
   const LEVELS_PER_CHAPTER = 10;
   const TOTAL_LEVELS = CHAPTER_COUNT * LEVELS_PER_CHAPTER;
@@ -10,7 +8,7 @@
   const chapterNames = {
     ru: [
       '\u041c\u0435\u043b\u043a\u043e\u0432\u043e\u0434\u044c\u0435',
-      '\u0422\u0451\u043f\u043b\u044b\u0439 \u0440\u0438\u0444',
+      '\u0422\u0451\u043f\u043b\u043e\u0435 \u0442\u0435\u0447\u0435\u043d\u0438\u0435',
       '\u0421\u0438\u043d\u0438\u0435 \u0442\u0435\u0447\u0435\u043d\u0438\u044f',
       '\u0413\u043b\u0443\u0431\u0438\u043d\u043d\u044b\u0435 \u0437\u0430\u0440\u043e\u0441\u043b\u0438',
       '\u0422\u0451\u043c\u043d\u0430\u044f \u0432\u043f\u0430\u0434\u0438\u043d\u0430',
@@ -22,7 +20,7 @@
     ],
     en: [
       'Shallows',
-      'Warm Reef',
+      'Warm Current',
       'Blue Currents',
       'Deep Thickets',
       'Dark Trench',
@@ -66,7 +64,7 @@
   let initialized = false;
   let messageTimer = 0;
   let cloudLoaded = false;
-  let progress = normalizeProgress(loadProgress());
+  let progress = normalizeProgress(window.JorSaveManager?.getSection?.('campaign', null));
   let state = {
     open: false,
     chapter: Math.max(0, Math.min(CHAPTER_COUNT - 1, Math.floor((recommendedLevelNumber() - 1) / LEVELS_PER_CHAPTER))),
@@ -152,69 +150,22 @@
     };
   }
 
-  function loadProgress() {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : { highestUnlockedLevel: 1, stars: {}, chapterTrophies: {}, pendingChapterTrophies: {} };
-    } catch (error) {
-      return { highestUnlockedLevel: 1, stars: {}, chapterTrophies: {}, pendingChapterTrophies: {} };
-    }
-  }
-
   function saveProgress() {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
-    } catch (error) {}
-    saveCloud();
-  }
-
-  function mergeProgress(local, cloud) {
-    const base = normalizeProgress(local);
-    const server = normalizeProgress(cloud);
-    const merged = normalizeProgress(base);
-    Object.keys(server.stars || {}).forEach((key) => {
-      merged.stars[key] = Math.max(Math.floor(Number(merged.stars[key]) || 0), Math.floor(Number(server.stars[key]) || 0));
-    });
-    Object.keys(server.unlockedLevels || {}).forEach((key) => {
-      if (server.unlockedLevels[key]) merged.unlockedLevels[key] = true;
-    });
-    Object.keys(server.chapterTrophies || {}).forEach((key) => {
-      if (server.chapterTrophies[key]) merged.chapterTrophies[key] = true;
-    });
-    Object.keys(server.pendingChapterTrophies || {}).forEach((key) => {
-      if (server.pendingChapterTrophies[key]) merged.pendingChapterTrophies[key] = true;
-    });
-    merged.highestUnlockedLevel = Math.max(merged.highestUnlockedLevel || 1, server.highestUnlockedLevel || 1);
-    return normalizeProgress(merged);
-  }
-
-  async function saveCloud() {
-    if (!App?.player?.setData) return false;
-    try {
-      await App.player.setData({ [CLOUD_KEY]: progress }, false);
-      return true;
-    } catch (error) {
-      console.warn('Campaign cloud save error:', error);
-      return false;
-    }
+    window.JorSaveManager?.setSection?.('campaign', progress, true);
   }
 
   async function loadCloud() {
-    if (cloudLoaded || !App?.player?.getData) return false;
+    if (cloudLoaded) return true;
     cloudLoaded = true;
     try {
-      const data = await App.player.getData([CLOUD_KEY]);
-      const next = mergeProgress(progress, data?.[CLOUD_KEY]);
-      progress = next;
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
-      } catch (error) {}
-      await saveCloud();
+      await window.JorSaveManager?.load?.();
+      progress = normalizeProgress(window.JorSaveManager?.getSection?.('campaign', null));
       window.JorMetaUI?.setStars?.(totalStars());
       render();
       return true;
     } catch (error) {
-      console.warn('Campaign cloud load error:', error);
+      cloudLoaded = false;
+      console.warn('Campaign save load error:', error);
       return false;
     }
   }
@@ -311,7 +262,7 @@
   }
 
   function open() {
-    progress = normalizeProgress(loadProgress());
+    progress = normalizeProgress(window.JorSaveManager?.getSection?.('campaign', progress));
     const recommended = recommendedLevelNumber();
     state.selectedLevel = recommended;
     state.chapter = Math.max(0, Math.min(CHAPTER_COUNT - 1, Math.floor((recommended - 1) / LEVELS_PER_CHAPTER)));

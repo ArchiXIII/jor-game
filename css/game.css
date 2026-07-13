@@ -175,7 +175,7 @@
         calc(var(--safe-bottom) + 18px)
         calc(var(--safe-left) + 16px);
       display: none;
-      align-items: flex-end;
+      align-items: center;
       justify-content: space-between;
       pointer-events: none;
       z-index: 12;
@@ -1839,6 +1839,11 @@
 .gameOverPanel .leaderboardRow.currentUser .leaderboardName,
 .gameOverPanel .leaderboardRow.currentUser .leaderboardPoints {
   color: #bffcff;
+}
+
+.gameOverPanel .leaderboardRow.currentUser .leaderboardRank {
+  background: transparent;
+  border-color: transparent;
 }
 
 .gameOverPanel .leaderboardRow.top1 .leaderboardName { color: #ffd86a; }

@@ -18,8 +18,16 @@ const AUDIO = {
     AUDIO.death.volume = 0.7;
     AUDIO.eating.volume = 0.45;
     AUDIO.flash.volume = 0.55;
-    AUDIO.eatingActiveCount = 0;
     AUDIO.eatingMaxVoices = 3;
+    AUDIO.eatingVoices = [];
+    AUDIO.eatingVoiceIndex = 0;
+    for (let i = 0; i < AUDIO.eatingMaxVoices; i += 1) {
+      const voice = new Audio('audio/eating.wav');
+      voice.preload = 'auto';
+      voice.volume = AUDIO.eating.volume;
+      voice.load();
+      AUDIO.eatingVoices.push(voice);
+    }
 
     // -----------------------------------------------------------------------
     // Процедурная фоновая музыка (Web Audio API).
@@ -320,7 +328,9 @@ const AUDIO = {
 
     function unlockAudio() {
       reviveAudio();
-      AUDIO.eatingActiveCount = 0;
+      for (let i = 0; i < AUDIO.eatingVoices.length; i += 1) {
+        if (AUDIO.eatingVoices[i].readyState < 2) AUDIO.eatingVoices[i].load();
+      }
       if (AUDIO.unlocked && (!ProcMusic.ctx || ProcMusic.ctx.state === 'running')) return;
       try {
         const unlockClone = AUDIO.button.cloneNode();
@@ -370,33 +380,26 @@ const AUDIO = {
       try {
         if (AUDIO.muted) return;
         reviveAudio();
-        if ((AUDIO.eatingActiveCount || 0) >= (AUDIO.eatingMaxVoices || 3)) return;
-
-        const sfx = AUDIO.eating.cloneNode();
-        AUDIO.eatingActiveCount = (AUDIO.eatingActiveCount || 0) + 1;
-        sfx.volume = AUDIO.eating.volume;
-        let released = false;
-        let releaseTimer = null;
-
-        const releaseVoice = () => {
-          if (released) return;
-          released = true;
-          if (releaseTimer) {
-            clearTimeout(releaseTimer);
-            releaseTimer = null;
+        const voices = AUDIO.eatingVoices;
+        let voice = null;
+        for (let i = 0; i < voices.length; i += 1) {
+          const candidate = voices[(AUDIO.eatingVoiceIndex + i) % voices.length];
+          if (candidate.paused || candidate.ended) {
+            voice = candidate;
+            AUDIO.eatingVoiceIndex = (AUDIO.eatingVoiceIndex + i + 1) % voices.length;
+            break;
           }
-          AUDIO.eatingActiveCount = Math.max(0, (AUDIO.eatingActiveCount || 1) - 1);
-        };
-
-        sfx.addEventListener('ended', releaseVoice, { once: true });
-        sfx.addEventListener('error', releaseVoice, { once: true });
-        releaseTimer = setTimeout(releaseVoice, 900);
-
-        const promise = sfx.play();
+        }
+        if (!voice) {
+          voice = voices[AUDIO.eatingVoiceIndex];
+          AUDIO.eatingVoiceIndex = (AUDIO.eatingVoiceIndex + 1) % voices.length;
+          voice.pause();
+        }
+        voice.currentTime = 0;
+        voice.volume = AUDIO.eating.volume;
+        const promise = voice.play();
         if (promise && typeof promise.catch === 'function') {
-          promise.catch(() => {
-            releaseVoice();
-          });
+          promise.catch(() => {});
         }
       } catch (error) {}
     }
@@ -478,6 +481,10 @@ const AUDIO = {
         window.localStorage.setItem(AUDIO_MUTED_STORAGE_KEY, AUDIO.muted ? '1' : '0');
       } catch (error) {}
       if (AUDIO.muted) {
+        for (let i = 0; i < AUDIO.eatingVoices.length; i += 1) {
+          AUDIO.eatingVoices[i].pause();
+          AUDIO.eatingVoices[i].currentTime = 0;
+        }
         pauseAmbientMusic();
       } else {
         ensureAmbientMusic();
@@ -496,7 +503,6 @@ const AUDIO = {
 
     function handlePlatformResume() {
       App.platformPaused = false;
-      AUDIO.eatingActiveCount = 0;
       reviveAudio();
       ensureAmbientMusic(true);
       markGameplayStart();
@@ -506,9 +512,10 @@ const AUDIO = {
       try {
         if (AUDIO.muted) return;
         reviveAudio();
-        const sfx = AUDIO.flash.cloneNode();
-        sfx.volume = AUDIO.flash.volume;
-        const promise = sfx.play();
+        AUDIO.flash.pause();
+        AUDIO.flash.currentTime = 0;
+        AUDIO.flash.volume = 0.55;
+        const promise = AUDIO.flash.play();
         if (promise && typeof promise.catch === 'function') promise.catch(() => {});
       } catch (error) {}
     }

@@ -61,6 +61,8 @@ const App = {
         });
 
         await initYandexPlayer();
+        await window.JorSaveManager?.load?.();
+        await window.JorMetaUI?.syncPlayerProgress?.();
         await window.JorCampaignUI?.syncCloud?.();
         await window.JorShopUI?.refreshPayments?.();
         // Р вЂўРЎРѓР В»Р С‘ РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… РЎС“Р В¶Р Вµ Р С•РЎвЂљРЎР‚Р С‘РЎРѓР С•Р Р†Р В°Р Р… Р С” Р СР С•Р СР ВµР Р…РЎвЂљРЎС“ Р С–Р С•РЎвЂљР С•Р Р†Р Р…Р С•РЎРѓРЎвЂљР С‘ SDK РІР‚вЂќ
@@ -100,6 +102,10 @@ const App = {
     async function submitScoreToLeaderboard(finalScore) {
       if (!App.sdkReady || !App.ysdk?.leaderboards) return false;
       if (!isAuthorizedYandexPlayer()) return false;
+
+      if (typeof window.JorMetaUI?.submitScore === 'function') {
+        return window.JorMetaUI.submitScore(App.leaderboardName, finalScore);
+      }
 
       try {
         await App.ysdk.leaderboards.setScore(App.leaderboardName, finalScore);
@@ -296,6 +302,7 @@ function showStartScreen() {
     // Р Р† РЎРѓР С‘РЎвЂљРЎС“Р В°РЎвЂ Р С‘Р С‘, Р С”Р С•Р С–Р Т‘Р В° Р С—Р С•Р С”Р В°Р В·РЎвЂ№Р Р†Р В°Р ВµРЎвЂљРЎРѓРЎРЏ Р СР С•Р Т‘Р В°Р В»Р С”Р В°.
     // -----------------------------------------------------------------------
     function canTogglePause() {
+      if (typeof isCampaignRoundIntroOpen === 'function' && isCampaignRoundIntroOpen()) return false;
       // Р СњР В° РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†Р С•Р С РЎРЊР С”РЎР‚Р В°Р Р…Р Вµ РІР‚вЂќ Р Р…Р ВµРЎвЂљ РЎРѓР СРЎвЂ№РЎРѓР В»Р В°, РЎвЂљР В°Р С Р С‘ РЎвЂљР В°Р С” Р С—Р В°РЎС“Р В·Р В°, Р С‘ Р ВµРЎРѓРЎвЂљРЎРЉ Р С”Р Р…Р С•Р С—Р С”Р В° Play.
       if (App.startScreenVisible) return false;
       // Р ВР С–РЎР‚Р В° Р ВµРЎвЂ°РЎвЂ Р Р…Р Вµ Р Р…Р В°РЎвЂЎР С‘Р Р…Р В°Р В»Р В°РЎРѓРЎРЉ.
@@ -448,13 +455,14 @@ function showStartScreen() {
 
     function retryCurrentCampaignRound() {
       if (App.gameMode !== 'campaign' || !App.campaignLevel) return;
-      App.pendingCampaignStart = true;
+      App.pendingCampaignStart = false;
       App.hasStarted = true;
       App.localPause = false;
       hideCenterMessage();
       hideStartScreen();
       resetGame();
       ensureAmbientMusic();
+      if (typeof showCampaignRoundIntro === 'function' && showCampaignRoundIntro()) return;
       markGameplayStart();
     }
 
@@ -483,6 +491,7 @@ function showStartScreen() {
         return;
       }
       ensureAmbientMusic();
+      if (campaignStart && typeof showCampaignRoundIntro === 'function' && showCampaignRoundIntro()) return;
       markGameplayStart();
     }
 

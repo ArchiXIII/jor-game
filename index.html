@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/game.css" />
   <link rel="stylesheet" href="css/meta-ui.css" />
   <link rel="stylesheet" href="css/campaign-ui.css" />
+  <link rel="stylesheet" href="css/campaign-intro.css" />
   <link rel="stylesheet" href="css/shop-ui.css" />
 </head>
 <body>
@@ -116,6 +117,15 @@
     <div class="topProgressScore" id="topProgressScore">0</div>
   </div>
   <div class="campaignTimer" id="campaignTimer" aria-hidden="true">0:00</div>
+
+  <div class="campaignRoundIntroOverlay" id="campaignRoundIntroOverlay" aria-hidden="true">
+    <section class="campaignRoundIntro" role="dialog" aria-modal="true" aria-labelledby="campaignRoundIntroTitle">
+      <div class="campaignRoundIntroTitle" id="campaignRoundIntroTitle"></div>
+      <div class="campaignRoundIntroGoal" id="campaignRoundIntroGoal"></div>
+      <div class="campaignRoundIntroStars" id="campaignRoundIntroStars"></div>
+      <button class="campaignRoundIntroStart" id="campaignRoundIntroStart" type="button"></button>
+    </section>
+  </div>
 
   <div class="topControls" id="topControls" aria-hidden="true">
     <button class="topControlBtn soundToggleBtn" id="soundToggleBtn" type="button" aria-label="Sound on">
@@ -232,11 +242,14 @@
   <script src="js/shop/shop-items-icons.js"></script>
   <script src="js/shop/shop-items-ads.js"></script>
   <script src="js/shop-data.js"></script>
+  <script src="js/save-manager.js"></script>
   <script src="js/shop-ui.js"></script>
   <script src="js/entities/entity-sprites.js"></script>
   <script src="js/entities/entity-pickups-background.js"></script>
   <script src="js/entities/entity-effects.js"></script>
   <script src="js/entities/entity-enemies.js"></script>
+  <script src="js/entities/enemy-ai.js"></script>
+  <script src="js/entities/enemy-render.js"></script>
   <script src="js/entities/entity-player.js"></script>
   <script src="js/entities/entity-pet.js"></script>
   <script src="js/entities/entity-mutations.js"></script>
@@ -249,8 +262,10 @@
   <script src="js/meta-ui.js"></script>
   <script src="js/campaign-ui.js"></script>
   <script src="js/campaign/levels-chapter-1.js"></script>
+  <script src="js/campaign/levels-chapter-2.js"></script>
   <script src="js/campaign-levels.js"></script>
   <script src="js/campaign-run.js"></script>
+  <script src="js/ui/campaign-intro.js"></script>
   <script src="js/endless-mode.js"></script>
   <script src="js/main.js"></script>
 </body>

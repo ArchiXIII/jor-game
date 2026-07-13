@@ -323,6 +323,7 @@
     if (!pet) return;
     ctx.save();
     ctx.rotate(direction);
+    if (Math.cos(direction) < 0) ctx.scale(1, -1);
     if (pet.style === 'medusa') drawMedusa(ctx, pet, radius, phase);
     else if (pet.style === 'kaplik') drawKaplik(ctx, pet, radius, phase);
     else if (pet.style === 'clown') drawClown(ctx, pet, radius, phase);

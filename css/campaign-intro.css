@@ -1,0 +1,143 @@
+.campaignRoundIntroOverlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 31;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px max(20px, env(safe-area-inset-right)) calc(18px + var(--safe-bottom)) max(20px, env(safe-area-inset-left));
+  background: transparent;
+  font-family: Arial, sans-serif;
+}
+
+.campaignRoundIntroOverlay.active {
+  display: flex;
+}
+
+.campaignRoundIntro {
+  width: min(430px, calc(100vw - var(--safe-left) - var(--safe-right) - 40px));
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 118px);
+  padding: 22px 28px 20px;
+  border: 2px solid rgba(83, 205, 224, 0.72);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(20, 77, 91, 0.98), rgba(5, 30, 42, 0.99));
+  color: #edfffb;
+  text-align: center;
+  overflow: hidden;
+}
+
+.campaignRoundIntroTitle {
+  color: #8ff3ff;
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.campaignRoundIntroGoal {
+  margin-top: 14px;
+  font-size: 25px;
+  line-height: 1.12;
+  font-weight: 900;
+}
+
+.campaignRoundIntroStars {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.campaignRoundIntroStarItem {
+  min-width: 0;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid rgba(102, 219, 232, 0.34);
+  border-radius: 10px;
+  background: rgba(2, 20, 29, 0.64);
+  color: #fff0b2;
+  font-size: 15px;
+}
+
+.campaignRoundIntroStarIcons {
+  height: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+
+.campaignRoundIntroStarIcons img {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+}
+
+.campaignRoundIntroStart {
+  width: min(250px, 100%);
+  height: 48px;
+  margin-top: 20px;
+  border: 2px solid rgba(196, 252, 255, 0.92);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #c7fbff 0%, #55dcf4 55%, #1aa9cf 100%);
+  color: #032033;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.campaignRoundIntroStart:active {
+  transform: translateY(1px);
+}
+
+@media (max-height: 520px), (max-width: 700px) {
+  .campaignRoundIntroOverlay {
+    padding-top: 10px;
+    padding-bottom: calc(10px + var(--safe-bottom));
+  }
+
+  .campaignRoundIntro {
+    width: min(390px, calc(100vw - var(--safe-left) - var(--safe-right) - 30px));
+    padding: 15px 22px 14px;
+    border-radius: 15px;
+  }
+
+  .campaignRoundIntroTitle {
+    font-size: 14px;
+  }
+
+  .campaignRoundIntroGoal {
+    margin-top: 9px;
+    font-size: 20px;
+  }
+
+  .campaignRoundIntroStars {
+    margin-top: 12px;
+  }
+
+  .campaignRoundIntroStarItem {
+    height: 43px;
+    font-size: 13px;
+  }
+
+  .campaignRoundIntroStarIcons,
+  .campaignRoundIntroStarIcons img {
+    height: 17px;
+  }
+
+  .campaignRoundIntroStarIcons img {
+    width: 17px;
+  }
+
+  .campaignRoundIntroStart {
+    height: 40px;
+    margin-top: 12px;
+    font-size: 16px;
+    border-radius: 13px;
+  }
+}

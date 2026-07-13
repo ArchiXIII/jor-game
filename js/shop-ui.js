@@ -1,9 +1,6 @@
 ﻿(function () {
   'use strict';
 
-  const STORAGE_KEY = 'jor-shop-v1';
-  const CLOUD_KEY = 'jorShop';
-  const BEST_ENDLESS_SCORE_KEY = 'jor-best-endless-score';
   const state = {
     activeCategory: 'characters',
     owned: {},
@@ -28,11 +25,8 @@
   function timedUntil(id) { return Math.max(0, Number(state.timed?.[id] || 0)); }
   function isTimedActive(id) { return timedUntil(id) > nowMs(); }
   function bestEndlessScore() {
-    let value = Math.max(0, Math.floor(Number(App?.bestEndlessScore || App?.lastLeaderboardScore || 0)));
-    try {
-      value = Math.max(value, Math.floor(Number(localStorage.getItem(BEST_ENDLESS_SCORE_KEY) || 0)));
-    } catch (error) {}
-    return value;
+    const meta = window.JorSaveManager?.getSection?.('meta', {}) || {};
+    return Math.max(0, Math.floor(Number(App?.bestEndlessScore || App?.lastLeaderboardScore || 0)), Math.floor(Number(meta.bestEndlessScore || 0)));
   }
 
   function isUnlockedByGameplay(item) {
@@ -80,49 +74,21 @@
     return { owned, selected, timed };
   }
 
-  function loadLocal() {
-    try {
-      return normalizeSave(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
-    } catch (error) {
-      return normalizeSave({});
-    }
-  }
-
-  function saveLocal() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ owned: state.owned, selected: state.selected, timed: state.timed }));
-    } catch (error) {}
-  }
-
-  async function saveCloud() {
-    if (!App?.player?.setData) return false;
-    try {
-      await App.player.setData({ [CLOUD_KEY]: { owned: state.owned, selected: state.selected, timed: state.timed } }, false);
-      return true;
-    } catch (error) {
-      console.warn('Shop cloud save error:', error);
-      return false;
-    }
-  }
-
   async function loadCloud() {
-    if (state.cloudLoaded || !App?.player?.getData) return;
+    if (state.cloudLoaded) return true;
     state.cloudLoaded = true;
     try {
-      const data = await App.player.getData([CLOUD_KEY]);
-      const cloud = normalizeSave(data?.[CLOUD_KEY]);
-      state.owned = { ...state.owned, ...cloud.owned };
-      Object.keys(cloud.timed).forEach((id) => {
-        state.timed[id] = Math.max(timedUntil(id), cloud.timed[id]);
-      });
-      Object.keys(cloud.selected).forEach((category) => {
-        if (cloud.selected[category]) state.selected[category] = cloud.selected[category];
-      });
-      saveLocal();
-      await saveCloud();
+      await window.JorSaveManager?.load?.();
+      const saved = normalizeSave(window.JorSaveManager?.getSection?.('shop', {}));
+      state.owned = saved.owned;
+      state.selected = saved.selected;
+      state.timed = saved.timed;
       render();
+      return true;
     } catch (error) {
-      console.warn('Shop cloud load error:', error);
+      state.cloudLoaded = false;
+      console.warn('Shop save load error:', error);
+      return false;
     }
   }
 
@@ -247,7 +213,10 @@
         .replace(/\.\s+(?=[+-]\d)/g, '.\n')
         .replace(/,\s*(?=(?:\u0420\u044b\u0432\u043e\u043a|starts with dash))/i, '\n');
     }
-    return escapeHtml(text).replace(/\n+/g, '<br>');
+    return text.split(/\n+/).map((line) => {
+      const escaped = escapeHtml(line);
+      return escaped.replace(/^([+-]\d+(?:[.,]\d+)?%?)/, '<span class="shopBonusValue">$1</span>');
+    }).join('<br>');
   }
 
   function formatDate(timestamp) {
@@ -321,8 +290,7 @@
   }
 
   async function persistShopState() {
-    saveLocal();
-    return await saveCloud();
+    return await window.JorSaveManager?.setSection?.('shop', { owned: state.owned, selected: state.selected, timed: state.timed }, true);
   }
 
   async function grant(item) {
@@ -411,7 +379,7 @@
   function createProductCard(item) {
     const owned = isOwned(item.id);
     const gameplayLocked = !!item.unlockEndlessScore && !owned;
-    const selected = isSelectable(item) && state.selected[item.category] === item.id;
+    const selected = (isSelectable(item) && state.selected[item.category] === item.id) || (isAdItem(item) && owned);
     const card = document.createElement('article');
     card.className = 'shopItem' + (isCharacterItem(item) || isGrowthEffectItem(item) || isPetItem(item) ? ' characterPreview' : '') + (isIconItem(item) ? ' profileIconPreview' : '') + (isAdItem(item) ? ' adPreview' : '') + (owned ? ' owned' : '') + (selected ? ' selected' : '') + (gameplayLocked ? ' gameplayLocked' : '');
     card.style.setProperty('--shop-accent', item.color || '#7af2ff');
@@ -420,7 +388,7 @@
       ? (isTimedAdItem(item) ? tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e', 'Active') : (isAdItem(item) ? tr('\u041a\u0443\u043f\u043b\u0435\u043d\u043e', 'Owned') : (selected ? tr('\u0412\u044b\u0431\u0440\u0430\u043d\u043e', 'Selected') : tr('\u0412\u044b\u0431\u0440\u0430\u0442\u044c', 'Select'))))
       : (gameplayLocked ? '' : priceText(item));
     const unlockHint = gameplayLocked
-      ? tr('\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043d\u0430\u0431\u0440\u0430\u043d\u043d\u044b\u0435 70 000 \u043e\u043f\u044b\u0442\u0430 \u0432 \u0431\u0435\u0441\u043a\u043e\u043d\u0435\u0447\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435', 'Unlocks at 70,000 endless mode score')
+      ? tr('\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043d\u0430\u0431\u0440\u0430\u043d\u043d\u044b\u0435 50 000 \u043e\u043f\u044b\u0442\u0430 \u0432 \u0431\u0435\u0441\u043a\u043e\u043d\u0435\u0447\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435', 'Unlocks at 50,000 endless mode score')
       : '';
     const descHtml = activeUntil > nowMs()
       ? `${productDescHtml(item)}<br>${tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e \u0434\u043e: ', 'Active until: ')}${escapeHtml(formatDate(activeUntil))}`
@@ -440,7 +408,7 @@
       ${preview}
       <div class="shopItemBody">
         <h3>${productTitle(item)}</h3>
-        <p>${descHtml}</p>
+        <p${item?.bonuses && Object.keys(item.bonuses).length ? ' class="shopBonusDesc"' : ''}>${descHtml}</p>
       </div>
       ${gameplayLocked ? '' : `<button class="shopBuyBtn" type="button" ${((state.pendingId && state.pendingId !== item.id) || (owned && isAdItem(item))) ? 'disabled' : ''}>${state.pendingId === item.id ? tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430...', 'Purchasing...') : action}</button>`}
       ${unlockHint ? `<div class="shopUnlockHint">${escapeHtml(unlockHint)}</div>` : ''}
@@ -552,7 +520,7 @@
   }
 
   function init() {
-    Object.assign(state, loadLocal());
+    Object.assign(state, normalizeSave(window.JorSaveManager?.getSection?.('shop', {})));
     dom.overlay = document.getElementById('shopOverlay');
     dom.panel = document.getElementById('shopPanel') || dom.overlay?.querySelector('.shopPanel');
     dom.close = document.getElementById('shopCloseBtn');

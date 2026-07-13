@@ -3,8 +3,10 @@
 
   const FULL_XP_LEADERBOARD = 'jorFullXP';
   const STARS_LEADERBOARD = 'jorStars';
-  const FULL_XP_STORAGE = 'jor-full-xp';
-  const STARS_STORAGE = 'jor-stars-total';
+  const LEADERBOARD_SUBMIT_INTERVAL = 1100;
+  let leaderboardSubmitChain = Promise.resolve();
+  let lastLeaderboardSubmitAt = 0;
+  const leaderboardSubmissions = Object.create(null);
 
   const rankThresholds = [
     0, 2500, 6500, 12500, 22000,
@@ -71,10 +73,11 @@
     }
   };
 
+  const initialMeta = window.JorSaveManager?.getSection?.('meta', {}) || {};
   const state = {
     initialized: false,
-    fullXp: loadNumber(FULL_XP_STORAGE),
-    totalStars: loadNumber(STARS_STORAGE),
+    fullXp: Math.max(0, Math.floor(Number(initialMeta.fullXp) || 0)),
+    totalStars: 0,
     activeModal: null,
     activeLeaderboardTab: 'stars',
     leaderboardLoading: false,
@@ -83,6 +86,7 @@
     xpLeaderboardLoading: false,
     xpLeaderboardError: '',
     xpLeaderboardEntries: [],
+    xpLeaderboardLoaded: false,
     trophyAwards: new Set(),
     trophyAwardTimer: 0,
     highlightedChapter: null
@@ -100,19 +104,12 @@
     return dictionary[key] || text.ru[key] || key;
   }
 
-  function loadNumber(key) {
+  function isAuthorizedPlayer() {
     try {
-      const value = Number(window.localStorage.getItem(key) || 0);
-      return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+      return !!App?.player?.isAuthorized?.();
     } catch (error) {
-      return 0;
+      return false;
     }
-  }
-
-  function saveNumber(key, value) {
-    try {
-      window.localStorage.setItem(key, String(Math.max(0, Math.floor(value || 0))));
-    } catch (error) {}
   }
 
   function formatNumber(value) {
@@ -294,7 +291,7 @@
   function openProfile() {
     render();
     setModal('profile');
-    syncFullXpWithServer();
+    loadXpLeaderboard(true);
   }
 
   async function openLeaderboard(tab = 'stars') {
@@ -321,21 +318,27 @@
     renderLeaderboard();
   }
 
-  async function openXpLeaderboard() {
+  async function loadXpLeaderboard(force = false) {
+    if ((!force && state.xpLeaderboardLoaded) || state.xpLeaderboardLoading) return;
     state.xpLeaderboardLoading = true;
     state.xpLeaderboardError = '';
     state.xpLeaderboardEntries = [];
     render();
-    setModal('xpLeaderboard');
 
-    await syncFullXpWithServer(false);
-    const result = await loadLeaderboardRows(FULL_XP_LEADERBOARD, state.fullXp, 30, 1);
+    await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
+    const result = await loadLeaderboardRows(FULL_XP_LEADERBOARD, state.fullXp, 20, 1);
     state.xpLeaderboardLoading = false;
+    state.xpLeaderboardLoaded = !result.error;
     state.xpLeaderboardEntries = result.entries;
     state.xpLeaderboardError = result.error;
     syncFullXpFromEntries(result.entries);
     renderXpLeaderboard();
     render();
+  }
+
+  async function openXpLeaderboard() {
+    setModal('xpLeaderboard');
+    await loadXpLeaderboard();
   }
 
   function renderLeaderboard() {
@@ -424,19 +427,14 @@
       if (result.length && result[result.length - 1].type !== 'gap') result.push({ type: 'gap' });
     };
 
-    sorted.filter((entry) => entry.rank <= 3).slice(0, 3).forEach(add);
+    sorted.filter((entry) => entry.rank <= 20).slice(0, 20).forEach(add);
     const player = sorted.find((entry) => entry.isPlayer);
     const around = player ? sorted.filter((entry) => Math.abs(entry.rank - player.rank) <= 1) : [];
     if (around.some((entry) => !added.has(entry.rank))) {
       addGap();
       around.forEach(add);
     }
-    const bottom = sorted.slice(-3);
-    if (bottom.some((entry) => !added.has(entry.rank))) {
-      addGap();
-      bottom.forEach(add);
-    }
-    return result.slice(0, 13);
+    return result.slice(0, 24);
   }
 
   async function getLeaderboardsApi() {
@@ -452,22 +450,48 @@
     return null;
   }
 
-  async function submitLeaderboardScore(name, value) {
-    const score = Math.max(0, Math.floor(value || 0));
-    if (score <= 0) return false;
+  async function sendLeaderboardScore(name, score) {
+    const waitMs = Math.max(0, LEADERBOARD_SUBMIT_INTERVAL - (Date.now() - lastLeaderboardSubmitAt));
+    if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
     const api = await getLeaderboardsApi();
     if (!api) return false;
     try {
+      if (typeof App?.ysdk?.isAvailableMethod === 'function') {
+        const available = await App.ysdk.isAvailableMethod('leaderboards.setScore');
+        if (!available) return false;
+      }
       if (typeof api.setScore === 'function') {
         await api.setScore(name, score);
-        return true;
-      }
-      if (typeof api.setLeaderboardScore === 'function') {
+      } else if (typeof api.setLeaderboardScore === 'function') {
         await api.setLeaderboardScore(name, score);
-        return true;
+      } else {
+        return false;
       }
-    } catch (error) {}
-    return false;
+      lastLeaderboardSubmitAt = Date.now();
+      return true;
+    } catch (error) {
+      lastLeaderboardSubmitAt = Date.now();
+      console.warn(`Leaderboard save error (${name}):`, error);
+      return false;
+    }
+  }
+
+  function submitLeaderboardScore(name, value) {
+    const score = Math.max(0, Math.floor(value || 0));
+    if (score <= 0 || !isAuthorizedPlayer()) return Promise.resolve(false);
+    const previous = leaderboardSubmissions[name];
+    if (previous?.score === score) return previous.promise;
+    const operation = leaderboardSubmitChain.then(async () => {
+      if (await sendLeaderboardScore(name, score)) return true;
+      await new Promise((resolve) => setTimeout(resolve, LEADERBOARD_SUBMIT_INTERVAL));
+      return sendLeaderboardScore(name, score);
+    });
+    leaderboardSubmitChain = operation.catch(() => false);
+    leaderboardSubmissions[name] = { score, promise: operation };
+    operation.then((saved) => {
+      if (!saved && leaderboardSubmissions[name]?.promise === operation) delete leaderboardSubmissions[name];
+    });
+    return operation;
   }
 
   async function loadLeaderboardRows(name, localValue, quantityTop, quantityAround) {
@@ -510,7 +534,7 @@
     const next = Math.max(0, Math.floor(value || 0));
     if (next <= state.fullXp) return false;
     state.fullXp = next;
-    saveNumber(FULL_XP_STORAGE, state.fullXp);
+    window.JorSaveManager?.updateSection?.('meta', (meta) => ({ ...meta, fullXp: state.fullXp }), true);
     return true;
   }
 
@@ -519,12 +543,30 @@
     return playerEntry ? setFullXp(playerEntry.score) : false;
   }
 
-  async function syncFullXpWithServer(renderAfter = true) {
-    const result = await loadLeaderboardRows(FULL_XP_LEADERBOARD, state.fullXp, 1, 1);
-    const updated = syncFullXpFromEntries(result.entries);
-    if (!updated && state.fullXp > 0) await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
-    if (updated && renderAfter) render();
-    return updated;
+  async function syncPlayerProgress() {
+    if (!isAuthorizedPlayer()) return false;
+    const savedMeta = window.JorSaveManager?.getSection?.('meta', null);
+    if (savedMeta && Number.isFinite(Number(savedMeta.fullXp))) {
+      state.fullXp = Math.max(0, Math.floor(Number(savedMeta.fullXp) || 0));
+      render();
+      await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
+      return true;
+    }
+    const api = await getLeaderboardsApi();
+    if (!api) return false;
+    try {
+      const entry = typeof api.getPlayerEntry === 'function'
+        ? await api.getPlayerEntry(FULL_XP_LEADERBOARD)
+        : null;
+      const serverXp = Math.max(0, Math.floor(Number(entry?.score) || 0));
+      state.fullXp = serverXp;
+      await window.JorSaveManager?.updateSection?.('meta', (meta) => ({ ...meta, fullXp: state.fullXp }), true);
+      render();
+      return true;
+    } catch (error) {
+      render();
+      return false;
+    }
   }
 
   function escapeHtml(value) {
@@ -542,13 +584,13 @@
     const xpBonus = Math.max(0, Number(window.JorShopUI?.getBonuses?.().xp || 0));
     const value = Math.max(0, Math.floor(baseValue * (1 + xpBonus)));
     setFullXp(state.fullXp + value);
+    state.xpLeaderboardLoaded = false;
     render();
     await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
   }
 
   async function setStars(totalStars) {
     state.totalStars = Math.max(0, Math.floor(totalStars || 0));
-    saveNumber(STARS_STORAGE, state.totalStars);
     render();
     await submitLeaderboardScore(STARS_LEADERBOARD, state.totalStars);
   }
@@ -573,7 +615,6 @@
     state.initialized = true;
     bindEvents();
     render();
-    syncFullXpWithServer();
   }
 
   window.JorMetaUI = {
@@ -588,6 +629,8 @@
     openLeaderboard,
     openXpLeaderboard,
     submitFullXp: () => submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp),
-    submitStars: () => submitLeaderboardScore(STARS_LEADERBOARD, state.totalStars)
+    submitStars: () => submitLeaderboardScore(STARS_LEADERBOARD, state.totalStars),
+    submitScore: submitLeaderboardScore,
+    syncPlayerProgress
   };
 })();

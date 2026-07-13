@@ -209,13 +209,19 @@
       const endlessZoom = hasTouchControls()
         ? (ENDLESS_CONFIG.CAMERA_ENDLESS_MOBILE_ZOOM_OUT ?? ENDLESS_CONFIG.CAMERA_ENDLESS_ZOOM_OUT)
         : ENDLESS_CONFIG.CAMERA_ENDLESS_ZOOM_OUT;
+      const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
+      const campaignZoom = clamp(Number(campaignLevel?.cameraZoom) || 1, 0.65, 1);
       return endlessMode
         ? lerp(growthZoom, endlessZoom, endlessTransition)
-        : growthZoom;
+        : growthZoom * campaignZoom;
     }
 
     function getWorldSpeedScale() {
-      const visibleFieldScale = 1 / Math.max(0.1, getCameraTargetZoom());
+      const targetZoom = getCameraTargetZoom();
+      const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
+      const campaignZoom = clamp(Number(campaignLevel?.cameraZoom) || 1, 0.65, 1);
+      const speedReferenceZoom = campaignLevel ? targetZoom / campaignZoom : targetZoom;
+      const visibleFieldScale = 1 / Math.max(0.1, speedReferenceZoom);
       const boostedScale = 1 + (visibleFieldScale - 1) * ENDLESS_CONFIG.WORLD_SPEED_SCALE_STRENGTH;
       return clamp(boostedScale, 1, ENDLESS_CONFIG.WORLD_SPEED_SCALE_MAX);
     }

@@ -81,6 +81,7 @@ function updateEndlessProgression() {
 function handlePostSimulationProgression() {
       if (typeof updateCampaignRun === 'function') updateCampaignRun();
       if (typeof isCampaignRunCompleted === 'function' && isCampaignRunCompleted()) return true;
+      if (typeof isCampaignRunFinishing === 'function' && isCampaignRunFinishing()) return true;
 
       const nextFirstPhaseRewardLevel = getNextFirstPhaseRewardLevel();
       const nextEndlessRewardLevel = getNextEndlessRewardLevel();
