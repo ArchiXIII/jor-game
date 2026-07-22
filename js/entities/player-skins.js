@@ -128,7 +128,8 @@
 
   function getPreviewMetrics(cssW, cssH, time = 0) {
     const swimPhase = time * 0.006;
-    const locomotion = Math.sin(swimPhase);
+    const visualSwimPhase = swimPhase * PLAYER_SWIM_VISUAL_SPEED;
+    const locomotion = Math.sin(visualSwimPhase);
     const cx = cssW * 0.52 + Math.sin(time * 0.003) * 2.2;
     const cy = cssH * 0.5 + Math.cos(time * 0.0034) * 1.6;
     const startRadius = (typeof GROWTH_CONFIG !== 'undefined' && GROWTH_CONFIG.START_RADIUS) || 14;
@@ -144,7 +145,7 @@
       rotation: Math.PI * 0.25 + locomotion * 0.035,
       swimPhase,
       locomotion,
-      finWave: Math.sin(swimPhase * 1.18 + 0.7)
+      finWave: Math.sin(visualSwimPhase * 1.18 + 0.7)
     };
   }
 
@@ -157,11 +158,11 @@
     ctx.rotate(rotation);
 
     if (skin.hasTail) drawSpeedTail(ctx, skin, width, height, base, finWave);
-    drawSideFin(ctx, skin, width, height, base, swimPhase, 1);
-    drawSideFin(ctx, skin, width, height, base, swimPhase, -1);
+    const finPower = Math.min(1.55, 0.55 + (0.35 + Math.abs(Math.sin(swimPhase * 0.9)) * 0.42) * 1.05);
+    drawBakedPlayerSideFins(ctx, width, height, base, swimPhase, finPower);
     drawBody(ctx, skin, width, height, base, time);
     drawPattern(ctx, skin, width, height, base);
-    drawMouth(ctx, skin, width, height, base, locomotion);
+    drawMouth(ctx, width, height, base, locomotion);
     drawEyes(ctx, skin, width, height, base);
 
     ctx.restore();
@@ -174,64 +175,6 @@
     drawPreviewContent(ctx, skinId, getPreviewMetrics(cssW, cssH, time), time);
   }
 
-  function drawSideFin(ctx, skin, width, height, radius, legCycle, side) {
-    const finRoots = [-width * 0.2, width * 0.26];
-    const phaseOffsets = [0, Math.PI * 0.52];
-    const legWave = 0.35 + Math.abs(Math.sin(legCycle * 0.9)) * 0.42;
-    const swimPower = Math.min(1.55, 0.55 + legWave * 1.05);
-    const finLengthBase = radius * (0.62 + swimPower * 0.16);
-    const finWidthBase = radius * (0.34 + swimPower * 0.08);
-
-    for (let i = 0; i < 2; i++) {
-      const rootX = finRoots[i];
-      const rootY = side * (height * (0.64 + i * 0.03));
-      const phase = legCycle * 0.72 + phaseOffsets[i] + (side === 1 ? 0 : Math.PI * 0.55);
-      const sweep = Math.sin(phase) * (0.42 + swimPower * 0.28);
-      const fanOpen = 0.95 + Math.cos(phase - 0.4) * 0.24 + swimPower * 0.26;
-      const trailing = Math.sin(phase - 0.7) * (0.24 + swimPower * 0.08);
-      const finLength = finLengthBase * (0.95 + i * 0.13);
-      const finWidth = finWidthBase * (0.96 + i * 0.1) * fanOpen;
-      const tipX = rootX - finLength;
-      const tipY = rootY + side * (sweep * radius * 0.78);
-      const upperCtrlX = rootX - finLength * 0.34;
-      const upperCtrlY = rootY - side * (finWidth * (1.18 + trailing));
-      const lowerCtrlX = rootX - finLength * 0.48;
-      const lowerCtrlY = rootY + side * (finWidth * (1.24 - trailing * 0.45));
-      const trailingX = rootX + width * (0.14 + i * 0.03);
-      const finGradient = ctx.createLinearGradient(rootX, rootY, tipX, tipY);
-      finGradient.addColorStop(0, 'rgba(120,255,235,0.34)');
-      finGradient.addColorStop(0.32, 'rgba(70,240,215,0.72)');
-      finGradient.addColorStop(0.72, 'rgba(220,255,248,0.92)');
-      finGradient.addColorStop(1, 'rgba(245,255,252,0.5)');
-
-      ctx.save();
-      ctx.fillStyle = finGradient;
-      ctx.beginPath();
-      ctx.moveTo(trailingX, rootY);
-      ctx.quadraticCurveTo(rootX - finLength * 0.12, upperCtrlY * 0.96, tipX, tipY);
-      ctx.quadraticCurveTo(rootX - finLength * 0.72, rootY + side * (finWidth * 0.08), rootX - finLength * 0.14, rootY + side * (finWidth * 0.24));
-      ctx.quadraticCurveTo(rootX - finLength * 0.02, rootY + side * (finWidth * 0.34), trailingX, rootY);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(235,255,250,0.92)';
-      ctx.lineWidth = Math.max(1.2, radius * 0.032);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(230,255,248,0.32)';
-      ctx.beginPath();
-      ctx.moveTo(rootX, rootY);
-      ctx.quadraticCurveTo(upperCtrlX, upperCtrlY, tipX, tipY);
-      ctx.quadraticCurveTo(lowerCtrlX, lowerCtrlY, rootX, rootY);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.58)';
-      ctx.lineWidth = Math.max(1, radius * 0.024);
-      ctx.beginPath();
-      ctx.moveTo(rootX - width * 0.04, rootY);
-      ctx.quadraticCurveTo(rootX - finLength * 0.4, rootY + side * (sweep * radius * 0.28), tipX, tipY);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
   function drawSpeedTail(ctx, skin, width, height, radius, wave) {
     const tailBaseX = -width * 0.86;
     const tailMidX = -width * 1.12;
@@ -240,11 +183,8 @@
     const swing = wave * radius * 0.18;
     ctx.save();
 
-    const gradient = ctx.createLinearGradient(tailBaseX, 0, tailTipX, swing);
-    gradient.addColorStop(0, skin.fin2);
-    gradient.addColorStop(0.45, skin.fin);
-    gradient.addColorStop(1, 'rgba(230,255,255,0.9)');
-    ctx.fillStyle = gradient;
+    ctx.globalAlpha = 0.68;
+    ctx.fillStyle = skin.fin;
     ctx.beginPath();
     ctx.moveTo(tailBaseX, -height * 0.18);
     ctx.quadraticCurveTo(tailMidX, -tailHalfHeight + swing * 0.35, tailTipX, -tailHalfHeight * 0.42 + swing);
@@ -254,6 +194,7 @@
     ctx.closePath();
     ctx.fill();
 
+    ctx.globalAlpha = 1;
     ctx.strokeStyle = 'rgba(238,255,255,0.62)';
     ctx.lineWidth = Math.max(1.1, radius * 0.035);
     ctx.stroke();
@@ -409,13 +350,9 @@
       ctx.stroke();
     }
   }
-  function drawMouth(ctx, skin, width, height, radius, locomotion) {
+  function drawMouth(ctx, width, height, radius, locomotion) {
     const mouthOpen = 0.19 + Math.max(0, locomotion) * 0.018;
     const mandibleBaseX = width * 0.4;
-    const mandibleRootBulge = width * 0.2;
-    const mandibleTipX = width * 1.02;
-    const mandibleSpread = height * (0.26 + mouthOpen * 0.54);
-    const clawLength = radius * 0.34;
 
     ctx.save();
     ctx.fillStyle = 'rgba(7, 30, 28, 0.68)';
@@ -423,41 +360,16 @@
     ctx.ellipse(width * 0.77, 0, Math.max(7.5, radius * 0.24), Math.max(3.4, radius * (0.14 + mouthOpen * 0.22)), 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const drawMandible = (side) => {
-      const upperY = -mandibleSpread * side;
-      const lowerY = -height * 0.05 * side;
-      const tipY = -mandibleSpread * 0.55 * side;
-      const gradient = ctx.createLinearGradient(mandibleBaseX, 0, mandibleTipX + clawLength, tipY);
-      gradient.addColorStop(0, 'rgba(70, 255, 215, 0.28)');
-      gradient.addColorStop(0.45, 'rgba(215, 255, 245, 0.96)');
-      gradient.addColorStop(1, 'rgba(255, 250, 245, 0.98)');
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.moveTo(mandibleBaseX - mandibleRootBulge * 0.28, lowerY - side * radius * 0.06);
-      ctx.quadraticCurveTo(width * 0.48, upperY * 0.34, mandibleBaseX + mandibleRootBulge * 0.65, upperY * 0.98);
-      ctx.quadraticCurveTo(width * 0.8, upperY * 1.02, mandibleTipX, tipY);
-      ctx.quadraticCurveTo(mandibleTipX + clawLength, tipY - side * radius * 0.1, mandibleTipX + clawLength * 0.94, tipY + side * radius * 0.15);
-      ctx.quadraticCurveTo(width * 0.9, lowerY + side * radius * 0.08, mandibleBaseX + mandibleRootBulge * 0.24, lowerY + side * radius * 0.13);
-      ctx.quadraticCurveTo(width * 0.48, lowerY * 0.68, mandibleBaseX - mandibleRootBulge * 0.28, lowerY - side * radius * 0.06);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = 'rgba(10, 42, 36, 0.42)';
-      ctx.beginPath();
-      ctx.moveTo(width * 0.5, lowerY * 0.98);
-      ctx.quadraticCurveTo(width * 0.78, upperY * 0.86, mandibleTipX - radius * 0.06, tipY * 0.96);
-      ctx.quadraticCurveTo(width * 0.82, lowerY * 0.88, width * 0.5, lowerY * 0.98);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(245,255,250,0.82)';
-      ctx.lineWidth = 1.35;
-      ctx.beginPath();
-      ctx.moveTo(mandibleTipX - radius * 0.05, tipY);
-      ctx.lineTo(mandibleTipX + clawLength * 0.84, tipY + side * radius * 0.12);
-      ctx.stroke();
-    };
-
-    drawMandible(1);
-    drawMandible(-1);
+    const mandibleSprite = getBakedPlayerMandibleSprite(0, mouthOpen, 0, false);
+    const mandibleScaleX = width / mandibleSprite.baseWidth;
+    const mandibleScaleY = height / mandibleSprite.baseHeight;
+    for (let side = -1; side <= 1; side += 2) {
+      ctx.save();
+      ctx.translate(mandibleBaseX, 0);
+      ctx.scale(mandibleScaleX, mandibleScaleY * side);
+      ctx.drawImage(mandibleSprite, -mandibleSprite.originX, -mandibleSprite.originY);
+      ctx.restore();
+    }
     ctx.restore();
   }
 

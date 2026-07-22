@@ -1,27 +1,16 @@
     const SECONDARY_ENTITY_LIMITS = {
       DNA_MAX: 20,
-      REMAINS_MAX: 12,
-      FOOD_EAT_PARTICLES_MAX: 132,
       ENEMY_EAT_PARTICLES_MAX: 156,
-      ENEMY_EAT_BURSTS_MAX: 28,
       ENEMY_SPIKES_MAX: 6,
     };
 
     let foods = [];
     let dnaOrbs = [];
     let tomatoFoods = [];
-    let remains = [];
     const spatialQueryScratch = [];
     let entitySpatialIndex = null;
-    const foodEatParticlePool = [];
     const enemyEatParticlePool = [];
-    const foodEatBurstPool = [];
-    const enemyEatBurstPool = [];
-    const remainsPool = [];
-    let foodEatParticles = [];
-    let foodEatBursts = [];
     let enemyEatParticles = [];
-    let enemyEatBursts = [];
     let enemySpikes = [];
     let enemySpikeGlobalCooldown = 0;
     let enemies = [];
@@ -40,6 +29,9 @@
     let firstPhaseRewardLevel = 1;
     let endlessLevel = 1;
     let endlessRewardLevel = 1;
+    let recoveryEvolutionCooldown = 0;
+    let recoveryEvolutionPending = false;
+    let evolutionRewardSource = 'normal';
     let currentChoices = [];
     let spawnFoodTimer = 0;
     let spawnDnaTimer = 0;
@@ -53,11 +45,16 @@
         this.invCellSize = 1 / cellSize;
         this.foodCells = new Map();
         this.enemyCells = new Map();
+        this.foodBucketPool = [];
+        this.enemyBucketPool = [];
       }
 
-      clear() {
-        this.foodCells.clear();
-        this.enemyCells.clear();
+      _releaseBuckets(map, pool) {
+        for (const bucket of map.values()) {
+          bucket.length = 0;
+          pool.push(bucket);
+        }
+        map.clear();
       }
 
       _cellCoord(value) {
@@ -65,25 +62,33 @@
       }
 
       _cellKey(cx, cy) {
-        return `${cx},${cy}`;
+        const x = cx >= 0 ? cx * 2 : -cx * 2 - 1;
+        const y = cy >= 0 ? cy * 2 : -cy * 2 - 1;
+        const sum = x + y;
+        return sum * (sum + 1) * 0.5 + y;
       }
 
-      _insertIntoMap(map, entity) {
+      _insertIntoMap(map, pool, entity) {
         const cx = this._cellCoord(entity.x);
         const cy = this._cellCoord(entity.y);
         const key = this._cellKey(cx, cy);
         let bucket = map.get(key);
         if (!bucket) {
-          bucket = [];
+          bucket = pool.pop() || [];
           map.set(key, bucket);
         }
         bucket.push(entity);
       }
 
       rebuild(foodsList, enemiesList) {
-        this.clear();
-        for (const food of foodsList) this._insertIntoMap(this.foodCells, food);
-        for (const enemy of enemiesList) this._insertIntoMap(this.enemyCells, enemy);
+        this._releaseBuckets(this.foodCells, this.foodBucketPool);
+        this._releaseBuckets(this.enemyCells, this.enemyBucketPool);
+        for (let i = 0; i < foodsList.length; i++) {
+          this._insertIntoMap(this.foodCells, this.foodBucketPool, foodsList[i]);
+        }
+        for (let i = 0; i < enemiesList.length; i++) {
+          this._insertIntoMap(this.enemyCells, this.enemyBucketPool, enemiesList[i]);
+        }
       }
 
       collectNearby(map, x, y, range, out) {
@@ -103,6 +108,118 @@
         }
 
         return out;
+      }
+
+      findEnemyTargets(source, includeFood, foodRange, preyRange, threatRange, out) {
+        let closestFoodDistSq = Infinity;
+        let closestPreyDistSq = Infinity;
+        let closestThreatDistSq = Infinity;
+        out.closestFood = null;
+        out.closestPrey = null;
+        out.closestThreat = null;
+
+        if (includeFood) {
+          const foodRangeSq = foodRange * foodRange;
+          const minX = this._cellCoord(source.x - foodRange);
+          const maxX = this._cellCoord(source.x + foodRange);
+          const minY = this._cellCoord(source.y - foodRange);
+          const maxY = this._cellCoord(source.y + foodRange);
+          for (let cy = minY; cy <= maxY; cy++) {
+            for (let cx = minX; cx <= maxX; cx++) {
+              const bucket = this.foodCells.get(this._cellKey(cx, cy));
+              if (!bucket) continue;
+              for (let i = 0; i < bucket.length; i++) {
+                const food = bucket[i];
+                const dx = food.x - source.x;
+                const dy = food.y - source.y;
+                const distSq = dx * dx + dy * dy;
+                if (distSq < foodRangeSq && distSq < closestFoodDistSq) {
+                  out.closestFood = food;
+                  closestFoodDistSq = distSq;
+                }
+              }
+            }
+          }
+        }
+
+        const maxEnemyRange = Math.max(preyRange, threatRange);
+        const preyRangeSq = preyRange * preyRange;
+        const threatRangeSq = threatRange * threatRange;
+        const minX = this._cellCoord(source.x - maxEnemyRange);
+        const maxX = this._cellCoord(source.x + maxEnemyRange);
+        const minY = this._cellCoord(source.y - maxEnemyRange);
+        const maxY = this._cellCoord(source.y + maxEnemyRange);
+        for (let cy = minY; cy <= maxY; cy++) {
+          for (let cx = minX; cx <= maxX; cx++) {
+            const bucket = this.enemyCells.get(this._cellKey(cx, cy));
+            if (!bucket) continue;
+            for (let i = 0; i < bucket.length; i++) {
+              const enemy = bucket[i];
+              if (enemy === source) continue;
+              const dx = enemy.x - source.x;
+              const dy = enemy.y - source.y;
+              const distSq = dx * dx + dy * dy;
+              if (
+                enemy.radius > source.radius * ENEMY_EVOLUTION_CONFIG.DOMINANCE_RATIO &&
+                distSq < threatRangeSq &&
+                distSq < closestThreatDistSq
+              ) {
+                out.closestThreat = enemy;
+                closestThreatDistSq = distSq;
+              }
+              if (
+                source.canEatTarget(enemy) &&
+                distSq < preyRangeSq &&
+                distSq < closestPreyDistSq
+              ) {
+                out.closestPrey = enemy;
+                closestPreyDistSq = distSq;
+              }
+            }
+          }
+        }
+
+        return out;
+      }
+
+      tryEatNearbyFood(source, player, range, foodsList) {
+        const minX = this._cellCoord(source.x - range);
+        const maxX = this._cellCoord(source.x + range);
+        const minY = this._cellCoord(source.y - range);
+        const maxY = this._cellCoord(source.y + range);
+        for (let cy = minY; cy <= maxY; cy++) {
+          for (let cx = minX; cx <= maxX; cx++) {
+            const bucket = this.foodCells.get(this._cellKey(cx, cy));
+            if (!bucket) continue;
+            for (let i = 0; i < bucket.length; i++) {
+              const food = bucket[i];
+              if (foodsList.indexOf(food) === -1) continue;
+              if (source.tryEatFood(food, player)) return food;
+            }
+          }
+        }
+        return null;
+      }
+
+      tryEatNearbyEnemy(source, player, range, enemiesList, sourceIndex) {
+        const minX = this._cellCoord(source.x - range);
+        const maxX = this._cellCoord(source.x + range);
+        const minY = this._cellCoord(source.y - range);
+        const maxY = this._cellCoord(source.y + range);
+        for (let cy = minY; cy <= maxY; cy++) {
+          for (let cx = minX; cx <= maxX; cx++) {
+            const bucket = this.enemyCells.get(this._cellKey(cx, cy));
+            if (!bucket) continue;
+            for (let i = 0; i < bucket.length; i++) {
+              const prey = bucket[i];
+              if (prey === source) continue;
+              const preyIndex = enemiesList.indexOf(prey);
+              if (preyIndex === -1 || preyIndex === sourceIndex) continue;
+              if (source.tryEatEnemy(prey, player)) return prey;
+            }
+          }
+        }
+        return null;
       }
 
       queryFoods(x, y, range, out = []) {
@@ -146,6 +263,21 @@
       return entitySpatialIndex.queryEnemies(x, y, range, out);
     }
 
+    function findNearbyEnemyTargets(source, targetPlayer, out) {
+      const result = out || { closestFood: null, closestPrey: null, closestThreat: null };
+      if (!entitySpatialIndex) {
+        result.closestFood = null;
+        result.closestPrey = null;
+        result.closestThreat = null;
+        return result;
+      }
+      const foodRange = ENEMY_EVOLUTION_CONFIG.FOOD_SEEK_RANGE + source.tentacleLevel * 26;
+      const preyRange = ENEMY_EVOLUTION_CONFIG.PREY_SEEK_RANGE + source.mawLevel * 24 + source.spikeLevel * 16;
+      const threatRange = ENEMY_EVOLUTION_CONFIG.THREAT_AVOID_RANGE + source.agilityLevel * 18;
+      const includeFood = !endlessMode && source.radius < source.getRadiusCap(targetPlayer) - 0.25;
+      return entitySpatialIndex.findEnemyTargets(source, includeFood, foodRange, preyRange, threatRange, result);
+    }
+
     function getEnemySpawnPerkCount() {
       const firstPhaseProgress = clamp(((player?.level ?? 1) - 1) / Math.max(1, PROGRESSION_CONFIG.FIRST_PHASE_LEVELS - 1), 0, 1);
       const endlessProgress = clamp((endlessLevel - 1) / Math.max(1, PROGRESSION_CONFIG.ENDLESS_LEVELS - 1), 0, 1);
@@ -165,8 +297,23 @@
       return 3;
     }
 
-    function getEnemyPerkPool() {
-      return shuffleArray([...ENEMY_PERK_CONFIG.BASE_PERKS]);
+    function getEnemyPerkPool(source = ENEMY_PERK_CONFIG.BASE_PERKS) {
+      return shuffleArray([...source]);
+    }
+
+    function getCampaignSurvivalTailTier(level) {
+      if (!level || level.type !== 'survive' || Number(level.n) <= 10) return 0;
+      const chapter = Math.max(2, Math.ceil(Number(level.n) / 10));
+      const chapterStep = Math.min(8, chapter - 2);
+      let elapsedProgress = 0;
+      if (campaignRun && Number(campaignRun.level?.n) === Number(level.n)) {
+        elapsedProgress = clamp(campaignRun.frames / Math.max(1, getCampaignTimeLimitFrames()), 0, 1);
+      }
+      const tailChance = Math.min(0.95, 0.3 + chapterStep * 0.09 + elapsedProgress * (0.1 + chapterStep * 0.01));
+      if (Math.random() >= tailChance) return 0;
+      if (chapter < 3) return 1;
+      const tierTwoChance = Math.min(0.68, chapterStep * 0.08 + elapsedProgress * 0.15);
+      return Math.random() < tierTwoChance ? 2 : 1;
     }
 
     function applyEnemyPerkTier(enemy, perkId, tiers = 1) {
@@ -229,9 +376,23 @@
 
     function applyRandomEnemyPerks(enemy) {
       const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
+      const survivalTailTier = getCampaignSurvivalTailTier(campaignLevel);
+      if (survivalTailTier > 0) {
+        applyEnemyPerkTier(enemy, 'tail', survivalTailTier);
+        enemy.radius *= 1 + enemy.getTotalPerkLevels() * 0.03;
+        enemy.level = calculateLevelFromRadius(enemy.radius);
+        return enemy;
+      }
       if (campaignLevel?.enemyPerks === false) return enemy;
-      const perkPool = getEnemyPerkPool();
-      const perkCount = Math.min(ENEMY_PERK_CONFIG.MAX_PERKS, getEnemySpawnPerkCount());
+      if (campaignLevel && Math.random() >= clamp(Number(campaignLevel.enemyPerkChance) || 0, 0, 1)) return enemy;
+      const configuredPool = campaignLevel && Array.isArray(campaignLevel.enemyPerkPool)
+        ? campaignLevel.enemyPerkPool
+        : ENEMY_PERK_CONFIG.BASE_PERKS;
+      const perkPool = getEnemyPerkPool(configuredPool);
+      const campaignMaxPerks = campaignLevel
+        ? Math.max(1, Math.floor(Number(campaignLevel.enemyMaxPerks) || 1))
+        : ENEMY_PERK_CONFIG.MAX_PERKS;
+      const perkCount = Math.min(campaignMaxPerks, getEnemySpawnPerkCount());
 
       for (let i = 0; i < perkCount; i++) {
         const perkId = perkPool[i];
@@ -273,25 +434,85 @@ if (endlessMode) {
       }
     }
 
+    function tuneCampaignEnemyRadius(enemy, level) {
+      if (!enemy || !player || !level || Number(level.n) < 31) return enemy;
+
+      let preyShare = 0.4;
+      let rivalShare = 0.35;
+      if (level.type === 'enemy') {
+        preyShare = Number.isFinite(Number(level.preyShare)) ? Number(level.preyShare) : 0.48;
+        rivalShare = 0.42;
+      } else if (level.type === 'growth') {
+        preyShare = 0.4;
+        rivalShare = 0.35;
+      } else if (level.type === 'survive') {
+        preyShare = 0.2;
+        rivalShare = 0.4;
+      } else if (level.type === 'food' || level.type === 'dna') {
+        preyShare = 0.45;
+        rivalShare = 0.35;
+      }
+
+      rivalShare -= window.getCampaignThreatProgress(level) * 0.1;
+
+      preyShare = clamp(preyShare, 0.15, 0.62);
+      rivalShare = clamp(rivalShare, 0.2, 0.5);
+      rivalShare = Math.min(rivalShare, 0.84 - preyShare);
+      const heroRadius = Math.max(GROWTH_CONFIG.START_RADIUS, player.radius);
+      const chapter = Math.max(4, Math.ceil(Number(level.n) / 10));
+      const chapterStep = Math.min(6, chapter - 4);
+      const perkScale = 1 + enemy.getTotalPerkLevels() * 0.03;
+      const roll = Math.random();
+      let minRadius;
+      let maxRadius;
+
+      if (roll < preyShare) {
+        const combinedModifier = Math.min(0.08, player.mawLevel * 0.03 + player.spikeLevel * 0.02);
+        const dominanceRequirement = Math.max(1.01, ENEMY_EVOLUTION_CONFIG.DOMINANCE_RATIO - combinedModifier);
+        const edibleMax = player.radius * player.predatorBonus / dominanceRequirement * 0.97;
+        minRadius = Math.max(10, edibleMax * 0.7);
+        maxRadius = Math.max(minRadius + 1, edibleMax);
+      } else if (roll < preyShare + rivalShare) {
+        minRadius = heroRadius * 0.86;
+        maxRadius = heroRadius * (1.04 + chapterStep * 0.006);
+      } else {
+        minRadius = heroRadius * (1.06 + chapterStep * 0.012);
+        maxRadius = heroRadius * Math.min(1.42, 1.15 + chapterStep * 0.05);
+      }
+
+      const absoluteCap = GROWTH_CONFIG.TARGET_MAX_RADIUS * (ENEMY_EVOLUTION_CONFIG.MAX_RADIUS_MULTIPLIER || 2);
+      enemy.radius = clamp(randomRange(minRadius, maxRadius) * perkScale, 10, absoluteCap);
+      if (roll < preyShare) enemy.radius = Math.min(enemy.radius, maxRadius);
+      enemy.level = calculateLevelFromRadius(enemy.radius);
+      return enemy;
+    }
+
 function createEnemy(sizeFactor = 1) {
       let shieldChance = 0.16;
       const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
       if (campaignLevel && Number.isFinite(Number(campaignLevel.shieldChance))) {
         shieldChance = clamp(Number(campaignLevel.shieldChance), 0, 1);
+      } else if (campaignLevel && Number(campaignLevel.n) >= 41) {
+        const shieldProgress = clamp((Number(campaignLevel.n) - 41) / 59, 0, 1);
+        shieldChance = (0.05 + shieldProgress * 0.27) * (campaignLevel.type === 'enemy' ? 0.82 : 1);
       }
       if (endlessMode && typeof getEndlessPressureState === 'function') {
         const endlessState = getEndlessPressureState();
         shieldChance = Math.min(0.28, 0.12 + endlessState.pressure * 0.05 + endlessState.doomProgress * 0.03);
       }
       const enemy = Math.random() < shieldChance ? new ShieldEnemy(sizeFactor) : new Enemy(sizeFactor);
+      const evolvedEnemy = applyRandomEnemyPerks(enemy);
+      if (campaignLevel && Number(campaignLevel.n) >= 31) {
+        return tuneCampaignEnemyRadius(evolvedEnemy, campaignLevel);
+      }
       if (campaignLevel?.preyShare > 0 && Math.random() < campaignLevel.preyShare) {
         const stage = Math.max(1, Math.floor(campaignLevel.preyGrowthStage || 1));
         const huntRadius = GROWTH_CONFIG.START_RADIUS + stage * GROWTH_CONFIG.GROWTH_STAGE_RADIUS_STEP;
         const edibleRadius = huntRadius / ENEMY_EVOLUTION_CONFIG.DOMINANCE_RATIO;
-        enemy.radius = randomRange(Math.max(10, edibleRadius * 0.84), edibleRadius * 0.97);
-        enemy.level = calculateLevelFromRadius(enemy.radius);
+        evolvedEnemy.radius = randomRange(Math.max(10, edibleRadius * 0.84), edibleRadius * 0.97);
+        evolvedEnemy.level = calculateLevelFromRadius(evolvedEnemy.radius);
       }
-      return applyRandomEnemyPerks(enemy);
+      return evolvedEnemy;
     }
 
     function applyCampaignStartConditions() {
@@ -305,6 +526,7 @@ function createEnemy(sizeFactor = 1) {
       );
       if (stage > 0) {
         player.growthStage = stage;
+        player.highestGrowthStage = stage;
         player.radius = Math.min(
           GROWTH_CONFIG.TARGET_MAX_RADIUS,
           GROWTH_CONFIG.START_RADIUS + stage * GROWTH_CONFIG.GROWTH_STAGE_RADIUS_STEP
@@ -344,22 +566,14 @@ function resetGame() {
       foods = [];
       dnaOrbs = [];
       tomatoFoods = [];
-      remains = [];
       ambientParticles = [];
       backgroundGlows = [];
       backgroundBubbles = [];
       backgroundBlooms = [];
       entitySpatialIndex = null;
       spatialQueryScratch.length = 0;
-      foodEatParticlePool.length = 0;
       enemyEatParticlePool.length = 0;
-      foodEatBurstPool.length = 0;
-      enemyEatBurstPool.length = 0;
-      remainsPool.length = 0;
-      foodEatParticles = [];
-      foodEatBursts = [];
       enemyEatParticles = [];
-      enemyEatBursts = [];
       enemySpikes = [];
       enemySpikeGlobalCooldown = 0;
       enemies = [];
@@ -379,6 +593,9 @@ function resetGame() {
       firstPhaseRewardLevel = 1;
       endlessLevel = 1;
       endlessRewardLevel = 1;
+      recoveryEvolutionCooldown = 0;
+      recoveryEvolutionPending = false;
+      evolutionRewardSource = 'normal';
       currentChoices = [];
       mutationOfferCounts = {};
       App.evolutionChoiceLockedUntil = 0;
@@ -454,14 +671,11 @@ function resetGame() {
       if (!endlessMode) {
         for (const enemy of enemies) {
           const eatRange = enemy.radius + 26;
-          const nearbyFoods = getNearbyFoods(enemy.x, enemy.y, eatRange, []);
-          for (const food of nearbyFoods) {
+          const food = entitySpatialIndex?.tryEatNearbyFood(enemy, player, eatRange, foods);
+          if (food) {
             const foodIndex = foods.indexOf(food);
-            if (foodIndex === -1) continue;
-            if (!enemy.tryEatFood(food, player)) continue;
-            spawnFoodEatEffect(food, enemy, { particleCount: food instanceof ShardFood ? 4 : 6, ringCount: 1 });
+            enemy.triggerSwallow(food instanceof ShardFood ? 0.42 : 0.72);
             foods.splice(foodIndex, 1);
-            break;
           }
         }
       }
@@ -471,25 +685,15 @@ function resetGame() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const hunter = enemies[i];
         const preyRange = hunter.radius + ENEMY_EVOLUTION_CONFIG.PREY_SEEK_RANGE + hunter.mawLevel * 24 + hunter.spikeLevel * 16;
-        const nearbyEnemies = getNearbyEnemies(hunter.x, hunter.y, preyRange, []);
-        let preyEaten = false;
-
-        for (const prey of nearbyEnemies) {
-          if (prey === hunter) continue;
+        const prey = entitySpatialIndex?.tryEatNearbyEnemy(hunter, player, preyRange, enemies, i);
+        const preyEaten = Boolean(prey);
+        if (prey) {
           const preyIndex = enemies.indexOf(prey);
-          if (preyIndex === -1 || preyIndex === i) continue;
-
-          if (!hunter.tryEatEnemy(prey, player)) continue;
-
-          spawnEnemyRemains(prey, hunter);
+          spawnEnemyEatEffect(prey, hunter);
           enemies.splice(preyIndex, 1);
-          preyEaten = true;
-
           if (preyIndex < i) {
             i -= 1;
           }
-
-          break;
         }
 
         if (preyEaten) {
@@ -513,14 +717,20 @@ function resetGame() {
       updateRenderBudget();
       rebuildSpatialIndex();
 
-      const shouldThrottleAmbient = simulationLoad > 180 && (simulationFrame % 2 === 0);
-      if (!shouldThrottleAmbient) {
-        for (const glow of backgroundGlows) glow.update();
-        for (const bubble of backgroundBubbles) bubble.update();
-        for (const bloom of backgroundBlooms) bloom.update();
-        for (const particle of ambientParticles) particle.update();
+      const ambientStride = simulationLoad > 180 || performanceQuality < 0.78 ? 2 : 1;
+      if (ambientStride === 1 || simulationFrame % ambientStride === 0) {
+        const glowBounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 260);
+        const bubbleBounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 120);
+        const bloomBounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 90);
+        const particleBounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 80);
+        for (const glow of backgroundGlows) glow.update(glowBounds, ambientStride);
+        for (const bubble of backgroundBubbles) bubble.update(bubbleBounds, ambientStride);
+        for (const bloom of backgroundBlooms) bloom.update(bloomBounds, ambientStride);
+        for (const particle of ambientParticles) particle.update(particleBounds, ambientStride);
       }
-      for (const food of foods) food.update();
+      for (const food of foods) {
+        if (food instanceof ShardFood) food.update();
+      }
       const shouldThrottleSecondary = simulationLoad > 150 && (simulationFrame % 2 === 1);
       for (const orb of dnaOrbs) {
         if (!shouldThrottleSecondary || !isEntityFarOutsideView(orb, 120)) orb.update();
@@ -528,14 +738,12 @@ function resetGame() {
       for (const tomato of tomatoFoods) {
         if (!shouldThrottleSecondary || !isEntityFarOutsideView(tomato, 120)) tomato.update();
       }
-      for (const chunk of remains) {
-        if (!shouldThrottleSecondary || !isEntityFarOutsideView(chunk, 120)) chunk.update();
-      }
-      updateFoodEatEffects();
       updateEnemyEatEffects();
       if (typeof updateEnemySpikes === 'function') updateEnemySpikes();
       trimSecondaryVisualLoad();
-      for (const enemy of enemies) enemy.update(player, foods, enemies);
+      const enemyAiContext = prepareEnemyAiFrameContext();
+      for (const enemy of enemies) enemy.update(player, foods, enemies, enemyAiContext);
+      if (typeof applyCampaignCurrents === 'function') applyCampaignCurrents();
 
       handlePlayerCollisions();
       updateEnemyEvolution();
@@ -612,8 +820,6 @@ function getEnemyDecorQuality() {
       const activeLoad =
         enemies.length +
         enemyEatParticles.length * 0.34 +
-        enemyEatBursts.length * 0.45 +
-        remains.length * 0.2 +
         dnaOrbs.length * 0.25 +
         tomatoFoods.length * 0.22 +
         foods.length * 0.08;

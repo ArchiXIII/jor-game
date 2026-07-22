@@ -57,6 +57,8 @@ function startCampaignRunIfNeeded() {
   };
   App.campaignRun = campaignRun;
   App.campaignResultTimeInfo = null;
+  App.campaignResultTrophyChapter = null;
+  App.campaignResultUnlockedShopItemId = '';
 }
 
 function getCampaignProgressValue() {
@@ -84,15 +86,6 @@ function getCampaignTimeLimitFrames() {
 
 function getCampaignStars() {
   if (!campaignRun) return 0;
-  if (campaignRun.level.starMode === 'completionTime') {
-    if (getCampaignProgressValue() < campaignRun.level.target) return 0;
-    const elapsedSeconds = (campaignRun.goalReachedFrames || campaignRun.frames) / 60;
-    const thresholds = campaignRun.level.timeStars || [];
-    if (elapsedSeconds <= thresholds[2]) return 3;
-    if (elapsedSeconds <= thresholds[1]) return 2;
-    if (elapsedSeconds <= thresholds[0]) return 1;
-    return 0;
-  }
   return window.JorCampaignLevels?.getStarCount?.(campaignRun.level, getCampaignProgressValue()) || 0;
 }
 
@@ -120,7 +113,9 @@ function getCampaignTopProgressText() {
   const label = window.JorCampaignLevels?.label?.(level.type) || level.type;
 
   if (level.type === 'survive') {
-    return `${label}: ${Math.min(value, goal)}/${goal}${window.JorCampaignLevels?.label?.('seconds') || 's'}`;
+    const limitFrames = getCampaignTimeLimitFrames();
+    const remainingSeconds = Math.max(0, Math.ceil((limitFrames - campaignRun.frames) / 60));
+    return `${label}: ${remainingSeconds}${window.JorCampaignLevels?.label?.('seconds') || 's'}`;
   }
 
   return `${label}: ${Math.min(value, goal)}/${goal}`;
@@ -145,6 +140,9 @@ function completeCampaignRun(stars) {
   const completedFrames = Math.max(0, Math.floor(Number(campaignRun.frames) || 0));
   const completedProgress = getCampaignProgressValue();
   const previousStars = window.JorCampaignUI?.levelStarsFor?.(completedLevel.n) || 0;
+  const unlockedShopItem = safeStars > 0 && previousStars <= 0
+    ? (window.JorShopPetItems || []).find(item => Number(item?.unlockCampaignLevel) === Number(completedLevel.n))
+    : null;
   const xpReward = getCampaignXpReward(completedLevel, safeStars, previousStars);
   const gameplayXpReward = Math.max(0, Math.round(typeof score === 'number' ? score : 0));
   const totalXpReward = gameplayXpReward + xpReward;
@@ -152,6 +150,7 @@ function completeCampaignRun(stars) {
   App.campaignResultTimeInfo = safeStars > 0 && timeInfo
     ? Object.assign({}, timeInfo, { expired: timeInfo.remainingFrames <= 0 })
     : null;
+  App.campaignResultUnlockedShopItemId = unlockedShopItem?.id || '';
   campaignRun.completed = true;
   victory = safeStars > 0;
   gameOver = safeStars <= 0;
@@ -161,7 +160,10 @@ function completeCampaignRun(stars) {
   if (totalXpReward > 0) window.JorMetaUI?.awardXp?.(totalXpReward);
 
   if (safeStars > 0) {
-    window.JorCampaignUI?.completeLevel?.(campaignRun.level.n, safeStars);
+    const completion = window.JorCampaignUI?.completeLevel?.(campaignRun.level.n, safeStars);
+    App.campaignResultTrophyChapter = Number.isInteger(completion?.newTrophyChapter)
+      ? completion.newTrophyChapter
+      : null;
   }
 
   if (safeStars <= 0) {
@@ -197,9 +199,7 @@ function updateCampaignRun() {
   campaignRun.bestSize = Math.max(campaignRun.bestSize, player.level || 1);
 
   const value = getCampaignProgressValue();
-  const threeStarTarget = campaignRun.level.starMode === 'completionTime'
-    ? campaignRun.level.target
-    : campaignRun.level.stars[2] || campaignRun.level.target;
+  const threeStarTarget = campaignRun.level.stars[2] || campaignRun.level.target;
   if (value >= threeStarTarget) {
     campaignRun.goalReachedFrames = campaignRun.frames;
     const stars = getCampaignStars();

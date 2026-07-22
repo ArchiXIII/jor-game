@@ -2,13 +2,71 @@ let ambientParticles = [];
     let backgroundGlows = [];
     let backgroundBubbles = [];
     let backgroundBlooms = [];
+    let backgroundLightingSprite = null;
+    let backgroundLightingKey = '';
     const BACKGROUND_EFFECT_LIMITS = {
-      TOTAL_MAX: 104,
-      AMBIENT_MAX: 62,
-      GLOW_MAX: 14,
-      BUBBLE_MAX: 28,
-      BLOOM_MAX: 8,
+      TOTAL_MAX: 80,
+      AMBIENT_MAX: 48,
+      GLOW_MAX: 8,
+      BUBBLE_MAX: 20,
+      BLOOM_MAX: 5,
     };
+
+    function getBackgroundLightingSprite(width, height) {
+      const touch = typeof hasTouchControls === 'function' && hasTouchControls();
+      const maxSide = touch ? 512 : 768;
+      const scale = Math.min(1, maxSide / Math.max(width, height));
+      const spriteWidth = Math.max(1, Math.round(width * scale));
+      const spriteHeight = Math.max(1, Math.round(height * scale));
+      const key = `${width}:${height}:${touch ? 1 : 0}`;
+      if (backgroundLightingSprite && backgroundLightingKey === key) return backgroundLightingSprite;
+
+      backgroundLightingKey = key;
+      backgroundLightingSprite = createSpriteCanvas(spriteWidth, spriteHeight, (spriteCtx, w, h) => {
+        const centerX = w * 0.5;
+        const centerY = h * 0.5;
+        const viewMax = Math.max(w, h);
+        const innerRadius = Math.max(18, Math.min(w, h) * 0.12);
+
+        spriteCtx.fillStyle = '#09111a';
+        spriteCtx.fillRect(0, 0, w, h);
+
+        const mainLight = spriteCtx.createRadialGradient(centerX, centerY, innerRadius, centerX, centerY, viewMax * 1.02);
+        mainLight.addColorStop(0, '#3a7890');
+        mainLight.addColorStop(0.28, '#255569');
+        mainLight.addColorStop(0.62, '#123247');
+        mainLight.addColorStop(1, '#08131f');
+        spriteCtx.fillStyle = mainLight;
+        spriteCtx.fillRect(0, 0, w, h);
+
+        const upperLight = spriteCtx.createLinearGradient(0, 0, 0, h);
+        upperLight.addColorStop(0, 'rgba(180, 255, 245, 0.16)');
+        upperLight.addColorStop(0.34, 'rgba(150, 235, 255, 0.08)');
+        upperLight.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        spriteCtx.fillStyle = upperLight;
+        spriteCtx.fillRect(0, 0, w, h);
+
+        const bioLightX = centerX - w * 0.12;
+        const bioLightY = centerY - h * 0.08;
+        const bioLight = spriteCtx.createRadialGradient(bioLightX, bioLightY, 0, bioLightX, bioLightY, viewMax * 0.7);
+        bioLight.addColorStop(0, 'rgba(110, 255, 225, 0.16)');
+        bioLight.addColorStop(0.42, 'rgba(90, 235, 210, 0.08)');
+        bioLight.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        spriteCtx.fillStyle = bioLight;
+        spriteCtx.fillRect(0, 0, w, h);
+
+        const magicLightX = centerX + w * 0.18;
+        const magicLightY = centerY + h * 0.03;
+        const magicLight = spriteCtx.createRadialGradient(magicLightX, magicLightY, 0, magicLightX, magicLightY, viewMax * 0.58);
+        magicLight.addColorStop(0, 'rgba(215, 150, 255, 0.14)');
+        magicLight.addColorStop(0.36, 'rgba(170, 120, 255, 0.08)');
+        magicLight.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        spriteCtx.fillStyle = magicLight;
+        spriteCtx.fillRect(0, 0, w, h);
+      });
+
+      return backgroundLightingSprite;
+    }
 
 function createAmbientParticleAt(x, y) {
       return new Particle(
@@ -132,15 +190,15 @@ function createAmbientParticleAt(x, y) {
       if (enemy instanceof ShieldEnemy) {
         enemy.getCachedBodySprite(
           enemy.hasShield
-            ? ['#fff4dd', '#f6af7d', '#914d48']
-            : ['#ffe3d8', '#ff8d76', '#7a2433'],
-          'rgba(255,252,244,0.96)'
+            ? ENEMY_SHIELD_FILL_COLORS
+            : ENEMY_SHIELD_BROKEN_FILL_COLORS,
+          ENEMY_SHIELD_EYE_COLOR
         );
         return;
       }
       enemy.getCachedBodySprite(
-        ['#ffe9d5', '#ff8f7c', '#7c1837'],
-        'rgba(255,245,252,0.95)'
+        ENEMY_BASIC_FILL_COLORS,
+        ENEMY_BASIC_EYE_COLOR
       );
     }
 
@@ -196,15 +254,6 @@ function createAmbientParticleAt(x, y) {
         tomatoFoods[writeTomato++] = tomato;
       }
       tomatoFoods.length = writeTomato;
-
-      for (let i = remains.length - 1; i >= 0; i--) {
-        const chunk = remains[i];
-        if (chunk.life > 0 && !isOutsideBounds(chunk, despawnBounds, chunk.radius + 26)) continue;
-        const deadRemain = remains[i];
-        remains[i] = remains[remains.length - 1];
-        remains.pop();
-        remainsPool.push(deadRemain);
-      }
 
       let writeEnemy = 0;
       for (let i = 0; i < enemies.length; i++) {
@@ -329,98 +378,15 @@ function createAmbientParticleAt(x, y) {
     }
 
 function drawBackground() {
-      ctx.fillStyle = '#09111a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const lightingSprite = getBackgroundLightingSprite(canvas.width, canvas.height);
+      ctx.drawImage(lightingSprite, 0, 0, canvas.width, canvas.height);
 
       const visibleBounds = getViewBounds(0);
       const zoom = camera.zoom || 1;
-      const viewWidth = canvas.width / zoom;
-      const viewHeight = canvas.height / zoom;
-      const viewMax = Math.max(viewWidth, viewHeight);
 
       ctx.save();
       ctx.scale(zoom, zoom);
       ctx.translate(-camera.x, -camera.y);
-
-      const gradient = ctx.createRadialGradient(
-        player.x,
-        player.y,
-        100,
-        player.x,
-        player.y,
-        viewMax * 1.02
-      );
-
-      gradient.addColorStop(0, '#3a7890');
-      gradient.addColorStop(0.28, '#255569');
-      gradient.addColorStop(0.62, '#123247');
-      gradient.addColorStop(1, '#08131f');
-
-      ctx.fillStyle = gradient;
-      ctx.fillRect(
-        visibleBounds.left,
-        visibleBounds.top,
-        visibleBounds.right - visibleBounds.left,
-        visibleBounds.bottom - visibleBounds.top
-      );
-
-      const upperGlow = ctx.createLinearGradient(
-        visibleBounds.left,
-        visibleBounds.top,
-        visibleBounds.left,
-        visibleBounds.bottom
-      );
-      upperGlow.addColorStop(0, 'rgba(180, 255, 245, 0.16)');
-      upperGlow.addColorStop(0.34, 'rgba(150, 235, 255, 0.08)');
-      upperGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      ctx.fillStyle = upperGlow;
-      ctx.fillRect(
-        visibleBounds.left,
-        visibleBounds.top,
-        visibleBounds.right - visibleBounds.left,
-        visibleBounds.bottom - visibleBounds.top
-      );
-
-      const bioGlow = ctx.createRadialGradient(
-        player.x - viewWidth * 0.12,
-        player.y - viewHeight * 0.08,
-        0,
-        player.x - viewWidth * 0.12,
-        player.y - viewHeight * 0.08,
-        viewMax * 0.7
-      );
-      bioGlow.addColorStop(0, 'rgba(110, 255, 225, 0.16)');
-      bioGlow.addColorStop(0.42, 'rgba(90, 235, 210, 0.08)');
-      bioGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      ctx.fillStyle = bioGlow;
-      ctx.fillRect(
-        visibleBounds.left,
-        visibleBounds.top,
-        visibleBounds.right - visibleBounds.left,
-        visibleBounds.bottom - visibleBounds.top
-      );
-
-      const magicGlow = ctx.createRadialGradient(
-        player.x + viewWidth * 0.18,
-        player.y + viewHeight * 0.03,
-        0,
-        player.x + viewWidth * 0.18,
-        player.y + viewHeight * 0.03,
-        viewMax * 0.58
-      );
-      magicGlow.addColorStop(0, 'rgba(215, 150, 255, 0.14)');
-      magicGlow.addColorStop(0.36, 'rgba(170, 120, 255, 0.08)');
-      magicGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      ctx.fillStyle = magicGlow;
-      ctx.fillRect(
-        visibleBounds.left,
-        visibleBounds.top,
-        visibleBounds.right - visibleBounds.left,
-        visibleBounds.bottom - visibleBounds.top
-      );
 
       for (const glow of backgroundGlows) {
         if (isOutsideBounds(glow, visibleBounds, Math.max(glow.radiusX ?? 0, glow.radiusY ?? 0) + 80)) continue;

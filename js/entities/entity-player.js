@@ -28,6 +28,7 @@ class Player {
         this.level = 1;
         this.hitCooldown = 0;
         this.growthStage = 0;
+        this.highestGrowthStage = 0;
         this.growthBank = 0;
         this.cameraRadius = this.radius;
         this.cameraGrowthDelay = 0;
@@ -279,6 +280,11 @@ class Player {
         }
 
         if (grewStage) {
+          const recoveredStage = this.growthStage <= this.highestGrowthStage;
+          this.highestGrowthStage = Math.max(this.highestGrowthStage, this.growthStage);
+          if (recoveredStage && typeof queueRecoveryEvolution === 'function') {
+            queueRecoveryEvolution();
+          }
           this.cameraGrowthDelay = GROWTH_CONFIG.CAMERA_GROWTH_DELAY_FRAMES;
           this.eatPulse = Math.max(this.eatPulse, 1.2);
           this.swallowPulse = Math.max(this.swallowPulse, 1.05);
@@ -315,7 +321,12 @@ class Player {
           0,
           GROWTH_CONFIG.VISUAL_GROWTH_STAGES - 1
         );
-        this.growthBank = 0;
+        const stageRadius = GROWTH_CONFIG.START_RADIUS + this.growthStage * GROWTH_CONFIG.GROWTH_STAGE_RADIUS_STEP;
+        this.growthBank = clamp(
+          this.radius - stageRadius,
+          0,
+          GROWTH_CONFIG.GROWTH_STAGE_RADIUS_STEP
+        );
         if (this.radius < this.cameraRadius) {
           this.cameraRadius = this.radius;
           this.cameraGrowthDelay = 0;
@@ -383,97 +394,11 @@ class Player {
 
 
       drawSideLegs(width, height) {
-        const playerFxShadowScale = getPlayerFxShadowScale();
-        const lowDetail = isPlayerLowDetail();
-        const finCount = 2;
-        const finRoots = [-width * 0.2, width * 0.26];
-        const phaseOffsets = [0, Math.PI * 0.52];
         const swimPower = Math.min(1.55, 0.55 + this.legWave * 1.05 + (this.dashTime > 0 ? 0.24 : 0));
-        const finLengthBase = this.radius * (0.62 + swimPower * 0.16);
-        const finWidthBase = this.radius * (0.34 + swimPower * 0.08);
-
-        for (const side of [-1, 1]) {
-          for (let i = 0; i < finCount; i++) {
-            const rootX = finRoots[i];
-            const rootY = side * (height * (0.64 + i * 0.03));
-            const phase = this.legCycle * 0.72 + phaseOffsets[i] + (side === 1 ? 0 : Math.PI * 0.55);
-
-            const sweep = Math.sin(phase) * (0.42 + swimPower * 0.28);
-            const fanOpen = 0.95 + Math.cos(phase - 0.4) * 0.24 + swimPower * 0.26;
-            const trailing = Math.sin(phase - 0.7) * (0.24 + swimPower * 0.08);
-
-            const finLength = finLengthBase * (0.95 + i * 0.13);
-            const finWidth = finWidthBase * (0.96 + i * 0.1) * fanOpen;
-            const tipX = rootX - finLength;
-            const tipY = rootY + side * (sweep * this.radius * 0.78);
-            const upperCtrlX = rootX - finLength * 0.34;
-            const upperCtrlY = rootY - side * (finWidth * (1.18 + trailing));
-            const lowerCtrlX = rootX - finLength * 0.48;
-            const lowerCtrlY = rootY + side * (finWidth * (1.24 - trailing * 0.45));
-            const trailingX = rootX + this.radius * (0.14 + i * 0.03);
-
-            const finGradient = ctx.createLinearGradient(rootX, rootY, tipX, tipY);
-            finGradient.addColorStop(0, 'rgba(120,255,235,0.34)');
-            finGradient.addColorStop(0.32, 'rgba(70,240,215,0.72)');
-            finGradient.addColorStop(0.72, 'rgba(220,255,248,0.92)');
-            finGradient.addColorStop(1, 'rgba(245,255,252,0.5)');
-
-            ctx.save();
-            ctx.fillStyle = finGradient;
-            ctx.beginPath();
-            ctx.moveTo(trailingX, rootY);
-            ctx.quadraticCurveTo(rootX - finLength * 0.12, upperCtrlY * 0.96, tipX, tipY);
-            ctx.quadraticCurveTo(rootX - finLength * 0.72, rootY + side * (finWidth * 0.08), rootX - finLength * 0.14, rootY + side * (finWidth * 0.24));
-            ctx.quadraticCurveTo(rootX - finLength * 0.02, rootY + side * (finWidth * 0.34), trailingX, rootY);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.strokeStyle = 'rgba(235,255,250,0.92)';
-            ctx.lineWidth = Math.max(1.4, this.radius * 0.032);
-            ctx.beginPath();
-            ctx.moveTo(trailingX, rootY);
-            ctx.quadraticCurveTo(rootX - finLength * 0.12, upperCtrlY * 0.96, tipX, tipY);
-            ctx.quadraticCurveTo(rootX - finLength * 0.72, rootY + side * (finWidth * 0.08), rootX - finLength * 0.14, rootY + side * (finWidth * 0.24));
-            ctx.quadraticCurveTo(rootX - finLength * 0.02, rootY + side * (finWidth * 0.34), trailingX, rootY);
-            ctx.closePath();
-            ctx.stroke();
-
-            ctx.fillStyle = 'rgba(230,255,248,0.32)';
-            ctx.beginPath();
-            ctx.moveTo(rootX, rootY);
-            ctx.quadraticCurveTo(upperCtrlX, upperCtrlY, tipX, tipY);
-            ctx.quadraticCurveTo(lowerCtrlX, lowerCtrlY, rootX, rootY);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.58)';
-            ctx.lineWidth = Math.max(1.1, this.radius * 0.024);
-            ctx.beginPath();
-            ctx.moveTo(rootX - this.radius * 0.04, rootY);
-            ctx.quadraticCurveTo(rootX - finLength * 0.4, rootY + side * (sweep * this.radius * 0.28), tipX, tipY);
-            ctx.stroke();
-
-            ctx.strokeStyle = 'rgba(205,255,242,0.34)';
-            ctx.lineWidth = Math.max(0.9, this.radius * 0.018);
-            const ribCount = lowDetail ? 1 : 4;
-            for (let rib = 1; rib <= ribCount; rib++) {
-              const t = rib / 5;
-              const ribStartX = rootX - finLength * 0.1;
-              const ribStartY = rootY + side * (finWidth * (t - 0.5) * 0.2);
-              const ribEndX = rootX - finLength * (0.26 + t * 0.48);
-              const ribEndY = rootY + side * (finWidth * (t - 0.5) * 0.98 + sweep * this.radius * 0.24);
-              ctx.beginPath();
-              ctx.moveTo(ribStartX, ribStartY);
-              ctx.lineTo(ribEndX, ribEndY);
-              ctx.stroke();
-            }
-
-            ctx.restore();
-          }
-        }
+        drawBakedPlayerSideFins(ctx, width, height, this.radius, this.legCycle, swimPower);
       }
       draw() {
-        const locomotion = Math.sin(this.swimPhase);
+        const locomotion = Math.sin(this.swimPhase * PLAYER_SWIM_VISUAL_SPEED);
         const totalMutations = this.getTotalMutationLevels();
         const evolutionScale = Math.min(1.2, totalMutations * 0.06);
         const dashBoost = this.dashTime > 0 ? 0.18 : 0;
@@ -545,11 +470,7 @@ class Player {
             ctx.stroke();
 
             // Основное тело щупальца с плавным сужением.
-            const coreGradient = ctx.createLinearGradient(rootX, rootY, tipX, tipY);
-            coreGradient.addColorStop(0, 'rgba(70,235,208,0.92)');
-            coreGradient.addColorStop(0.45, 'rgba(205,255,244,0.98)');
-            coreGradient.addColorStop(1, 'rgba(245,255,252,0.94)');
-            ctx.strokeStyle = coreGradient;
+            ctx.strokeStyle = 'rgba(205,255,244,0.96)';
             ctx.lineWidth = baseThickness;
             ctx.beginPath();
             ctx.moveTo(rootX, rootY);
@@ -574,9 +495,8 @@ class Player {
             }
 
             // Присоски вдоль внутренней стороны щупальца.
-            const suckerCount = lowDetail
-              ? Math.max(2, Math.min(4, 2 + Math.floor(this.tentacleLevel * 0.5)))
-              : Math.max(3, Math.round((4 + this.tentacleLevel + Math.floor(dist / 55)) * (0.72 + renderDetailScale * 0.28)));
+            const suckerCount = Math.max(2, Math.round((4 + this.tentacleLevel + Math.floor(dist / 55)) * 0.5));
+            const suckerSprite = getBakedTentacleSuckerSprite();
             for (let i = 1; i <= suckerCount; i++) {
               const t = i / (suckerCount + 1);
               const mt = 1 - t;
@@ -605,20 +525,16 @@ class Player {
               const suckX = bx - sx * baseThickness * (0.45 + (1 - t) * 0.22) * offsetDir;
               const suckY = by - sy * baseThickness * (0.45 + (1 - t) * 0.22) * offsetDir;
               const suckR = Math.max(1.3, baseThickness * (0.16 + (1 - t) * 0.12));
-              const suckAngle = Math.atan2(ty, tx);
-
-              ctx.fillStyle = 'rgba(218,255,246,0.9)';
-              ctx.beginPath();
-              ctx.ellipse(suckX, suckY, suckR * 1.18, suckR * 0.82, suckAngle, 0, Math.PI * 2);
-              ctx.fill();
-
-              if (!lowDetail) {
-                ctx.strokeStyle = 'rgba(120,240,222,0.55)';
-                ctx.lineWidth = Math.max(0.8, suckR * 0.25);
-                ctx.beginPath();
-                ctx.ellipse(suckX, suckY, suckR * 0.62, suckR * 0.38, suckAngle, 0, Math.PI * 2);
-                ctx.stroke();
-              }
+              const suckerScale = suckR / suckerSprite.baseRadius;
+              const suckerWidth = suckerSprite.width * suckerScale;
+              const suckerHeight = suckerSprite.height * suckerScale;
+              ctx.drawImage(
+                suckerSprite,
+                suckX - suckerWidth * 0.5,
+                suckY - suckerHeight * 0.5,
+                suckerWidth,
+                suckerHeight
+              );
             }
 
             // Светящийся кончик у цели.
@@ -633,16 +549,21 @@ class Player {
 
         if (this.hasTail || (typeof window !== 'undefined' && window.JorPlayerSkins?.hasVisualTail?.(this.skinId))) {
           ctx.save();
-          const tailSwing = Math.sin(this.swimPhase * 0.92) * this.radius * (0.34 + this.tailLevel * 0.035);
-          const tailTipSwing = Math.sin(this.swimPhase * 0.92 - 0.75) * this.radius * (0.62 + this.tailLevel * 0.06);
+          const tailPhase = this.swimPhase * 0.92 * PLAYER_SWIM_VISUAL_SPEED;
+          const tailSwing = Math.sin(tailPhase) * this.radius * (0.34 + this.tailLevel * 0.035);
+          const tailTipSwing = Math.sin(tailPhase - 0.75) * this.radius * (0.62 + this.tailLevel * 0.06);
           const tailBaseX = -width * 0.78;
           const tailMidX = -width * (1.1 + this.tailLevel * 0.08);
           const tailTipX = -width * (1.66 + this.tailLevel * 0.16);
           const tailFinHeight = height * (0.52 + this.tailLevel * 0.05);
           const splitDepth = width * (0.18 + this.tailLevel * 0.02);
-          const spinePath = new Path2D();
-          spinePath.moveTo(tailBaseX, 0);
-          spinePath.bezierCurveTo(
+
+          ctx.strokeStyle = 'rgba(178,255,242,0.82)';
+          ctx.lineWidth = Math.max(3.5, this.radius * (0.11 + this.tailLevel * 0.012));
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(tailBaseX, 0);
+          ctx.bezierCurveTo(
             -width * 0.96,
             tailSwing * 0.22,
             tailMidX,
@@ -650,9 +571,11 @@ class Player {
             tailTipX - splitDepth * 0.42,
             tailTipSwing * 0.26
           );
-          const finPath = new Path2D();
-          finPath.moveTo(tailBaseX, 0);
-          finPath.bezierCurveTo(
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(tailBaseX, 0);
+          ctx.bezierCurveTo(
             -width * 0.98,
             -tailFinHeight * 0.26 + tailSwing * 0.2,
             tailMidX,
@@ -660,19 +583,19 @@ class Player {
             tailTipX,
             -tailFinHeight * 0.18 + tailTipSwing
           );
-          finPath.quadraticCurveTo(
+          ctx.quadraticCurveTo(
             tailTipX - splitDepth * 0.56,
             tailTipSwing * 0.2,
             tailTipX - splitDepth,
             tailTipSwing * 0.06
           );
-          finPath.quadraticCurveTo(
+          ctx.quadraticCurveTo(
             tailTipX - splitDepth * 0.56,
             -tailTipSwing * 0.2,
             tailTipX,
             tailFinHeight * 0.18 + tailTipSwing
           );
-          finPath.bezierCurveTo(
+          ctx.bezierCurveTo(
             tailMidX,
             tailFinHeight * 0.58 + tailSwing * 0.38,
             -width * 0.98,
@@ -680,23 +603,12 @@ class Player {
             tailBaseX,
             0
           );
-          finPath.closePath();
-
-          ctx.strokeStyle = 'rgba(178,255,242,0.82)';
-          ctx.lineWidth = Math.max(3.5, this.radius * (0.11 + this.tailLevel * 0.012));
-          ctx.lineCap = 'round';
-          ctx.stroke(spinePath);
-
-          const tailGradient = ctx.createLinearGradient(tailBaseX, 0, tailTipX, 0);
-          tailGradient.addColorStop(0, 'rgba(85,245,222,0.12)');
-          tailGradient.addColorStop(0.58, 'rgba(190,255,245,0.5)');
-          tailGradient.addColorStop(1, 'rgba(245,255,252,0.24)');
-          ctx.fillStyle = tailGradient;
-          ctx.fill(finPath);
-
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(168,252,236,0.34)';
+          ctx.fill();
           ctx.strokeStyle = 'rgba(236,255,250,0.88)';
           ctx.lineWidth = Math.max(1.3, this.radius * 0.026);
-          ctx.stroke(finPath);
+          ctx.stroke();
 
           if (!lowDetail) {
             ctx.strokeStyle = 'rgba(255,255,255,0.5)';
@@ -750,31 +662,6 @@ class Player {
         // чтобы персонаж визуально именно плыл, а не перебирал лапами.
         this.drawSideLegs(width, height);
 
-        if (this.hasShell) {
-          ctx.save();
-          ctx.strokeStyle = `rgba(170, 255, 255, ${0.24 + this.shellLevel * 0.08})`;
-          ctx.lineWidth = 4 + this.shellLevel;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, width * 1.08, height * 1.08, 0, 0, Math.PI * 2);
-          ctx.stroke();
-
-          if (!lowDetail) {
-            ctx.lineWidth = 1.5;
-            ctx.strokeStyle = 'rgba(235,255,255,0.34)';
-            ctx.beginPath();
-            ctx.ellipse(0, 0, width * 0.88, height * 0.86, 0, 0, Math.PI * 2);
-            ctx.stroke();
-
-            for (let i = -1; i <= 1; i++) {
-              ctx.beginPath();
-              ctx.moveTo(-width * 0.34, i * height * 0.28);
-              ctx.quadraticCurveTo(0, i * height * 0.02, width * 0.32, i * height * 0.28);
-              ctx.stroke();
-            }
-          }
-          ctx.restore();
-        }
-
         if (typeof window !== 'undefined' && window.JorPlayerSkins?.drawGameBody) {
           window.JorPlayerSkins.drawGameBody(ctx, this.skinId, width, height, this.radius, frameTime);
         } else if (lowDetail) {
@@ -826,28 +713,6 @@ class Player {
           ctx.fill();
         }
 
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        const innerDots = lowDetail ? 0 : 4 + totalMutations;
-        for (let i = 0; i < innerDots; i++) {
-          const ox = Math.sin(this.patternPhase + i * 1.3) * width * 0.26;
-          const oy = Math.cos(this.patternPhase * 1.25 + i * 0.9) * height * 0.24;
-          ctx.beginPath();
-          ctx.arc(ox, oy, Math.max(1.2, this.radius * 0.038 + (i % 3) * 0.35), 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        if (this.hasShatter) {
-          ctx.fillStyle = `rgba(200,255,245,${0.12 + this.shatterLevel * 0.05})`;
-          const shatterDotCount = lowDetail ? Math.min(2, 1 + this.shatterLevel) : 3 + this.shatterLevel;
-          for (let i = 0; i < shatterDotCount; i++) {
-            const px = Math.cos(this.patternPhase * 1.4 + i) * width * 0.34;
-            const py = Math.sin(this.patternPhase * 1.8 + i * 1.2) * height * 0.28;
-            ctx.beginPath();
-            ctx.arc(px, py, Math.max(1.8, this.radius * 0.05), 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-
         // Мембрана.
         ctx.strokeStyle = 'rgba(235,255,250,0.32)';
         ctx.lineWidth = Math.max(1.2, this.radius * 0.055);
@@ -857,46 +722,14 @@ class Player {
 
         if (this.hasSpike) {
           ctx.save();
-          const spikeLength = this.radius * (0.44 + this.spikeLevel * 0.2) + this.attackPulse * 7.5;
-          const spikeWidth = Math.max(this.radius * 0.11, this.radius * (0.09 + this.spikeLevel * 0.014));
-          const rootX = width * 0.4;
-          const tipX = width * 0.72 + spikeLength;
-          const mouthInset = height * 0.5;
-          const drawCheekSpike = (side) => {
-            const rootY = side * mouthInset;
-            const curveLift = side * height * (0.32 + this.spikeLevel * 0.03);
-            const tipY = side * height * 0.72;
-            const spikeGradient = ctx.createLinearGradient(rootX, rootY, tipX, tipY);
-            spikeGradient.addColorStop(0, 'rgba(90,255,230,0.22)');
-            spikeGradient.addColorStop(0.42, 'rgba(225,255,252,0.96)');
-            spikeGradient.addColorStop(1, 'rgba(255,255,255,1)');
-            ctx.fillStyle = spikeGradient;
-            ctx.beginPath();
-            ctx.moveTo(rootX, rootY - spikeWidth);
-            ctx.quadraticCurveTo(width * 0.72, rootY - spikeWidth - curveLift * 0.52, tipX, tipY);
-            ctx.quadraticCurveTo(width * 0.72, rootY + spikeWidth - curveLift * 0.52, rootX, rootY + spikeWidth);
-            ctx.quadraticCurveTo(rootX - width * 0.1, rootY, rootX, rootY - spikeWidth);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.strokeStyle = 'rgba(120,255,240,0.68)';
-            ctx.lineWidth = Math.max(1.1, this.radius * 0.028);
-            ctx.beginPath();
-            ctx.moveTo(rootX + width * 0.025, rootY);
-            ctx.quadraticCurveTo(width * 0.74, rootY - curveLift * 0.28, tipX - spikeLength * 0.1, tipY);
-            ctx.stroke();
-          };
-          drawCheekSpike(-1);
-          drawCheekSpike(1);
+          const spikeSprite = getBakedPlayerSpikeSprite(this.spikeLevel, this.attackPulse);
+          ctx.scale(width / spikeSprite.baseWidth, height / spikeSprite.baseHeight);
+          ctx.drawImage(spikeSprite, -spikeSprite.originX, -spikeSprite.originY);
           ctx.restore();
         }
 
         const mouthOpen = (this.hasMaw ? 0.32 + this.mawLevel * 0.052 : 0.19) + this.attackPulse * 0.38 + this.eatPulse * 0.23 + this.swallowPulse * 0.34;
         const mandibleBaseX = width * 0.4;
-        const mandibleRootBulge = width * (0.2 + this.mawLevel * 0.018);
-        const mandibleTipX = width * (1.02 + this.mawLevel * 0.05) + this.attackPulse * this.radius * 0.3;
-        const mandibleSpread = height * (0.26 + mouthOpen * 0.54);
-        const clawLength = this.radius * (0.34 + this.mawLevel * 0.07);
 
         // Центральная ротовая полость между жвалами.
         ctx.fillStyle = 'rgba(7, 30, 28, 0.68)';
@@ -912,73 +745,15 @@ class Player {
         );
         ctx.fill();
 
-        const drawMandible = (side) => {
-          const upperY = -mandibleSpread * side;
-          const lowerY = -height * 0.05 * side;
-          const tipY = -mandibleSpread * 0.55 * side;
-
-          const mandibleGradient = ctx.createLinearGradient(mandibleBaseX, 0, mandibleTipX + clawLength, tipY);
-          mandibleGradient.addColorStop(0, 'rgba(70, 255, 215, 0.28)');
-          mandibleGradient.addColorStop(0.45, 'rgba(215, 255, 245, 0.96)');
-          mandibleGradient.addColorStop(1, 'rgba(255, 250, 245, 0.98)');
-          ctx.fillStyle = mandibleGradient;
-
-          ctx.beginPath();
-          ctx.moveTo(mandibleBaseX - mandibleRootBulge * 0.28, lowerY - side * this.radius * 0.06);
-          ctx.quadraticCurveTo(width * 0.48, upperY * 0.34, mandibleBaseX + mandibleRootBulge * 0.65, upperY * 0.98);
-          ctx.quadraticCurveTo(width * 0.8, upperY * 1.02, mandibleTipX, tipY);
-          ctx.quadraticCurveTo(mandibleTipX + clawLength, tipY - side * this.radius * 0.1, mandibleTipX + clawLength * 0.94, tipY + side * this.radius * 0.15);
-          ctx.quadraticCurveTo(width * 0.9, lowerY + side * this.radius * 0.08, mandibleBaseX + mandibleRootBulge * 0.24, lowerY + side * this.radius * 0.13);
-          ctx.quadraticCurveTo(width * 0.48, lowerY * 0.68, mandibleBaseX - mandibleRootBulge * 0.28, lowerY - side * this.radius * 0.06);
-          ctx.closePath();
-          ctx.fill();
-
-          // Внутренняя тёмная грань жвала.
-          ctx.fillStyle = 'rgba(10, 42, 36, 0.42)';
-          ctx.beginPath();
-          ctx.moveTo(width * 0.5, lowerY * 0.98);
-          ctx.quadraticCurveTo(width * 0.78, upperY * 0.86, mandibleTipX - this.radius * 0.06, tipY * 0.96);
-          ctx.quadraticCurveTo(width * 0.82, lowerY * 0.88, width * 0.5, lowerY * 0.98);
-          ctx.closePath();
-          ctx.fill();
-
-          // Острый внутренний крюк как у клешни.
-          ctx.strokeStyle = 'rgba(245,255,250,0.82)';
-          ctx.lineWidth = 1.35;
-          ctx.beginPath();
-          ctx.moveTo(mandibleTipX - this.radius * 0.05, tipY);
-          ctx.lineTo(mandibleTipX + clawLength * 0.84, tipY + side * this.radius * 0.12);
-          ctx.stroke();
-
-          // Сегменты/зазубрины на внутренней стороне.
-          const toothCount = lowDetail ? Math.min(3, 2 + Math.floor(this.mawLevel * 0.5)) : 3 + this.mawLevel;
-          ctx.strokeStyle = 'rgba(225,255,248,0.72)';
-          ctx.lineWidth = 1.05;
-          for (let i = 0; i < toothCount; i++) {
-            const t = toothCount === 1 ? 0 : i / (toothCount - 1);
-            const px = mandibleBaseX + (mandibleTipX - mandibleBaseX) * (0.1 + t * 0.78);
-            const py = lowerY + (tipY - lowerY) * (0.13 + t * 0.76);
-            ctx.beginPath();
-            ctx.moveTo(px, py);
-            ctx.lineTo(px + this.radius * 0.08, py + side * this.radius * 0.09);
-            ctx.stroke();
-          }
-        };
-
-        drawMandible(1);
-        drawMandible(-1);
-
-        if (this.swallowPulse > 0.02) {
-          ctx.strokeStyle = `rgba(235,255,248,${0.18 + this.swallowPulse * 0.24})`;
-          ctx.lineWidth = Math.max(1.2, this.radius * 0.05);
-          const swallowRingCount = lowDetail ? 1 : 3;
-          for (let i = 0; i < swallowRingCount; i++) {
-            const throatX = width * (0.22 + i * 0.16);
-            const ringScale = 1 - i * 0.12;
-            ctx.beginPath();
-            ctx.ellipse(throatX, 0, width * 0.08 * ringScale, height * (0.24 + this.swallowPulse * 0.06) * ringScale, 0, 0, Math.PI * 2);
-            ctx.stroke();
-          }
+        const mandibleSprite = getBakedPlayerMandibleSprite(this.mawLevel, mouthOpen, this.attackPulse);
+        const mandibleScaleX = width / mandibleSprite.baseWidth;
+        const mandibleScaleY = height / mandibleSprite.baseHeight;
+        for (let side = -1; side <= 1; side += 2) {
+          ctx.save();
+          ctx.translate(mandibleBaseX, 0);
+          ctx.scale(mandibleScaleX, mandibleScaleY * side);
+          ctx.drawImage(mandibleSprite, -mandibleSprite.originX, -mandibleSprite.originY);
+          ctx.restore();
         }
 
         if (this.hasDash && !lowDetail) {

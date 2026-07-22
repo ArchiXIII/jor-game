@@ -1,0 +1,236 @@
+.uiFitTarget {
+  box-sizing: border-box;
+  width: var(--ui-fit-width) !important;
+  height: var(--ui-fit-height) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  flex: 0 0 auto;
+  scale: var(--ui-fit-scale, 1);
+  transform-origin: center;
+}
+
+.startScreen {
+  padding-top: var(--ui-meta-bottom, calc(var(--safe-top) + 88px)) !important;
+  padding-bottom: calc(var(--safe-bottom) + 8px) !important;
+}
+
+.campaignOverlay {
+  padding-top: calc(var(--ui-meta-bottom, calc(var(--safe-top) + 88px)) - 4px) !important;
+  padding-bottom: calc(var(--safe-bottom) + 16px) !important;
+}
+
+.startCard.uiFitTarget {
+  overflow: hidden;
+}
+
+@media (max-height: 620px) {
+  .startCard.uiFitTarget {
+    padding: 7px 14px;
+  }
+
+  .startCard.uiFitTarget .startBadge {
+    margin-bottom: 4px;
+    padding: 3px 9px;
+    font-size: 11px;
+  }
+
+  .startCard.uiFitTarget h1 {
+    margin-bottom: 3px;
+    font-size: 36px;
+  }
+
+  .startCard.uiFitTarget p {
+    max-width: 520px;
+    font-size: 15px;
+    line-height: 1.15;
+  }
+
+  .startCard.uiFitTarget .startActions {
+    gap: 6px;
+    margin-top: 7px;
+  }
+
+  .startCard.uiFitTarget .startModeRow {
+    max-width: 500px;
+  }
+
+  .startCard.uiFitTarget .startSecondaryRow {
+    max-width: 430px;
+  }
+
+  .startCard.uiFitTarget .startModeRow .startCampaignBtn,
+  .startCard.uiFitTarget .startModeRow .startPlayBtn,
+  .startCard.uiFitTarget .startSecondaryRow .startShopBtn,
+  .startCard.uiFitTarget .startSecondaryRow .startOurGamesBtn {
+    height: 48px;
+    max-height: 48px;
+    border-radius: 14px;
+    font-size: 17px;
+  }
+
+  .startCard.uiFitTarget .startSecondaryRow .startShopBtn,
+  .startCard.uiFitTarget .startSecondaryRow .startOurGamesBtn {
+    min-width: 0;
+    width: 0;
+    flex: 1 1 0;
+  }
+}
+
+.campaignPanel.uiFitTarget {
+  overflow: visible;
+}
+
+.centerMessage.uiFitTarget,
+.evolutionPanel.uiFitTarget,
+.exitConfirmCard.uiFitTarget,
+.campaignRoundIntro.uiFitTarget,
+.pauseCard.uiFitTarget {
+  position: fixed !important;
+  left: var(--ui-fit-center-x, 50%) !important;
+  right: auto !important;
+  top: var(--ui-fit-center-y, 50%) !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+.centerMessage.uiFitTarget,
+.evolutionPanel.uiFitTarget {
+  overflow: hidden !important;
+}
+
+.centerMessage.campaignCompleteDialog.uiFitTarget,
+.centerMessage.levelFailedDialog.uiFitTarget,
+.centerMessage.leaderboardDialog.uiFitTarget {
+  display: flex !important;
+  flex-direction: column;
+}
+
+body.uiFitMessageOpen::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  background: rgba(2, 12, 20, 0.58);
+  pointer-events: none;
+}
+
+.centerMessage.uiFitTarget::before {
+  content: none !important;
+}
+
+.centerMessage.campaignCompleteDialog.uiFitTarget h2,
+.centerMessage.campaignCompleteDialog.uiFitTarget .messageButtons,
+.centerMessage.leaderboardDialog.uiFitTarget h2,
+.centerMessage.leaderboardDialog.uiFitTarget .messageButtons {
+  flex: 0 0 auto;
+}
+
+.centerMessage.campaignCompleteDialog.uiFitTarget #messageText,
+.centerMessage.leaderboardDialog.uiFitTarget #messageText {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.centerMessage.campaignCompleteDialog.uiFitTarget #messageText,
+.centerMessage.campaignCompleteDialog.uiFitTarget .campaignResultPanel,
+.centerMessage.campaignCompleteDialog.uiFitTarget .campaignResultLeaderboard,
+.centerMessage.leaderboardDialog.uiFitTarget #messageText,
+.centerMessage.leaderboardDialog.uiFitTarget .gameOverPanel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.centerMessage.campaignCompleteDialog.uiFitTarget .campaignResultLeaderboardRows,
+.centerMessage.leaderboardDialog.uiFitTarget .leaderboardListCard {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+.metaLeaderboardList,
+.gameOverPanel .leaderboardListCard,
+.campaignResultLeaderboardRows,
+.centerMessage.leaderboardDialog {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+}
+
+.metaLeaderboardList::-webkit-scrollbar,
+.gameOverPanel .leaderboardListCard::-webkit-scrollbar,
+.campaignResultLeaderboardRows::-webkit-scrollbar,
+.centerMessage.leaderboardDialog::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+@media (max-height: 500px) {
+  .campaignPanel.uiFitTarget .campaignGrid {
+    --campaign-chip-size: 76px;
+  }
+
+  .campaignPanel.uiFitTarget .campaignLevelBtn {
+    width: var(--campaign-chip-size);
+  }
+}
+
+@media (max-width: 660px), (max-height: 520px), (pointer: coarse) {
+  .shopPanel.uiFitTarget .shopHeader {
+    display: none;
+  }
+
+  .shopPanel.uiFitTarget .shopBody {
+    height: 100%;
+    grid-template-columns: 116px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .shopPanel.uiFitTarget .shopTabs {
+    width: 116px;
+  }
+
+  .shopPanel.uiFitTarget .shopTabs button {
+    padding: 0 5px;
+    font-size: 14px;
+    line-height: 1.08;
+    white-space: nowrap;
+  }
+
+  .shopPanel.uiFitTarget .shopContent {
+    padding-top: 42px;
+  }
+
+  .shopPanel.uiFitTarget .shopItem h3 {
+    font-size: 16px;
+    line-height: 1.08;
+  }
+
+  .shopPanel.uiFitTarget .shopItem.compactTitle h3 {
+    font-size: 14px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .shopPanel.uiFitTarget .shopItem p {
+    max-height: 45px;
+    font-size: 13px;
+    line-height: 1.15;
+  }
+
+  .shopPanel.uiFitTarget .shopItem.adPreview p {
+    font-size: 12px;
+  }
+
+  .shopPanel.uiFitTarget .shopBuyBtn {
+    font-size: 12px;
+  }
+
+  .shopPanel.uiFitTarget .shopUnlockHint {
+    font-size: 10px;
+    line-height: 1.12;
+  }
+}

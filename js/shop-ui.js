@@ -10,7 +10,6 @@
     payments: null,
     pendingId: '',
     status: '',
-    cloudLoaded: false,
     pages: {},
     previewFrame: 0,
   };
@@ -29,8 +28,20 @@
     return Math.max(0, Math.floor(Number(App?.bestEndlessScore || App?.lastLeaderboardScore || 0)), Math.floor(Number(meta.bestEndlessScore || 0)));
   }
 
+  function campaignLevelStars(levelNumber) {
+    const level = Math.max(1, Math.floor(Number(levelNumber) || 1));
+    const liveStars = Math.max(0, Math.floor(Number(window.JorCampaignUI?.levelStarsFor?.(level)) || 0));
+    const saved = window.JorSaveManager?.getSection?.('campaign', {}) || {};
+    return Math.max(liveStars, Math.floor(Number(saved.stars?.[String(level)]) || 0));
+  }
+
+  function hasGameplayUnlock(item) {
+    return !!item?.unlockEndlessScore || !!item?.unlockCampaignLevel;
+  }
+
   function isUnlockedByGameplay(item) {
-    return !!item?.unlockEndlessScore && bestEndlessScore() >= Number(item.unlockEndlessScore || 0);
+    if (item?.unlockEndlessScore && bestEndlessScore() >= Number(item.unlockEndlessScore || 0)) return true;
+    return !!item?.unlockCampaignLevel && campaignLevelStars(item.unlockCampaignLevel) > 0;
   }
 
   function isOwned(id) {
@@ -75,18 +86,16 @@
   }
 
   async function loadCloud() {
-    if (state.cloudLoaded) return true;
-    state.cloudLoaded = true;
     try {
-      await window.JorSaveManager?.load?.();
+      const loaded = await window.JorSaveManager?.load?.();
       const saved = normalizeSave(window.JorSaveManager?.getSection?.('shop', {}));
       state.owned = saved.owned;
       state.selected = saved.selected;
       state.timed = saved.timed;
+      window.JorMetaUI?.refreshPlayer?.();
       render();
-      return true;
+      return loaded !== false;
     } catch (error) {
-      state.cloudLoaded = false;
       console.warn('Shop save load error:', error);
       return false;
     }
@@ -186,7 +195,7 @@
   }
 
   function priceText(item) {
-    if (item?.unlockEndlessScore) return '';
+    if (hasGameplayUnlock(item)) return '';
     const product = state.catalog[item.id];
     if (product?.price) return String(product.price);
     return lang() === 'en' ? `${item.priceYan} YAN` : `${item.priceYan} \u044f\u043d`;
@@ -231,6 +240,7 @@
   function isGrowthEffectItem(item) { return item?.category === 'effects'; }
   function isPetItem(item) { return item?.category === 'pets'; }
   function isIconItem(item) { return item?.category === 'icons'; }
+  function canDisableSelection(item) { return !!item && ['characters', 'effects', 'pets'].includes(item.category); }
   function hasImageIcon(item) { return !!item?.iconSrc; }
   function selectedCharacterSkinId() {
     const item = byId(state.selected.characters);
@@ -340,7 +350,7 @@
 
   async function select(item) {
     if (!item || !isSelectable(item) || !isOwned(item.id)) return;
-    state.selected[item.category] = item.id;
+    state.selected[item.category] = canDisableSelection(item) && state.selected[item.category] === item.id ? '' : item.id;
     await persistShopState();
     if (item.category === 'icons') window.JorMetaUI?.refreshPlayer?.();
     render();
@@ -378,17 +388,21 @@
 
   function createProductCard(item) {
     const owned = isOwned(item.id);
-    const gameplayLocked = !!item.unlockEndlessScore && !owned;
+    const gameplayLocked = hasGameplayUnlock(item) && !owned;
     const selected = (isSelectable(item) && state.selected[item.category] === item.id) || (isAdItem(item) && owned);
+    const availableToSelect = owned && isSelectable(item) && !selected;
+    const title = productTitle(item);
     const card = document.createElement('article');
-    card.className = 'shopItem' + (isCharacterItem(item) || isGrowthEffectItem(item) || isPetItem(item) ? ' characterPreview' : '') + (isIconItem(item) ? ' profileIconPreview' : '') + (isAdItem(item) ? ' adPreview' : '') + (owned ? ' owned' : '') + (selected ? ' selected' : '') + (gameplayLocked ? ' gameplayLocked' : '');
+    card.className = 'shopItem' + (isCharacterItem(item) || isGrowthEffectItem(item) || isPetItem(item) ? ' characterPreview' : '') + (isIconItem(item) ? ' profileIconPreview' : '') + (isAdItem(item) ? ' adPreview' : '') + (title.length >= 15 ? ' compactTitle' : '') + (owned ? ' owned' : '') + (selected ? ' selected' : '') + (availableToSelect ? ' availableToSelect' : '') + (gameplayLocked ? ' gameplayLocked' : '');
     card.style.setProperty('--shop-accent', item.color || '#7af2ff');
     const activeUntil = isTimedAdItem(item) ? timedUntil(item.id) : 0;
     const action = owned
-      ? (isTimedAdItem(item) ? tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e', 'Active') : (isAdItem(item) ? tr('\u041a\u0443\u043f\u043b\u0435\u043d\u043e', 'Owned') : (selected ? tr('\u0412\u044b\u0431\u0440\u0430\u043d\u043e', 'Selected') : tr('\u0412\u044b\u0431\u0440\u0430\u0442\u044c', 'Select'))))
+      ? (isTimedAdItem(item) ? tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e', 'Active') : (isAdItem(item) ? tr('\u041a\u0443\u043f\u043b\u0435\u043d\u043e', 'Owned') : (selected ? (canDisableSelection(item) ? tr('\u041e\u0442\u043a\u043b\u044e\u0447\u0438\u0442\u044c', 'Disable') : tr('\u0412\u044b\u0431\u0440\u0430\u043d\u043e', 'Selected')) : tr('\u0412\u044b\u0431\u0440\u0430\u0442\u044c', 'Select'))))
       : (gameplayLocked ? '' : priceText(item));
     const unlockHint = gameplayLocked
-      ? tr('\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043d\u0430\u0431\u0440\u0430\u043d\u043d\u044b\u0435 50 000 \u043e\u043f\u044b\u0442\u0430 \u0432 \u0431\u0435\u0441\u043a\u043e\u043d\u0435\u0447\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435', 'Unlocks at 50,000 endless mode score')
+      ? (item.unlockCampaignLevel
+          ? tr(`\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435 ${item.unlockCampaignLevel} \u0440\u0430\u0443\u043d\u0434\u0430 \u0432 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438`, `Unlocks after completing campaign round ${item.unlockCampaignLevel}`)
+          : tr('\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043d\u0430\u0431\u0440\u0430\u043d\u043d\u044b\u0435 50 000 \u043e\u043f\u044b\u0442\u0430 \u0432 \u0431\u0435\u0441\u043a\u043e\u043d\u0435\u0447\u043d\u043e\u043c \u0440\u0435\u0436\u0438\u043c\u0435', 'Unlocks at 50,000 endless mode score'))
       : '';
     const descHtml = activeUntil > nowMs()
       ? `${productDescHtml(item)}<br>${tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e \u0434\u043e: ', 'Active until: ')}${escapeHtml(formatDate(activeUntil))}`
@@ -407,7 +421,7 @@
     card.innerHTML = `
       ${preview}
       <div class="shopItemBody">
-        <h3>${productTitle(item)}</h3>
+        <h3>${title}</h3>
         <p${item?.bonuses && Object.keys(item.bonuses).length ? ' class="shopBonusDesc"' : ''}>${descHtml}</p>
       </div>
       ${gameplayLocked ? '' : `<button class="shopBuyBtn" type="button" ${((state.pendingId && state.pendingId !== item.id) || (owned && isAdItem(item))) ? 'disabled' : ''}>${state.pendingId === item.id ? tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430...', 'Purchasing...') : action}</button>`}
@@ -454,6 +468,8 @@
     prev.textContent = '\u2039';
     next.textContent = '\u203a';
     label.textContent = `${page + 1}/${totalPages}`;
+    prev.setAttribute('aria-label', tr('\u041f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0430\u044f \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430', 'Previous page'));
+    next.setAttribute('aria-label', tr('\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0430\u044f \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430', 'Next page'));
     prev.disabled = page <= 0;
     next.disabled = page >= totalPages - 1;
     prev.addEventListener('click', () => { setActivePage(page - 1); render(); });
@@ -490,6 +506,8 @@
     renderTabs();
     renderProducts();
     if (dom.title) dom.title.textContent = tr('\u041c\u0430\u0433\u0430\u0437\u0438\u043d', 'Shop');
+    if (dom.close) dom.close.setAttribute('aria-label', tr('\u0417\u0430\u043a\u0440\u044b\u0442\u044c', 'Close'));
+    if (dom.tabs) dom.tabs.setAttribute('aria-label', tr('\u0420\u0430\u0437\u0434\u0435\u043b\u044b \u043c\u0430\u0433\u0430\u0437\u0438\u043d\u0430', 'Shop categories'));
     if (dom.status) dom.status.textContent = state.status || '';
   }
 
@@ -534,6 +552,7 @@
     const resizeShopRender = () => { if (dom.overlay?.classList.contains('visible')) render(); };
     window.addEventListener('resize', resizeShopRender);
     window.addEventListener('orientationchange', resizeShopRender);
+    window.JorMetaUI?.refreshPlayer?.();
     render();
   }
 

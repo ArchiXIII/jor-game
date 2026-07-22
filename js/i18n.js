@@ -51,7 +51,7 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
           agility: () => '\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u0443\u0440\u043e\u0432\u0435\u043d\u044c: \u043f\u043e\u0432\u043e\u0440\u043e\u0442 \u043a \u043a\u0443\u0440\u0441\u043e\u0440\u0443 \u0441\u0442\u0430\u043d\u0435\u0442 \u0435\u0449\u0451 \u0431\u044b\u0441\u0442\u0440\u0435\u0435.',
         },
         mutations: {
-          spike: { title: '\u0428\u0438\u043f', desc: '\u041b\u0435\u0433\u0447\u0435 \u043e\u0445\u043e\u0442\u0438\u0442\u044c\u0441\u044f \u043d\u0430 \u0432\u0440\u0430\u0433\u043e\u0432 \u043f\u043e\u043a\u0440\u0443\u043f\u043d\u0435\u0435.', hint: '+\u043e\u0445\u043e\u0442\u0430' },
+          spike: { title: '\u0428\u0438\u043f\u044b', desc: '\u041b\u0435\u0433\u0447\u0435 \u043e\u0445\u043e\u0442\u0438\u0442\u044c\u0441\u044f \u043d\u0430 \u0432\u0440\u0430\u0433\u043e\u0432 \u043f\u043e\u043a\u0440\u0443\u043f\u043d\u0435\u0435.', hint: '+\u043e\u0445\u043e\u0442\u0430' },
           tail: { title: '\u0425\u0432\u043e\u0441\u0442', desc: '\u041a\u043b\u0435\u0442\u043a\u0430 \u043f\u043b\u0430\u0432\u0430\u0435\u0442 \u0431\u044b\u0441\u0442\u0440\u0435\u0435.', hint: '+\u0441\u043a\u043e\u0440\u043e\u0441\u0442\u044c' },
           shell: { title: '\u041f\u0430\u043d\u0446\u0438\u0440\u044c', desc: '\u0421\u043d\u0438\u0436\u0430\u0435\u0442 \u043f\u043e\u0442\u0435\u0440\u044e \u043c\u0430\u0441\u0441\u044b \u043f\u0440\u0438 \u0443\u0440\u043e\u043d\u0435.', hint: '+\u0437\u0430\u0449\u0438\u0442\u0430' },
           maw: { title: '\u0411\u043e\u043b\u044c\u0448\u043e\u0439 \u0440\u043e\u0442', desc: '\u0415\u0434\u0430 \u0434\u0430\u0451\u0442 \u0431\u043e\u043b\u044c\u0448\u0435 \u0440\u043e\u0441\u0442\u0430.', hint: '+\u0440\u043e\u0441\u0442' },
@@ -110,7 +110,7 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
           agility: () => 'Next level: turning toward the cursor becomes even faster.',
         },
         mutations: {
-          spike: { title: 'Spike', desc: 'Makes hunting larger enemies easier.', hint: '+hunting' },
+          spike: { title: 'Spikes', desc: 'Makes hunting larger enemies easier.', hint: '+hunting' },
           tail: { title: 'Tail', desc: 'The cell swims faster.', hint: '+speed' },
           shell: { title: 'Shell', desc: 'Reduces mass loss when taking damage.', hint: '+defense' },
           maw: { title: 'Big Maw', desc: 'Food gives more growth.', hint: '+growth' },

@@ -205,8 +205,22 @@
 
     function getCameraTargetZoom() {
       const cameraRadius = player?.cameraRadius ?? player?.radius ?? GROWTH_CONFIG.START_RADIUS;
-      const growthZoom = lerp(1, ENDLESS_CONFIG.CAMERA_GROWTH_ZOOM_OUT, getGrowthCameraProgress(cameraRadius));
-      const endlessZoom = hasTouchControls()
+      const growthProgress = getGrowthCameraProgress(cameraRadius);
+      let growthZoom = lerp(1, ENDLESS_CONFIG.CAMERA_GROWTH_ZOOM_OUT, growthProgress);
+      const isTouch = hasTouchControls();
+      if (isTouch && App.gameMode === 'endless') {
+        const growthStageProgress = clamp(
+          (cameraRadius - GROWTH_CONFIG.START_RADIUS) /
+            Math.max(1, GROWTH_CONFIG.TARGET_MAX_RADIUS - GROWTH_CONFIG.START_RADIUS),
+          0,
+          1
+        );
+        const lateStart = ENDLESS_CONFIG.CAMERA_FIRST_PHASE_LATE_START;
+        const lateProgress = clamp((growthStageProgress - lateStart) / Math.max(0.01, 1 - lateStart), 0, 1);
+        const smoothLateProgress = lateProgress * lateProgress * (3 - 2 * lateProgress);
+        growthZoom = lerp(growthZoom, ENDLESS_CONFIG.CAMERA_FIRST_PHASE_LATE_MOBILE_ZOOM_OUT, smoothLateProgress);
+      }
+      const endlessZoom = isTouch
         ? (ENDLESS_CONFIG.CAMERA_ENDLESS_MOBILE_ZOOM_OUT ?? ENDLESS_CONFIG.CAMERA_ENDLESS_ZOOM_OUT)
         : ENDLESS_CONFIG.CAMERA_ENDLESS_ZOOM_OUT;
       const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;

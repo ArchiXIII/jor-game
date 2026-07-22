@@ -18,6 +18,17 @@ let displayedTopScore = 0;
       return Math.max(min, Math.min(max, value));
     }
 
+    window.getCampaignThreatProgress = function (level) {
+      if (!level || App.gameMode !== 'campaign' || (typeof endlessMode !== 'undefined' && endlessMode)) return 0;
+      const levelProgress = Math.sqrt(clamp((Math.floor(Number(level.n) || 1) - 20) / 80, 0, 1));
+      const typeScale = level.type === 'food' || level.type === 'dna'
+        ? 0.72
+        : level.type === 'growth'
+          ? 0.9
+          : 1;
+      return clamp(levelProgress * typeScale, 0, 1);
+    };
+
     function randomRange(min, max) {
       return Math.random() * (max - min) + min;
     }
@@ -83,6 +94,7 @@ let displayedTopScore = 0;
 
     function clearRenderWarmupQueue() {
       renderWarmupQueue.length = 0;
+      if (typeof clearEnemySpritePendingKeys === 'function') clearEnemySpritePendingKeys();
     }
 
     function scheduleRenderWarmupTask(task, priority = false) {
@@ -115,34 +127,6 @@ let displayedTopScore = 0;
       clearRenderWarmupQueue();
     }
 
-    function getFoodParticleSprite(tint, spark = false) {
-      return getCachedEffectSprite(`food:${tint}:${spark ? 1 : 0}`, 28, 28, (spriteCtx, w, h) => {
-        const cx = w * 0.5;
-        const cy = h * 0.5;
-        const r = 6.5;
-        spriteCtx.save();
-        spriteCtx.fillStyle = tint;
-        spriteCtx.beginPath();
-        spriteCtx.arc(cx, cy, r, 0, Math.PI * 2);
-        spriteCtx.fill();
-        spriteCtx.fillStyle = 'rgba(255,255,255,0.95)';
-        spriteCtx.beginPath();
-        spriteCtx.arc(cx - r * 0.28, cy - r * 0.28, r * 0.38, 0, Math.PI * 2);
-        spriteCtx.fill();
-        if (spark) {
-          spriteCtx.strokeStyle = 'rgba(235,255,245,0.95)';
-          spriteCtx.lineWidth = 1;
-          spriteCtx.beginPath();
-          spriteCtx.moveTo(cx - r * 0.9, cy);
-          spriteCtx.lineTo(cx + r * 0.9, cy);
-          spriteCtx.moveTo(cx, cy - r * 0.9);
-          spriteCtx.lineTo(cx, cy + r * 0.9);
-          spriteCtx.stroke();
-        }
-        spriteCtx.restore();
-      });
-    }
-
     function getEnemyParticleSprite(core, glow) {
       return getCachedEffectSprite(`enemy:${core}:${glow}`, 44, 30, (spriteCtx, w, h) => {
         const cx = w * 0.52;
@@ -160,69 +144,6 @@ let displayedTopScore = 0;
         spriteCtx.beginPath();
         spriteCtx.arc(cx - 5, cy - 3.6, 2.4, 0, Math.PI * 2);
         spriteCtx.fill();
-        spriteCtx.restore();
-      });
-    }
-
-    function getBurstSprite(kind) {
-      return getCachedEffectSprite(`burst:${kind}`, kind === 'impact' ? 80 : 92, kind === 'impact' ? 80 : 92, (spriteCtx, w, h) => {
-        const cx = w * 0.5;
-        const cy = h * 0.5;
-        spriteCtx.save();
-        if (kind === 'impact') {
-          spriteCtx.strokeStyle = 'rgba(255,155,175,0.95)';
-          spriteCtx.lineWidth = 3;
-          spriteCtx.beginPath();
-          spriteCtx.ellipse(cx, cy, 28, 18, 0, 0, Math.PI * 2);
-          spriteCtx.stroke();
-          for (let i = 0; i < 4; i++) {
-            const a = (Math.PI * 2 / 4) * i;
-            spriteCtx.beginPath();
-            spriteCtx.moveTo(cx + Math.cos(a) * 5, cy + Math.sin(a) * 5);
-            spriteCtx.lineTo(cx + Math.cos(a) * 29, cy + Math.sin(a) * 20);
-            spriteCtx.stroke();
-          }
-        } else {
-          spriteCtx.strokeStyle = 'rgba(235,255,248,0.98)';
-          spriteCtx.lineWidth = 3;
-          spriteCtx.beginPath();
-          spriteCtx.ellipse(cx, cy, 30, 22, 0, 0, Math.PI * 2);
-          spriteCtx.stroke();
-          spriteCtx.fillStyle = 'rgba(180,255,230,0.95)';
-          spriteCtx.beginPath();
-          spriteCtx.ellipse(cx, cy, 14, 10, 0, 0, Math.PI * 2);
-          spriteCtx.fill();
-        }
-        spriteCtx.restore();
-      });
-    }
-
-    function getRemainsSprite(kind = 'basic') {
-      const colors = kind === 'shield'
-        ? ['rgba(255,245,230,0.55)', 'rgba(180,255,245,0.16)']
-        : ['rgba(255,180,170,0.55)', 'rgba(255,110,130,0.14)'];
-      return getCachedEffectSprite(`remains:${kind}`, 52, 40, (spriteCtx, w, h) => {
-        const pieces = [
-          { x: 15, y: 20, rx: 10, ry: 6, rot: -0.35 },
-          { x: 26, y: 16, rx: 9, ry: 5.5, rot: 0.18 },
-          { x: 36, y: 21, rx: 7.5, ry: 5.8, rot: 0.52 },
-        ];
-        spriteCtx.save();
-        for (const p of pieces) {
-          const grad = spriteCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 12);
-          grad.addColorStop(0, colors[0]);
-          grad.addColorStop(1, colors[1]);
-          spriteCtx.fillStyle = grad;
-          spriteCtx.beginPath();
-          spriteCtx.ellipse(p.x, p.y, p.rx, p.ry, p.rot, 0, Math.PI * 2);
-          spriteCtx.fill();
-        }
-        spriteCtx.strokeStyle = 'rgba(255,245,250,0.16)';
-        spriteCtx.lineWidth = 1;
-        spriteCtx.beginPath();
-        spriteCtx.moveTo(10, 20);
-        spriteCtx.quadraticCurveTo(26, 16, 42, 20);
-        spriteCtx.stroke();
         spriteCtx.restore();
       });
     }

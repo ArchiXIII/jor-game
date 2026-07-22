@@ -14,7 +14,7 @@
       '\u0422\u0451\u043c\u043d\u0430\u044f \u0432\u043f\u0430\u0434\u0438\u043d\u0430',
       '\u0421\u0432\u0435\u0442\u044f\u0449\u0438\u0439\u0441\u044f \u0440\u0430\u0437\u043b\u043e\u043c',
       '\u0425\u043e\u043b\u043e\u0434\u043d\u0430\u044f \u0431\u0435\u0437\u0434\u043d\u0430',
-      '\u0421\u0442\u0430\u044f \u0445\u0438\u0449\u043d\u0438\u043a\u043e\u0432',
+      '\u0413\u043b\u0443\u0431\u0438\u043d\u043d\u044b\u0435 \u0442\u0435\u0447\u0435\u043d\u0438\u044f',
       '\u0414\u0440\u0435\u0432\u043d\u0438\u0439 \u043e\u043a\u0435\u0430\u043d',
       '\u0421\u0435\u0440\u0434\u0446\u0435 \u0433\u043e\u043b\u043e\u0434\u0430'
     ],
@@ -26,7 +26,7 @@
       'Dark Trench',
       'Glowing Rift',
       'Cold Abyss',
-      'Predator Pack',
+      'Deep Currents',
       'Ancient Ocean',
       'Heart of Hunger'
     ]
@@ -50,20 +50,25 @@
       campaign: '\u041f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435',
       chapter: '\u0413\u041b\u0410\u0412\u0410',
       back: '\u041d\u0430\u0437\u0430\u0434',
-      play: '\u0418\u0433\u0440\u0430\u0442\u044c'
+      play: '\u0418\u0433\u0440\u0430\u0442\u044c',
+      previousChapter: '\u041f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0430\u044f \u0433\u043b\u0430\u0432\u0430',
+      nextChapter: '\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0430\u044f \u0433\u043b\u0430\u0432\u0430',
+      chapterStars: '\u0417\u0432\u0451\u0437\u0434\u044b \u0433\u043b\u0430\u0432\u044b'
     },
     en: {
       campaign: 'Campaign',
       chapter: 'CHAPTER',
       back: 'Back',
-      play: 'Play'
+      play: 'Play',
+      previousChapter: 'Previous chapter',
+      nextChapter: 'Next chapter',
+      chapterStars: 'Chapter stars'
     }
   };
 
   const dom = {};
   let initialized = false;
   let messageTimer = 0;
-  let cloudLoaded = false;
   let progress = normalizeProgress(window.JorSaveManager?.getSection?.('campaign', null));
   let state = {
     open: false,
@@ -90,6 +95,7 @@
     dom.title = document.getElementById('campaignTitle');
     dom.name = document.getElementById('campaignName');
     dom.stars = document.getElementById('campaignStarsText');
+    dom.starsGroup = dom.stars?.closest('.campaignStars');
     dom.grid = document.getElementById('campaignGrid');
     dom.message = document.getElementById('campaignMessage');
     dom.backButton = document.getElementById('campaignBackBtn');
@@ -155,16 +161,13 @@
   }
 
   async function loadCloud() {
-    if (cloudLoaded) return true;
-    cloudLoaded = true;
     try {
-      await window.JorSaveManager?.load?.();
+      const loaded = await window.JorSaveManager?.load?.();
       progress = normalizeProgress(window.JorSaveManager?.getSection?.('campaign', null));
       window.JorMetaUI?.setStars?.(totalStars());
       render();
-      return true;
+      return loaded !== false;
     } catch (error) {
-      cloudLoaded = false;
       console.warn('Campaign save load error:', error);
       return false;
     }
@@ -262,6 +265,7 @@
   }
 
   function open() {
+    if (!window.JorSaveManager?.isCloudLoaded?.()) loadCloud();
     progress = normalizeProgress(window.JorSaveManager?.getSection?.('campaign', progress));
     const recommended = recommendedLevelNumber();
     state.selectedLevel = recommended;
@@ -316,6 +320,7 @@
   function completeLevel(levelNumber, stars) {
     const level = Math.max(1, Math.min(TOTAL_LEVELS, Math.floor(Number(levelNumber) || 1)));
     const value = Math.max(0, Math.min(3, Math.floor(Number(stars) || 0)));
+    let newTrophyChapter = null;
     if (value > levelStarsFor(level)) {
       progress.stars[String(level)] = value;
     }
@@ -332,11 +337,13 @@
       if (!alreadyHadTrophy) {
         progress.pendingChapterTrophies = progress.pendingChapterTrophies || {};
         progress.pendingChapterTrophies[trophyKey] = true;
+        newTrophyChapter = chapter;
       }
     }
     saveProgress();
     window.JorMetaUI?.setStars?.(totalStars());
     render();
+    return { newTrophyChapter };
   }
 
   function createStar(active) {
@@ -375,6 +382,9 @@
     if (dom.trophy) dom.trophy.classList.toggle('complete', hasChapterTrophy(state.chapter));
     if (dom.prevButton) dom.prevButton.disabled = state.chapter <= 0;
     if (dom.nextButton) dom.nextButton.disabled = state.chapter >= CHAPTER_COUNT - 1;
+    if (dom.prevButton) dom.prevButton.setAttribute('aria-label', tr('previousChapter'));
+    if (dom.nextButton) dom.nextButton.setAttribute('aria-label', tr('nextChapter'));
+    if (dom.starsGroup) dom.starsGroup.setAttribute('aria-label', tr('chapterStars'));
     if (dom.backButton) dom.backButton.textContent = tr('back');
     if (dom.playButton) {
       dom.playButton.textContent = tr('play');

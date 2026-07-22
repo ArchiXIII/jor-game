@@ -1,35 +1,60 @@
+const enemyAiFrameContext = {};
+
+function prepareEnemyAiFrameContext() {
+  const context = enemyAiFrameContext;
+  context.endlessState = endlessMode ? getEndlessPressureState() : null;
+  context.campaignLevel = !endlessMode && App.gameMode === 'campaign'
+    ? App.campaignRun?.level || (typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel() : null)
+    : null;
+  context.campaignThreat = window.getCampaignThreatProgress(context.campaignLevel);
+  context.allowAmbush = context.campaignLevel?.allowAmbush !== false;
+  context.allowSchool = context.campaignLevel?.allowSchool !== false;
+  context.ambushChargeFrames = context.campaignLevel ? Math.round(70 - context.campaignThreat * 6) : 60;
+  context.ambushCooldownFrames = context.campaignLevel ? Math.round(300 - context.campaignThreat * 60) : 300;
+  context.endlessAggroScale = context.endlessState ? 1 + context.endlessState.pressure * 0.2 + context.endlessState.doomProgress * 0.34 : 1;
+  context.endlessSpeedScale = context.endlessState ? 1 + context.endlessState.pressure * 0.08 + context.endlessState.doomProgress * 0.13 : 1;
+  context.worldSpeedScale = getWorldSpeedScale();
+  const isTouchDevice = typeof hasTouchControls === 'function' && hasTouchControls();
+  const mobileGameplayScale = ENDLESS_CONFIG.MOBILE_GAMEPLAY_SPEED_SCALE ?? 0.9;
+  const mobileEnemyScale = context.campaignLevel ? 0.9 : 0.85;
+  const campaignEnemySpeedScale = context.campaignLevel ? Math.max(0.5, Number(context.campaignLevel.enemySpeedScale) || 1) : 1;
+  context.enemyPlatformSpeedScale = (isTouchDevice ? mobileEnemyScale * mobileGameplayScale : (endlessMode ? 1.1 : 1)) * campaignEnemySpeedScale;
+  context.lateGameScale = context.endlessState ? context.endlessState.lateGameScale : 0;
+  context.viewSpan = Math.max(canvas.width, canvas.height) / Math.max(0.1, camera.zoom || 1);
+  return context;
+}
+
 class EnemyAiMethods {
-      update(player, foods, enemies) {
+      update(player, foods, enemies, frameContext = prepareEnemyAiFrameContext()) {
         this.dirTimer -= 1;
         if (this.ambushCooldown > 0) this.ambushCooldown -= 1;
+        if (this.campaignAlarmTimer > 0) this.campaignAlarmTimer -= 1;
 
-        const endlessState = endlessMode ? getEndlessPressureState() : null;
-        const campaignLevel = !endlessMode && App.gameMode === 'campaign'
-          ? App.campaignRun?.level || (typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel() : null)
-          : null;
-        const allowAmbush = campaignLevel?.allowAmbush !== false;
-        const allowSchool = campaignLevel?.allowSchool !== false;
-        const ambushChargeFrames = campaignLevel ? 70 : 60;
-        const ambushCooldownFrames = 300;
+        const endlessState = frameContext.endlessState;
+        const campaignLevel = frameContext.campaignLevel;
+        const campaignThreat = frameContext.campaignThreat;
+        const allowAmbush = frameContext.allowAmbush;
+        const allowSchool = frameContext.allowSchool;
+        const ambushChargeFrames = frameContext.ambushChargeFrames;
+        const ambushCooldownFrames = frameContext.ambushCooldownFrames;
         this.ambushChargeTarget = ambushChargeFrames;
-        const endlessAggroScale = endlessState ? 1 + endlessState.pressure * 0.2 + endlessState.doomProgress * 0.34 : 1;
-        const endlessSpeedScale = endlessState ? 1 + endlessState.pressure * 0.08 + endlessState.doomProgress * 0.13 : 1;
-        const worldSpeedScale = getWorldSpeedScale();
-        const isTouchDevice = typeof hasTouchControls === 'function' && hasTouchControls();
-        const mobileGameplayScale = ENDLESS_CONFIG.MOBILE_GAMEPLAY_SPEED_SCALE ?? 0.9;
-        const enemyPlatformSpeedScale = isTouchDevice ? 0.85 * mobileGameplayScale : (endlessMode ? 1.1 : 1);
+        const endlessAggroScale = frameContext.endlessAggroScale;
+        const endlessSpeedScale = frameContext.endlessSpeedScale;
+        const worldSpeedScale = frameContext.worldSpeedScale;
+        const enemyPlatformSpeedScale = frameContext.enemyPlatformSpeedScale;
         // РџСЂРѕРіСЂРµСЃСЃ late-game: 0 РІРЅРµ endless, 0..2.2 РІ endless. Р’Р»РёСЏРµС‚ РЅР°
         // СЃРєРѕСЂРѕСЃС‚СЊ, СЂРµР°РєС‚РёРІРЅРѕСЃС‚СЊ РїРѕРІРѕСЂРѕС‚Р°, СЃРёР»Сѓ Р·Р°СЃР°РґРЅРѕРіРѕ СЂС‹РІРєР°. Р­С‚Рѕ
         // РєР»СЋС‡РµРІР°СЏ РїРµСЂРµРјРµРЅРЅР°СЏ РґР»СЏ РЅР°СЂР°СЃС‚Р°РЅРёСЏ СЃР»РѕР¶РЅРѕСЃС‚Рё Рє С„РёРЅР°Р»Сѓ.
-        const lateGameScale = endlessState ? endlessState.lateGameScale : 0;
+        const lateGameScale = frameContext.lateGameScale;
         const playerIsEdibleThreat = playerCanEatTarget(this);
+        const campaignAlarmActive = this.campaignAlarmTimer > 0;
         const dx = player.x - this.x;
         const dy = player.y - this.y;
         const dist = Math.hypot(dx, dy) || 1;
         if (typeof updateEnemySpikeShooter === 'function') {
           updateEnemySpikeShooter(this, player, dx, dy, dist, lateGameScale);
         }
-        const viewSpan = Math.max(canvas.width, canvas.height) / Math.max(0.1, camera.zoom || 1);
+        const viewSpan = frameContext.viewSpan;
         const aiDistanceTier = dist > viewSpan * 0.74 + 220
           ? 2
           : dist > viewSpan * 0.48 + 150
@@ -95,8 +120,8 @@ class EnemyAiMethods {
           1.4
         );
         // Р”Р°Р»СЊРЅРѕСЃС‚СЊ РїСЂРµСЃР»РµРґРѕРІР°РЅРёСЏ Р·Р°РІРёСЃРёС‚ РѕС‚ СЂР°Р·РјРµСЂР° Рё Р»РёС‡РЅРѕСЃС‚Рё.
-        const baseChase = 200 + sizeArchetype * 80 + this.aiPersonality * 70;
-        const playerChaseRange = baseChase + this.mawLevel * 18
+        const baseChase = (200 + sizeArchetype * 80 + this.aiPersonality * 70) * (1 + campaignThreat * 0.2);
+        const playerChaseRange = baseChase + this.mawLevel * 18 + (campaignAlarmActive ? 260 : 0)
           + (endlessState ? endlessState.pressure * 26 + endlessState.doomProgress * 34 : 0);
         const playerFleeRange = 180 + this.agilityLevel * 22
           + (endlessState ? endlessState.pressure * 24 + endlessState.doomProgress * 44 : 0);
@@ -127,8 +152,8 @@ class EnemyAiMethods {
             // Р‘РѕР»СЊС€РёРµ/СЃРјРµР»С‹Рµ СЃ Р±РѕР»СЊС€РµР№ РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊСЋ РёРґСѓС‚ РІ Р·Р°СЃР°РґСѓ,
             // РјРµР»РєРёРµ вЂ” РІ РїСЂСЏРјСѓСЋ РїРѕРіРѕРЅСЋ.
             const ambushPreference = sizeArchetype * 0.5 + this.aiPersonality * 0.35;
-            const ambushPreferenceThreshold = campaignLevel ? 0.2 : 0.55;
-            const canStartAmbush = !campaignLevel || (this.aiPersonality < 0.32 && this.ambushCooldown <= 0);
+            const ambushPreferenceThreshold = campaignLevel ? 0.2 - campaignThreat * 0.03 : 0.55;
+            const canStartAmbush = !campaignLevel || (this.aiPersonality < 0.32 + campaignThreat * 0.18 && this.ambushCooldown <= 0);
             if (allowAmbush && canStartAmbush && dist > playerChaseRange * 0.55 && ambushPreference > ambushPreferenceThreshold && this.ambushCharge < ambushChargeFrames) {
               nextState = 'ambush';
             } else {
@@ -150,6 +175,12 @@ class EnemyAiMethods {
           }
 
           this.aiState = nextState;
+        }
+
+        if (campaignAlarmActive && !playerIsEdibleThreat && player.radius < this.radius * 0.97) {
+          this.aiState = 'hunt';
+          this.aiStateTimer = Math.max(this.aiStateTimer, 12);
+          this.attackPulse = Math.max(this.attackPulse, 0.5 + Math.sin(simulationFrame * 0.16) * 0.12);
         }
 
         // РќР°РєРѕРїР»РµРЅРёРµ В«СѓСЃС‚Р°Р»РѕСЃС‚Рё РїРѕРіРѕРЅРёВ» вЂ” РЅСѓР¶РЅРѕ, С‡С‚РѕР±С‹ РёРіСЂРѕРє РјРѕРі СЂРµР°Р»СЊРЅРѕ СѓР№С‚Рё.
@@ -178,7 +209,7 @@ class EnemyAiMethods {
 
         // Р‘Р°Р·РѕРІРѕРµ РїРѕРІРµРґРµРЅРёРµ РїРѕ РёРіСЂРѕРєСѓ (СЃ СѓС‡С‘С‚РѕРј СЃРѕСЃС‚РѕСЏРЅРёСЏ).
         if (!playerIsEdibleThreat && player.radius < this.radius * 0.97 && dist < playerChaseRange) {
-          const chaseStrength = (0.042 + this.mawLevel * 0.004) * endlessAggroScale * stateChaseScale * worldSpeedScale;
+          const chaseStrength = (0.042 + this.mawLevel * 0.004) * (1 + campaignThreat * 0.3) * endlessAggroScale * stateChaseScale * worldSpeedScale;
           this.vx += (dx / dist) * chaseStrength;
           this.vy += (dy / dist) * chaseStrength;
           this.attackPulse = Math.min(1, this.attackPulse + 0.016 * endlessAggroScale * stateChaseScale);
@@ -295,7 +326,7 @@ class EnemyAiMethods {
           this.swallowPulse = Math.max(this.swallowPulse, 0.12 + ambushProgress * 0.24);
           const centerVisible = isWithinBounds(this, getViewBounds(0), 0);
           if (this.ambushCharge > ambushThreshold && !playerIsEdibleThreat && centerVisible) {
-            const burst = (1.6 + sizeArchetype * 0.6 + lateGameScale * 0.4) * worldSpeedScale;
+            const burst = (1.6 + sizeArchetype * 0.6 + lateGameScale * 0.4) * (1 + campaignThreat * 0.12) * worldSpeedScale;
             this.vx += (dx / dist) * burst;
             this.vy += (dy / dist) * burst;
             this.attackPulse = 1;
@@ -348,7 +379,7 @@ class EnemyAiMethods {
                              : 1.0;
         // late-game СѓСЃРєРѕСЂРµРЅРёРµ: +0.45 Рє РјР°РєСЃРёРјР°Р»РєРµ Рє С„РёРЅР°Р»Сѓ endless.
         const lateSpeedBonus = lateGameScale * 0.28;
-        const computedSpeed = (baseMaxSpeed + perkSpeedBonus - shellPenalty + lateSpeedBonus) * stateSpeedCap * worldSpeedScale;
+        const computedSpeed = (baseMaxSpeed + perkSpeedBonus - shellPenalty + lateSpeedBonus) * (1 + campaignThreat * 0.1) * stateSpeedCap * worldSpeedScale;
         const maxSpeed = Math.max((this.hasShield ? 1.14 : 1.26) * worldSpeedScale, computedSpeed);
         const currentSpeed = Math.hypot(this.vx, this.vy);
         if (currentSpeed > maxSpeed) {
@@ -372,7 +403,7 @@ class EnemyAiMethods {
         // Р’СЂР°РіРё РІ late-game РїРѕРІРѕСЂР°С‡РёРІР°СЋС‚СЃСЏ РѕС‰СѓС‚РёРјРѕ Р¶РёРІРµРµ.
         const turnResponsiveness = this.spikeChargeTimer > 0
           ? 0.24 + this.agilityLevel * 0.018
-          : 0.14 + this.agilityLevel * 0.018 + lateGameScale * 0.024;
+          : 0.14 + this.agilityLevel * 0.018 + lateGameScale * 0.024 + campaignThreat * 0.025;
         this.displayAngle += angleDelta * turnResponsiveness;
 
         const animationCurrentSpeed = (currentSpeed * enemyPlatformSpeedScale) / Math.max(1, worldSpeedScale);
@@ -388,4 +419,3 @@ class EnemyAiMethods {
 const enemyAiDescriptors = Object.getOwnPropertyDescriptors(EnemyAiMethods.prototype);
 delete enemyAiDescriptors.constructor;
 Object.defineProperties(Enemy.prototype, enemyAiDescriptors);
-

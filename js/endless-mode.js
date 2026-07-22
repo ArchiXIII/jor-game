@@ -112,11 +112,25 @@ function getEnemySpikeStartFrame() {
   return ENDLESS_CONFIG.WAVE_SECONDS * 60 * 4;
 }
 
-function getEnemySpikeThreatProgress() {
-  if (!endlessMode) return 0;
-  return clamp((endlessTime - getEnemySpikeStartFrame()) / (60 * 180), 0, 1);
+function getCampaignEnemyShotLevel() {
+  if (endlessMode || App.gameMode !== 'campaign') return null;
+  const level = typeof getCampaignLevelBalance === 'function' ? getCampaignLevelBalance() : null;
+  return level?.allowEnemyShots ? level : null;
 }
 
+function isEnemySpikeModeActive() {
+  return endlessMode
+    ? endlessTime >= getEnemySpikeStartFrame()
+    : !!getCampaignEnemyShotLevel();
+}
+
+function getEnemySpikeThreatProgress() {
+  if (endlessMode) {
+    return clamp((endlessTime - getEnemySpikeStartFrame()) / (60 * 180), 0, 1);
+  }
+  const level = getCampaignEnemyShotLevel();
+  return level ? clamp((level.n - 51) / 29, 0, 0.72) : 0;
+}
 function isEnemyVisibleForSpikeShot(enemy) {
   if (!enemy) return false;
   const bounds = getViewBounds(0);
@@ -128,11 +142,31 @@ function isEnemyVisibleForSpikeShot(enemy) {
   );
 }
 
+function getCampaignActiveSpikeCharges() {
+  let count = 0;
+  for (let i = 0; i < enemies.length; i++) {
+    if (enemies[i].spikeChargeTimer > 0) count += 1;
+  }
+  return count;
+}
+
 function canEnemyUseSpikeShot(enemy, player, dist) {
-  if (!endlessMode || endlessTime < getEnemySpikeStartFrame()) return false;
-  if (!enemy || !player || enemySpikes.length >= SECONDARY_ENTITY_LIMITS.ENEMY_SPIKES_MAX) return false;
+  if (!isEnemySpikeModeActive()) return false;
+  const campaignLevel = getCampaignEnemyShotLevel();
+  const projectileLimit = campaignLevel
+    ? Math.max(3, Math.floor(Number(campaignLevel.enemyProjectileLimit) || 3))
+    : SECONDARY_ENTITY_LIMITS.ENEMY_SPIKES_MAX;
+  if (!enemy || !player || enemySpikes.length >= projectileLimit) return false;
   if (enemySpikeGlobalCooldown > 0) return false;
-  if (enemy.radius < Math.max(34, player.radius * 1.18)) return false;
+  if (campaignLevel) {
+    const maxCharges = Math.max(1, Math.floor(Number(campaignLevel.enemyConcurrentShooters) || 1));
+    if (getCampaignActiveSpikeCharges() >= maxCharges) return false;
+  }
+  if (campaignLevel && enemy.aiPersonality >= clamp(Number(campaignLevel.enemyShooterShare) || 0.1, 0, 1)) return false;
+  const shooterRadius = campaignLevel
+    ? Math.max(30, player.radius * 1.12)
+    : Math.max(34, player.radius * 1.18);
+  if (enemy.radius < shooterRadius) return false;
   if (playerCanEatTarget(enemy)) return false;
   if (!isEnemyVisibleForSpikeShot(enemy)) return false;
 
@@ -143,18 +177,38 @@ function canEnemyUseSpikeShot(enemy, player, dist) {
 
 function getEnemySpikeCooldownFrames() {
   const progress = getEnemySpikeThreatProgress();
+  if (getCampaignEnemyShotLevel()) {
+    return Math.round(randomRange(900, 1280) - progress * randomRange(140, 240));
+  }
   return Math.round(randomRange(680, 980) - progress * randomRange(120, 220));
 }
 
 function getEnemySpikeGlobalCooldownFrames() {
   const progress = getEnemySpikeThreatProgress();
+  if (getCampaignEnemyShotLevel()) {
+    return Math.round(randomRange(440, 620) - progress * randomRange(80, 150));
+  }
   return Math.round(randomRange(250, 360) - progress * randomRange(45, 90));
 }
 
 function spawnEnemySpike(enemy, angle) {
-  if (!enemy || enemySpikes.length >= SECONDARY_ENTITY_LIMITS.ENEMY_SPIKES_MAX) return;
-  const pressure = getEndlessPressureState()?.pressure ?? 0;
-  enemySpikes.push(new EnemySpikeProjectile(enemy, angle, pressure));
+  const campaignLevel = getCampaignEnemyShotLevel();
+  const projectileLimit = campaignLevel
+    ? Math.max(3, Math.floor(Number(campaignLevel.enemyProjectileLimit) || 3))
+    : SECONDARY_ENTITY_LIMITS.ENEMY_SPIKES_MAX;
+  if (!enemy || enemySpikes.length >= projectileLimit) return;
+  const pressure = endlessMode
+    ? getEndlessPressureState()?.pressure ?? 0
+    : 0.28 + getEnemySpikeThreatProgress() * 0.5;
+  const doubleChance = campaignLevel ? clamp(Number(campaignLevel.enemyDoubleShotChance) || 0, 0, 1) : 0;
+  const doubleShot = doubleChance > 0 && enemy.aiPersonality < doubleChance && enemy.radius > player.radius * 1.2 && enemySpikes.length + 1 < projectileLimit;
+  if (doubleShot) {
+    const spread = clamp(Number(campaignLevel.enemyDoubleShotSpread) || 0.18, 0.1, 0.28);
+    enemySpikes.push(new EnemySpikeProjectile(enemy, angle - spread, pressure));
+    enemySpikes.push(new EnemySpikeProjectile(enemy, angle + spread, pressure));
+  } else {
+    enemySpikes.push(new EnemySpikeProjectile(enemy, angle, pressure));
+  }
   enemySpikeGlobalCooldown = getEnemySpikeGlobalCooldownFrames();
 }
 
@@ -162,7 +216,7 @@ function updateEnemySpikeShooter(enemy, player, dx, dy, dist, lateGameScale = 0)
   if (!enemy || !player) return;
 
   if (enemy.spikeChargeTimer > 0) {
-    if (!endlessMode) {
+    if (!isEnemySpikeModeActive()) {
       enemy.spikeChargeTimer = 0;
       enemy.spikeChargeDuration = 0;
       enemy.spikeShotCooldown = Math.max(enemy.spikeShotCooldown, 150);
@@ -198,6 +252,7 @@ function updateEnemySpikeShooter(enemy, player, dx, dy, dist, lateGameScale = 0)
   const chargeDuration = Math.round(74 - progress * 10 - Math.min(5, lateGameScale * 1.5));
   enemy.spikeChargeDuration = Math.max(58, chargeDuration);
   enemy.spikeChargeTimer = enemy.spikeChargeDuration;
+  if (getCampaignEnemyShotLevel()) enemySpikeGlobalCooldown = 18;
   enemy.spikeAimAngle = Math.atan2(dy, dx);
   enemy.aiState = 'ambush';
   enemy.aiStateTimer = Math.max(enemy.aiStateTimer, enemy.spikeChargeDuration + 10);
@@ -205,6 +260,7 @@ function updateEnemySpikeShooter(enemy, player, dx, dy, dist, lateGameScale = 0)
 }
 
 function updateEnemySpikes() {
+  if (enemySpikeGlobalCooldown > 0) enemySpikeGlobalCooldown -= 1;
   const despawnBounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 160);
   for (let i = enemySpikes.length - 1; i >= 0; i--) {
     const spike = enemySpikes[i];

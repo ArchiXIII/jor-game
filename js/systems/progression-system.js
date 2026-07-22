@@ -13,6 +13,11 @@ function getTotalRewardLevels() {
       return (firstPhaseRewardLevel - 1) + (endlessRewardLevel - 1);
     }
 
+    function queueRecoveryEvolution() {
+      if (recoveryEvolutionPending) return;
+      recoveryEvolutionPending = true;
+    }
+
     function getNextFirstPhaseRewardLevel() {
       const cap = getFirstPhaseRewardCap();
       if (firstPhaseRewardLevel > cap) return null;
@@ -57,7 +62,6 @@ function updateEndlessProgression() {
       if (!endlessMode) return;
 
       endlessTime += 1;
-      if (enemySpikeGlobalCooldown > 0) enemySpikeGlobalCooldown -= 1;
       if (typeof getEndlessPressureState === 'function') {
         const endlessState = getEndlessPressureState();
         endlessDifficulty = Math.min(
@@ -82,14 +86,19 @@ function handlePostSimulationProgression() {
       if (typeof updateCampaignRun === 'function') updateCampaignRun();
       if (typeof isCampaignRunCompleted === 'function' && isCampaignRunCompleted()) return true;
       if (typeof isCampaignRunFinishing === 'function' && isCampaignRunFinishing()) return true;
+      if (recoveryEvolutionCooldown > 0) recoveryEvolutionCooldown -= 1;
 
       const nextFirstPhaseRewardLevel = getNextFirstPhaseRewardLevel();
       const nextEndlessRewardLevel = getNextEndlessRewardLevel();
       const canOpenPhaseLevelUp = !endlessMode && nextFirstPhaseRewardLevel !== null && player.level >= nextFirstPhaseRewardLevel;
       const canOpenEndlessLevelUp = endlessMode && nextEndlessRewardLevel !== null && endlessLevel >= nextEndlessRewardLevel;
       const canOpenEvolutionNow = (player.evolutionDelayTimer ?? 0) <= 0;
-      if ((canOpenPhaseLevelUp || canOpenEndlessLevelUp) && !evolutionPending && canOpenEvolutionNow) {
-        openEvolutionPanel();
+      const canOpenRegularEvolution = canOpenPhaseLevelUp || canOpenEndlessLevelUp;
+      if (canOpenRegularEvolution && !evolutionPending && canOpenEvolutionNow) {
+        recoveryEvolutionPending = false;
+        openEvolutionPanel('normal');
+      } else if (recoveryEvolutionPending && recoveryEvolutionCooldown <= 0 && !evolutionPending && canOpenEvolutionNow) {
+        openEvolutionPanel('recovery');
       }
 
       const deathRadius = endlessMode

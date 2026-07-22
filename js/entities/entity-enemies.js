@@ -37,34 +37,47 @@ class EnemySpikeProjectile {
       draw() {
         const fade = clamp(this.life / this.maxLife, 0, 1);
         const pulse = 0.92 + Math.sin(frameTime * 0.16 + this.spin) * 0.08;
+        const sprite = getEnemySpikeProjectileSprite();
 
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
         ctx.globalAlpha = fade;
-
-        const spikeGradient = ctx.createLinearGradient(-this.length * 0.45, 0, this.length * 0.58, 0);
-        spikeGradient.addColorStop(0, 'rgba(122, 30, 44, 0.92)');
-        spikeGradient.addColorStop(0.52, 'rgba(255, 126, 102, 0.98)');
-        spikeGradient.addColorStop(1, 'rgba(255, 232, 210, 1)');
-        ctx.fillStyle = spikeGradient;
-        ctx.beginPath();
-        ctx.moveTo(this.length * 0.62, 0);
-        ctx.quadraticCurveTo(this.length * 0.12, -this.radius * 1.45 * pulse, -this.length * 0.48, -this.radius * 0.62);
-        ctx.quadraticCurveTo(-this.length * 0.18, 0, -this.length * 0.48, this.radius * 0.62);
-        ctx.quadraticCurveTo(this.length * 0.12, this.radius * 1.45 * pulse, this.length * 0.62, 0);
-        ctx.fill();
-
-        ctx.strokeStyle = 'rgba(255, 238, 226, 0.48)';
-        ctx.lineWidth = Math.max(1, this.radius * 0.18);
-        ctx.beginPath();
-        ctx.moveTo(-this.length * 0.16, -this.radius * 0.28);
-        ctx.lineTo(this.length * 0.34, -this.radius * 0.08);
-        ctx.stroke();
-
+        ctx.scale(this.length / 100, this.radius * pulse / 20);
+        ctx.drawImage(sprite, -60, -36);
         ctx.restore();
       }
     }
+
+let enemySpikeProjectileSprite = null;
+
+function getEnemySpikeProjectileSprite() {
+  if (enemySpikeProjectileSprite) return enemySpikeProjectileSprite;
+  enemySpikeProjectileSprite = createSpriteCanvas(128, 72, (spriteCtx) => {
+    const length = 100;
+    const radius = 20;
+    spriteCtx.translate(60, 36);
+    const spikeGradient = spriteCtx.createLinearGradient(-length * 0.45, 0, length * 0.58, 0);
+    spikeGradient.addColorStop(0, 'rgba(122, 30, 44, 0.92)');
+    spikeGradient.addColorStop(0.52, 'rgba(255, 126, 102, 0.98)');
+    spikeGradient.addColorStop(1, 'rgba(255, 232, 210, 1)');
+    spriteCtx.fillStyle = spikeGradient;
+    spriteCtx.beginPath();
+    spriteCtx.moveTo(length * 0.62, 0);
+    spriteCtx.quadraticCurveTo(length * 0.12, -radius * 1.45, -length * 0.48, -radius * 0.62);
+    spriteCtx.quadraticCurveTo(-length * 0.18, 0, -length * 0.48, radius * 0.62);
+    spriteCtx.quadraticCurveTo(length * 0.12, radius * 1.45, length * 0.62, 0);
+    spriteCtx.fill();
+    spriteCtx.strokeStyle = 'rgba(255, 238, 226, 0.48)';
+    spriteCtx.lineWidth = radius * 0.18;
+    spriteCtx.beginPath();
+    spriteCtx.moveTo(-length * 0.16, -radius * 0.28);
+    spriteCtx.lineTo(length * 0.34, -radius * 0.08);
+    spriteCtx.stroke();
+  });
+  return enemySpikeProjectileSprite;
+}
+
 class Enemy {
       constructor(sizeFactor = 1) {
         this.type = 'basic';
@@ -140,6 +153,8 @@ class Enemy {
         this.spikeChargeTimer = 0;
         this.spikeChargeDuration = 0;
         this.spikeAimAngle = 0;
+        this.campaignAlarmTimer = 0;
+        this.campaignAlarmDuration = 0;
         this.lastTargetX = 0;                         // РєСѓРґР° РЅР°РїСЂР°РІР»СЏР»СЃСЏ РІ РїСЂРѕС€Р»С‹Р№ СЂР°Р·
         this.lastTargetY = 0;
         // РљСЌС€ СЃС‚Р°Р№РЅРѕРіРѕ РёРјРїСѓР»СЊСЃР°: РІС‹С‡РёСЃР»СЏРµС‚СЃСЏ РІ retarget-С†РёРєР»Рµ, Р° РЅРµ РєР°Р¶РґС‹Р№
@@ -269,6 +284,9 @@ class Enemy {
       }
 
       findNearbyTargets(player) {
+        if (typeof findNearbyEnemyTargets === 'function') {
+          return findNearbyEnemyTargets(this, player, this.cachedTargets);
+        }
         let closestFood = null;
         let closestFoodDistSq = Infinity;
         let closestPrey = null;
@@ -285,7 +303,7 @@ class Enemy {
         const threatAvoidRangeSq = threatAvoidRange * threatAvoidRange;
 
         if (!endlessMode && this.radius < this.getRadiusCap(player) - 0.25) {
-          const nearbyFoods = getNearbyFoods(this.x, this.y, foodSeekRange, []);
+          const nearbyFoods = getNearbyFoods(this.x, this.y, foodSeekRange);
           for (const food of nearbyFoods) {
             const dx = food.x - this.x;
             const dy = food.y - this.y;
@@ -297,7 +315,7 @@ class Enemy {
           }
         }
 
-        const nearbyEnemies = getNearbyEnemies(this.x, this.y, maxEnemyRange, []);
+        const nearbyEnemies = getNearbyEnemies(this.x, this.y, maxEnemyRange);
         for (const enemy of nearbyEnemies) {
           if (enemy === this) continue;
 

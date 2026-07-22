@@ -86,7 +86,7 @@ function spawnShatterFood(x, y, amount) {
       }
 
       if (freeSlots > 0) {
-        const nearbyFoods = getNearbyFoods(mouth.x, mouth.y, pullRange, []);
+        const nearbyFoods = getNearbyFoods(mouth.x, mouth.y, pullRange);
         for (const food of nearbyFoods) {
           tryRegisterTarget(food);
         }
@@ -99,7 +99,7 @@ function spawnShatterFood(x, y, amount) {
           tryRegisterTarget(tomato);
         }
 
-        const nearbyEnemies = getNearbyEnemies(mouth.x, mouth.y, pullRange, []);
+        const nearbyEnemies = getNearbyEnemies(mouth.x, mouth.y, pullRange);
         for (const enemy of nearbyEnemies) {
           if (!playerCanEatTarget(enemy)) continue;
           tryRegisterTarget(enemy);
@@ -176,7 +176,7 @@ function handlePlayerCollisions() {
       }
 
       if (foodsRemovedThisFrame) rebuildSpatialIndex();
-      const nearbyPlayerFoods = getNearbyFoods(player.x, player.y, player.radius + 48, []);
+      const nearbyPlayerFoods = getNearbyFoods(player.x, player.y, player.radius + 48);
       for (const food of nearbyPlayerFoods) {
         const foodIndex = foods.indexOf(food);
         if (foodIndex === -1) continue;
@@ -184,7 +184,7 @@ function handlePlayerCollisions() {
 
         foods.splice(foodIndex, 1);
         playEatingSound();
-        spawnFoodEatEffect(food, player);
+        player.triggerSwallow(food instanceof ShardFood ? 0.42 : 0.72);
         if (food instanceof ShardFood) {
           player.grow(0.10);
           addScore(ENDLESS_CONFIG.SCORE_PER_SHARD);
@@ -195,12 +195,22 @@ function handlePlayerCollisions() {
         }
 
         if (!endlessMode && !(food instanceof ShardFood) && Math.random() < 0.18) {
-          dnaOrbs.push(new DNAOrb(food.x, food.y));
+          const orbAngle = Math.random() * Math.PI * 2;
+          const minOrbDistance = Math.max(100, player.radius * 2.6);
+          const maxOrbDistance = Math.max(220, player.radius * 4.5);
+          const orbDistance = minOrbDistance + Math.random() * (maxOrbDistance - minOrbDistance);
+          dnaOrbs.push(new DNAOrb(
+            player.x + Math.cos(orbAngle) * orbDistance,
+            player.y + Math.sin(orbAngle) * orbDistance,
+            undefined,
+            { collectDelay: 18 }
+          ));
         }
       }
 
       for (let i = dnaOrbs.length - 1; i >= 0; i--) {
         const orb = dnaOrbs[i];
+        if (orb.collectDelay > 0) continue;
 
         if (isWithinDistance(player, orb, player.radius + orb.radius + 2)) {
           dnaOrbs.splice(i, 1);
@@ -208,7 +218,7 @@ function handlePlayerCollisions() {
           player.dna += 1;
           player.grow(endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_GROWTH : 0.95);
           addScore(endlessMode ? ENDLESS_CONFIG.SCORE_PER_ENDLESS_DNA : ENDLESS_CONFIG.SCORE_PER_DNA);
-          if (typeof recordCampaignDna === 'function') recordCampaignDna();
+          if (orb.countsForCampaignDna && typeof recordCampaignDna === 'function') recordCampaignDna();
           if (typeof recordCampaignFood === 'function') recordCampaignFood();
         }
       }
@@ -218,7 +228,7 @@ function handlePlayerCollisions() {
         if (isWithinDistance(player, tomato, player.radius + tomato.radius + 2)) {
           tomatoFoods.splice(i, 1);
           playEatingSound();
-          spawnFoodEatEffect(tomato, player, { particleCount: 10, ringCount: 2 });
+          player.triggerSwallow(0.72);
           player.grow(endlessMode ? ENDLESS_CONFIG.TOMATO_ENDLESS_GROWTH : ENDLESS_CONFIG.TOMATO_GROWTH);
           addScore(ENDLESS_CONFIG.SCORE_PER_TOMATO);
           if (typeof recordCampaignTomato === 'function') recordCampaignTomato();
@@ -239,15 +249,21 @@ function handlePlayerCollisions() {
 
             enemy.receiveImpact(1);
             playEatingSound();
-            spawnEnemyRemains(enemy, player);
+            spawnEnemyEatEffect(enemy, player);
             enemies.splice(i, 1);
+            if (typeof triggerCampaignEnemyAlarm === 'function') triggerCampaignEnemyAlarm(enemy.x, enemy.y);
             enemiesEatenThisRound += 1;
             if (typeof recordCampaignEnemy === 'function') recordCampaignEnemy();
             player.dna += endlessMode ? 1 : 3;
             player.grow((endlessMode ? 0.28 : 1.8) * (player.enemyGrowthBonus || 1));
             addScore(ENDLESS_CONFIG.SCORE_PER_ENEMY_BASE + enemy.radius * ENDLESS_CONFIG.SCORE_PER_ENEMY_RADIUS);
             if (dnaOrbs.length < SECONDARY_ENTITY_LIMITS.DNA_MAX) {
-              dnaOrbs.push(new DNAOrb(enemy.x, enemy.y, endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_RADIUS : undefined));
+              dnaOrbs.push(new DNAOrb(
+                enemy.x,
+                enemy.y,
+                endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_RADIUS : undefined,
+                { countsForCampaignDna: false }
+              ));
             }
 
             if (player.hasShatter) {

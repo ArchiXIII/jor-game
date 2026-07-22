@@ -178,7 +178,10 @@ function buildMutationCard(mutation, index) {
     dashRequested = false;
     if (player) player.dashTime = 0;
     player.applyMutation(mutation.id);
-    if (endlessMode) {
+    if (evolutionRewardSource === 'recovery') {
+      recoveryEvolutionPending = false;
+      recoveryEvolutionCooldown = PROGRESSION_CONFIG.RECOVERY_EVOLUTION_COOLDOWN_FRAMES;
+    } else if (endlessMode) {
       endlessRewardLevel = getEndlessRewardCounterAfterChoice(
         endlessLevel,
         endlessRewardLevel,
@@ -232,7 +235,8 @@ function renderEvolutionChoices() {
   updateEvolutionChoiceLockState();
 }
 
-async function openEvolutionPanel() {
+async function openEvolutionPanel(source = 'normal') {
+  evolutionRewardSource = source;
   evolutionPending = true;
   App.localPause = true;
   dashRequested = false;

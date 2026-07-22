@@ -10,11 +10,9 @@ class Particle {
       }
 
 
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-
-        const bounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 80);
+      update(bounds, step = 1) {
+        this.x += this.vx * step;
+        this.y += this.vy * step;
 
         if (this.x < bounds.left - 20) this.x = bounds.right + 20;
         if (this.x > bounds.right + 20) this.x = bounds.left - 20;
@@ -84,12 +82,10 @@ class Particle {
         });
       }
 
-      update() {
-        this.phase += this.speed;
-        this.x += this.driftX;
-        this.y += this.driftY;
-
-        const bounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 260);
+      update(bounds, step = 1) {
+        this.phase += this.speed * step;
+        this.x += this.driftX * step;
+        this.y += this.driftY * step;
 
         if (this.x < bounds.left - this.radiusX) this.x = bounds.right + this.radiusX;
         if (this.x > bounds.right + this.radiusX) this.x = bounds.left - this.radiusX;
@@ -160,12 +156,13 @@ class Particle {
         });
       }
 
-      update() {
-        this.phase += this.phaseSpeed;
-        this.x += this.vx + Math.sin(this.phase) * 0.12;
-        this.y += this.vy;
-
-        const bounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 120);
+      update(bounds, step = 1) {
+        this.phase += this.phaseSpeed * step;
+        const wobble = step === 2
+          ? Math.sin(this.phase - this.phaseSpeed) + Math.sin(this.phase)
+          : Math.sin(this.phase);
+        this.x += this.vx * step + wobble * 0.12;
+        this.y += this.vy * step;
 
         if (this.y < bounds.top - this.radius * 3) {
           this.y = bounds.bottom + this.radius * 3;
@@ -222,12 +219,10 @@ class Particle {
         });
       }
 
-      update() {
-        this.phase += this.speed;
-        this.x += this.vx;
-        this.y += this.vy;
-
-        const bounds = getViewBounds(WORLD_CONFIG.DESPAWN_MARGIN + 90);
+      update(bounds, step = 1) {
+        this.phase += this.speed * step;
+        this.x += this.vx * step;
+        this.y += this.vy * step;
 
         if (this.x < bounds.left - this.radius * 2) this.x = bounds.right + this.radius * 2;
         if (this.x > bounds.right + this.radius * 2) this.x = bounds.left - this.radius * 2;
@@ -260,6 +255,7 @@ class Particle {
         this.radius = 4 + Math.random() * 3;
         this.pulse = Math.random() * Math.PI * 2;
         this.spin = Math.random() * Math.PI * 2;
+        this.animationStartFrame = typeof simulationFrame === 'number' ? simulationFrame : 0;
         this.spinSpeed = randomRange(-0.02, 0.02);
         this.variant = Math.floor(Math.random() * 4);
         this.tintIndex = Math.floor(Math.random() * FOOD_TINT_SETS.length);
@@ -282,7 +278,10 @@ class Particle {
       }
 
       draw() {
-        const radius = this.radius + Math.sin(this.pulse) * 0.7;
+        const animationAge = Math.max(0, simulationFrame - this.animationStartFrame);
+        const pulse = this.pulse + animationAge * 0.05;
+        const spin = this.spin + animationAge * this.spinSpeed;
+        const radius = this.radius + Math.sin(pulse) * 0.7;
         if (!this.sprite) {
           ctx.save();
           ctx.fillStyle = 'rgba(106, 242, 164, 0.84)';
@@ -298,7 +297,7 @@ class Particle {
           ctx.globalAlpha *= clamp(this.fadeOut, 0, 1);
         }
         ctx.translate(this.x, this.y);
-        ctx.rotate(this.spin + Math.sin(this.pulse * 0.8) * 0.08);
+        ctx.rotate(spin + Math.sin(pulse * 0.8) * 0.08);
         drawSpriteCentered(this.sprite, 0, 0, size, size);
         ctx.restore();
       }
@@ -442,6 +441,8 @@ class Particle {
         this.y = y;
         this.radius = radius;
         this.pulse = Math.random() * Math.PI * 2;
+        this.collectDelay = Math.max(0, Math.floor(options.collectDelay || 0));
+        this.countsForCampaignDna = options.countsForCampaignDna !== false;
         if (!options.deferSprite) {
           const baked = getBakedDnaOrbSprite(this.radius);
           this.sprite = baked.sprite;
@@ -457,6 +458,7 @@ class Particle {
 
       update() {
         this.pulse += 0.08;
+        if (this.collectDelay > 0) this.collectDelay -= 1;
       }
 
       draw() {

@@ -253,17 +253,10 @@ function escapeHtml(value) {
         .sort((a, b) => a.rank - b.rank);
     }
 
-    function getCampaignStarsRows(entries, currentUserId, compact = false) {
+    function getCampaignStarsRows(entries, currentUserId) {
       const sorted = normalizeCampaignStarsEntries(entries, currentUserId);
       const top = sorted.filter(entry => entry.rank <= 3).slice(0, 3);
       const player = sorted.find(entry => entry.isPlayer);
-
-      if (compact) {
-        if (player) {
-          return sorted.filter(entry => Math.abs(entry.rank - player.rank) <= 1).slice(0, 3);
-        }
-        return top.length ? top : sorted.slice(0, 3);
-      }
 
       const rows = top.slice();
 
@@ -304,36 +297,46 @@ function escapeHtml(value) {
       const currentUserId = App.player && typeof App.player.getUniqueID === 'function'
         ? App.player.getUniqueID()
         : '';
-      const rows = state === 'ready' ? getCampaignStarsRows(entries, currentUserId, false) : [];
-      const compactRows = state === 'ready' ? getCampaignStarsRows(entries, currentUserId, true) : [];
+      const rows = state === 'ready' ? getCampaignStarsRows(entries, currentUserId) : [];
       const title = currentLang === 'en' ? 'STARS RATING' : '\u0420\u0415\u0419\u0422\u0418\u041d\u0413 \u0417\u0412\u0401\u0417\u0414';
       const content = state === 'loading'
         ? `<div class="campaignResultLeaderboardPending">${escapeHtml(getGameOverLoadingText())}</div>`
         : state === 'error'
           ? `<div class="campaignResultLeaderboardPending">${escapeHtml(getLeaderboardUnavailableText())}</div>`
           : buildCampaignStarsLeaderboardRows(rows);
-      const compactContent = state === 'ready' ? buildCampaignStarsLeaderboardRows(compactRows) : content;
 
       return `
         <div class="campaignResultLeaderboard">
           <div class="campaignResultLeaderboardTitle">${escapeHtml(title)}</div>
-          <div class="campaignResultLeaderboardRows campaignResultLeaderboardRowsFull">${content}</div>
-          <div class="campaignResultLeaderboardRows campaignResultLeaderboardRowsCompact">${compactContent}</div>
+          <div class="campaignResultLeaderboardRows">${content}</div>
         </div>
       `;
+    }
+
+    function revealCampaignLeaderboardPlayer() {
+      requestAnimationFrame(() => {
+        const rows = DOM.messageText?.querySelector('.campaignResultLeaderboardRows');
+        const player = rows?.querySelector('.currentUser');
+        if (!rows || !player || rows.scrollHeight <= rows.clientHeight) return;
+        rows.scrollTop = Math.max(0, player.offsetTop - rows.offsetTop - (rows.clientHeight - player.offsetHeight) * 0.5);
+      });
     }
 
     function buildCampaignCompleteHtml(level, stars, progressValue, elapsedFrames, leaderboardEntries = null, leaderboardState = 'loading') {
       const levelNumber = level?.n || App.campaignLevel || 1;
       const chapter = Math.max(0, Math.floor((levelNumber - 1) / 10));
-      const progress = window.JorCampaignUI?.getProgress?.() || {};
-      const hasNewTrophy = !!progress.pendingChapterTrophies?.[String(chapter)];
+      const hasNewTrophy = App.campaignResultTrophyChapter === chapter;
       const trophyLabel = currentLang === 'en' ? 'Chapter trophy earned' : '\u041a\u0443\u0431\u043e\u043a \u0433\u043b\u0430\u0432\u044b \u043f\u043e\u043b\u0443\u0447\u0435\u043d';
+      const unlockedItem = (window.JorShopPetItems || []).find(item => item?.id === App.campaignResultUnlockedShopItemId);
+      const unlockLabel = unlockedItem
+        ? (currentLang === 'en' ? `Pet unlocked: ${unlockedItem.en}` : `\u041e\u0442\u043a\u0440\u044b\u0442 \u043f\u0438\u0442\u043e\u043c\u0435\u0446: ${unlockedItem.ru}`)
+        : '';
 
       return `
         <div class="campaignResultPanel">
           <div class="campaignResultStars">${buildCampaignStarRow(stars)}</div>
           ${hasNewTrophy ? '<div class="campaignResultTrophy"><img src="sprites/ui/chapter_trophy.png" alt="" aria-hidden="true"><span>' + escapeHtml(trophyLabel) + '</span></div>' : ''}
+          ${unlockLabel ? `<div class="campaignResultUnlock">${escapeHtml(unlockLabel)}</div>` : ''}
           ${buildCampaignStarsLeaderboardHtml(leaderboardEntries, leaderboardState)}
         </div>
       `;
@@ -385,12 +388,16 @@ function escapeHtml(value) {
       }
       DOM.centerMessage.style.display = 'block';
       updateCampaignTimer();
+      if (leaderboardState === 'ready') revealCampaignLeaderboardPlayer();
 
       if (leaderboardState === 'loading') {
         const result = await loadCampaignStarsLeaderboard();
         if (DOM.messageTitle?.dataset?.messageKey !== 'campaignComplete') return;
         const leaderboard = DOM.messageText.querySelector('.campaignResultLeaderboard');
-        if (leaderboard) leaderboard.outerHTML = buildCampaignStarsLeaderboardHtml(result.entries, result.state);
+        if (leaderboard) {
+          leaderboard.outerHTML = buildCampaignStarsLeaderboardHtml(result.entries, result.state);
+          if (result.state === 'ready') revealCampaignLeaderboardPlayer();
+        }
       }
     }
 

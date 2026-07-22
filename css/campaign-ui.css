@@ -10,7 +10,9 @@
     max(22px, env(safe-area-inset-right))
     calc(var(--safe-bottom) + 28px)
     max(22px, env(safe-area-inset-left));
-  background: rgba(0, 8, 14, 0.54);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(38, 111, 126, 0.18), rgba(5, 25, 35, 0) 52%),
+    linear-gradient(180deg, rgb(5, 24, 34), rgb(2, 13, 22));
   font-family: Arial, sans-serif;
   color: #eafff8;
 }
@@ -24,12 +26,12 @@
   --campaign-theme-mid: rgb(9, 38, 50);
   --campaign-theme-bottom: rgb(4, 17, 27);
   --campaign-theme-glow: rgba(103, 237, 255, 0.14);
-  --campaign-header-width: 330px;
+  --campaign-header-width: 350px;
   --campaign-side-zone: calc((100% - var(--campaign-header-width)) / 2);
   position: relative;
-  width: min(640px, calc(100vw - var(--safe-left) - var(--safe-right) - 44px));
-  height: min(570px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 116px));
-  min-height: min(430px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 116px));
+  width: min(680px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+  height: min(570px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 104px));
+  min-height: min(430px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 104px));
   border-radius: 24px;
   overflow: visible;
   background:
@@ -73,9 +75,9 @@
   position: absolute;
   left: 50%;
   top: 24px;
-  width: min(var(--campaign-header-width), calc(100% - 230px));
+  width: min(var(--campaign-header-width), calc(100% - 240px));
   min-width: 250px;
-  height: 58px;
+  height: 62px;
   transform: translateX(-50%);
   border-radius: 18px;
   border: 2px solid rgba(122, 242, 255, 0.48);
@@ -91,14 +93,14 @@
 
 .campaignTitle {
   color: #9df8ff;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 900;
   line-height: 1;
 }
 
 .campaignName {
   color: #eafff8;
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 900;
   line-height: 1.05;
   white-space: nowrap;
@@ -117,13 +119,13 @@
   align-items: center;
   gap: 1px;
   color: #9df8ff;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 900;
 }
 
 .campaignStarIcon {
-  width: 31px;
-  height: 31px;
+  width: 34px;
+  height: 34px;
   display: block;
   object-fit: contain;
   filter: none;
@@ -131,10 +133,10 @@
 
 .campaignTrophy {
   position: absolute;
-  top: 21px;
-  left: calc(var(--campaign-side-zone) / 2 - 36px);
-  width: 72px;
-  height: 72px;
+  top: 19px;
+  left: calc(var(--campaign-side-zone) / 2 - 39px);
+  width: 78px;
+  height: 78px;
   transform: scale(0.86);
   transition: transform .18s ease;
   pointer-events: none;
@@ -352,11 +354,11 @@
 
 .campaignBackBtn,
 .campaignPlayBtn {
-  width: min(160px, calc((100% - 20px) / 2));
-  height: 50px;
+  width: min(174px, calc((100% - 20px) / 2));
+  height: 54px;
   border-radius: 18px;
   font-family: Arial, sans-serif;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 900;
   cursor: pointer;
   transition: transform .14s ease, filter .14s ease;
@@ -399,49 +401,49 @@
   .campaignOverlay {
     padding:
       calc(var(--safe-top) + 76px)
-      max(16px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-right))
       calc(var(--safe-bottom) + 24px)
-      max(16px, env(safe-area-inset-left));
+      max(8px, env(safe-area-inset-left));
   }
 
   .campaignPanel {
-    --campaign-header-width: 300px;
-    width: min(640px, calc(100vw - var(--safe-left) - var(--safe-right) - 32px));
-    height: min(540px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 100px));
-    min-height: min(390px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 100px));
+    --campaign-header-width: 320px;
+    width: min(680px, calc(100vw - var(--safe-left) - var(--safe-right) - 16px));
+    height: min(540px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 92px));
+    min-height: min(390px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 92px));
   }
 
   .campaignHeader {
     top: 15px;
-    height: 52px;
+    height: 56px;
     width: min(var(--campaign-header-width), calc(100% - 172px));
     min-width: 214px;
   }
 
-  .campaignTitle { font-size: 14px; }
-  .campaignName { font-size: 16px; }
+  .campaignTitle { font-size: 15px; }
+  .campaignName { font-size: 18px; }
 
   .campaignStars {
     top: 18px;
     left: calc(50% + var(--campaign-header-width) / 2);
     width: var(--campaign-side-zone);
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .campaignStarIcon {
-    width: 26px;
-    height: 26px;
+    width: 29px;
+    height: 29px;
   }
 
   .campaignTrophy {
-    top: 10px;
-    left: calc(var(--campaign-side-zone) / 2 - 36px);
-    transform: scale(0.72);
+    top: 8px;
+    left: calc(var(--campaign-side-zone) / 2 - 39px);
+    transform: scale(0.78);
     transform-origin: center;
   }
 
   .campaignTrophy.complete {
-    transform: scale(0.82);
+    transform: scale(0.88);
   }
 
   .campaignGrid {
@@ -506,8 +508,8 @@
 
   .campaignBackBtn,
   .campaignPlayBtn {
-    height: 42px;
-    font-size: 15px;
+    height: 46px;
+    font-size: 17px;
   }
 
   .campaignMessage {
@@ -520,49 +522,49 @@
   .campaignOverlay {
     padding:
       calc(var(--safe-top) + 72px)
-      max(12px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-right))
       calc(var(--safe-bottom) + 14px)
-      max(12px, env(safe-area-inset-left));
+      max(8px, env(safe-area-inset-left));
   }
 
   .campaignPanel {
-    height: min(500px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 86px));
-    min-height: min(340px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 86px));
+    height: min(500px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 82px));
+    min-height: min(280px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 82px));
     border-width: 4px;
     border-radius: 22px;
   }
 
   .campaignHeader {
     top: 7px;
-    height: 42px;
+    height: 46px;
   }
 
-  .campaignTitle { font-size: 12px; }
-  .campaignName { font-size: 15px; }
+  .campaignTitle { font-size: 13px; }
+  .campaignName { font-size: 16px; }
 
   .campaignStars {
     top: 8px;
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .campaignStarIcon {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
   }
 
   .campaignTrophy {
-    top: -7px;
-    transform: scale(0.58);
+    top: -4px;
+    transform: scale(0.64);
   }
 
   .campaignTrophy.complete {
-    transform: scale(0.68);
+    transform: scale(0.74);
   }
 
   .campaignGrid {
     left: 32px;
     right: 32px;
-    top: 56px;
+    top: 61px;
     bottom: 58px;
     gap: 5px 0;
     grid-template-columns: repeat(11, minmax(0, 1fr));
@@ -631,9 +633,9 @@
 
   .campaignBackBtn,
   .campaignPlayBtn {
-    height: 34px;
+    height: 38px;
     border-radius: 13px;
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .campaignMessage {

@@ -177,6 +177,7 @@ function drawMobileEnemyEdgeIndicators() {
       ctx.globalCompositeOperation = 'source-over';
       ctx.filter = 'none';
       drawBackground();
+      if (typeof drawCampaignCurrents === 'function') drawCampaignCurrents();
       DOM.sdkStatus.textContent = endlessMode && typeof getEndlessWave === 'function'
         ? t('endlessWave', getEndlessWave() + 1)
         : (App.sdkReady ? t('sdkReady') : t('sdkLocal'));
@@ -190,7 +191,6 @@ function drawMobileEnemyEdgeIndicators() {
         if (isOutsideBounds(food, renderBounds, food.radius + 12)) continue;
         food.draw();
       }
-      drawFoodEatEffects();
       drawEnemyEatEffects();
       for (const orb of dnaOrbs) {
         if (isOutsideBounds(orb, renderBounds, orb.radius + 18)) continue;
@@ -199,10 +199,6 @@ function drawMobileEnemyEdgeIndicators() {
       for (const tomato of tomatoFoods) {
         if (isOutsideBounds(tomato, renderBounds, tomato.radius + 24)) continue;
         tomato.draw();
-      }
-      for (const chunk of remains) {
-        if (isOutsideBounds(chunk, renderBounds, chunk.radius + 18)) continue;
-        chunk.draw();
       }
       for (const enemy of enemies) {
         if (isOutsideBounds(enemy, renderBounds, enemy.radius + 120)) continue;

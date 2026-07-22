@@ -60,6 +60,7 @@ const App = {
           handlePlatformResume();
         });
 
+        notifyGameReady();
         await initYandexPlayer();
         await window.JorSaveManager?.load?.();
         await window.JorMetaUI?.syncPlayerProgress?.();
@@ -68,7 +69,6 @@ const App = {
         // Р вЂўРЎРѓР В»Р С‘ РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… РЎС“Р В¶Р Вµ Р С•РЎвЂљРЎР‚Р С‘РЎРѓР С•Р Р†Р В°Р Р… Р С” Р СР С•Р СР ВµР Р…РЎвЂљРЎС“ Р С–Р С•РЎвЂљР С•Р Р†Р Р…Р С•РЎРѓРЎвЂљР С‘ SDK РІР‚вЂќ
         // Р Т‘Р В°РЎвЂљРЎРЉ РЎРѓР С‘Р С–Р Р…Р В°Р В» ready() Р С—РЎР‚РЎРЏР СР С• РЎРѓР ВµР в„–РЎвЂЎР В°РЎРѓ. Р ВР Р…Р В°РЎвЂЎР Вµ Р С•Р Р… РЎРѓРЎвЂљРЎР‚Р ВµР В»РЎРЉР Р…РЎвЂРЎвЂљ Р С‘Р В·
         // showStartScreen() Р С”Р В°Р С” РЎвЂљР С•Р В»РЎРЉР С”Р С• РЎвЂљР С•РЎвЂљ Р С—Р С•Р С”Р В°Р В¶Р ВµРЎвЂљРЎРѓРЎРЏ.
-        notifyGameReady();
         showEvolutionBanner();
         if (App.hasStarted && !App.startScreenVisible) {
           markGameplayStart();
@@ -136,7 +136,7 @@ const App = {
 
     function markGameplayStart() {
       if (!App.sdkReady) return;
-      if (App.localPause || App.platformPaused) return;
+      if (App.localPause || App.platformPaused || App.userPaused) return;
       if (App.gameplayMarked) return;
 
       App.ysdk.features?.GameplayAPI?.start();
@@ -597,7 +597,8 @@ function showStartScreen() {
       const liveInfo = typeof getCampaignTimeInfo === 'function' ? getCampaignTimeInfo() : null;
       const resultInfo = resultOpen ? App.campaignResultTimeInfo : null;
       const info = liveInfo || resultInfo;
-      const visible = Boolean(info && App.hasStarted && !App.startScreenVisible && (!victory || resultOpen));
+      const surviveLevel = App.gameMode === 'campaign' && campaignRun?.level?.type === 'survive';
+      const visible = Boolean(!surviveLevel && info && App.hasStarted && !App.startScreenVisible && (!victory || resultOpen));
       DOM.campaignTimer.classList.toggle('visible', visible);
       DOM.campaignTimer.setAttribute('aria-hidden', visible ? 'false' : 'true');
       if (!visible) {

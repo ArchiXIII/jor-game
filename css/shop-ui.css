@@ -44,15 +44,20 @@
 
 .shopCloseBtn {
   position: absolute;
+  z-index: 5;
+  display: grid;
+  place-items: center;
   top: 8px;
   right: 8px;
   width: 38px;
   height: 38px;
+  padding: 0;
   border-radius: 50%;
   border: 1px solid rgba(122,242,255,0.48);
   background: rgba(6, 22, 31, 0.72);
   color: #eafff8;
   font-size: 24px;
+  line-height: 1;
   font-weight: 900;
   cursor: pointer;
 }
@@ -140,14 +145,20 @@
 .shopProfileIconPreview img { width: 100%; height: 100%; display: block; object-fit: contain; }
 .shopItemPreview { grid-row: 1 / span 2; width: 104px; height: 74px; align-self: center; justify-self: center; display: block; background: transparent; }
 .shopItemPreview[data-growth-preview] { width: 118px; height: 104px; margin: -15px -7px; }
-.shopItemBody { min-width: 0; }
+.shopItemBody { min-width: 0; overflow: hidden; }
 .shopItem:not(.adPreview) .shopItemBody { align-self: start; min-height: 67px; }
 .shopItem.adPreview .shopItemBody { align-self: start; min-height: 92px; }
 .shopItem h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.1; }
+.shopItem.compactTitle h3 { font-size: 13px; white-space: normal; overflow-wrap: anywhere; }
 .shopItem p { margin: 0; color: rgba(234,255,248,0.76); font-size: 12px; line-height: 1.28; }
 .shopItem p.shopBonusDesc { color: #bfffea; }
 .shopItem .shopBonusValue { color: #ffe071; }
 .shopBuyBtn { position: relative; grid-column: 2; min-height: 34px; border-radius: 12px; border: 1px solid rgba(230,255,252,0.7); background: linear-gradient(180deg, #d9ffff 0%, #7aefff 52%, #1395b4 100%); color: #04141b; font-weight: 900; cursor: pointer; }
+.shopItem.availableToSelect .shopBuyBtn {
+  border-color: #d9ffea;
+  background: linear-gradient(180deg, #d9ffea 0%, #5cffb4 48%, #12b98c 100%);
+  color: #03251b;
+}
 .shopItem.selected .shopBuyBtn::after {
   content: '\2713';
   position: absolute;
@@ -220,10 +231,10 @@
   .shopBuyBtn { min-height: 30px; border-radius: 10px; font-size: 12px; }
   .shopItem:not(.adPreview) .shopBuyBtn { width: 126px; height: 30px; }
   .shopItem.adPreview .shopBuyBtn { width: 126px; height: 30px; }
-  .shopPager { position: absolute; left: 0; right: 0; bottom: -12px; display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 34px; margin-top: 0; }
-  .shopPageArrow { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(122,242,255,0.28); background: rgba(255,255,255,0.055); color: rgba(234,255,248,0.88); font-size: 22px; font-weight: 900; line-height: 1; }
+  .shopPager { position: absolute; left: 0; right: 0; bottom: -12px; display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 38px; margin-top: 0; }
+  .shopPageArrow { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(122,242,255,0.28); background: rgba(255,255,255,0.055); color: rgba(234,255,248,0.88); font-size: 24px; font-weight: 900; line-height: 1; }
   .shopPageArrow:disabled { opacity: 0.28; }
-  .shopPageLabel { min-width: 42px; color: rgba(234,255,248,0.78); font-size: 18px; font-weight: 900; text-align: center; }
+  .shopPageLabel { min-width: 46px; color: rgba(234,255,248,0.78); font-size: 20px; font-weight: 900; text-align: center; }
 }
 
 @media (max-width: 660px), (pointer: coarse) {
@@ -279,9 +290,9 @@
   .shopItem:not(.adPreview) .shopBuyBtn,
   .shopItem.adPreview .shopBuyBtn { width: 104px; height: 30px; justify-self: start; }
   .shopUnlockHint { left: 8px; right: 8px; bottom: 7px; font-size: 9px; line-height: 1.08; }
-  .shopPager { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; min-height: 30px; gap: 10px; margin-top: 0; }
-  .shopPageArrow { width: 28px; height: 28px; font-size: 20px; }
-  .shopPageLabel { font-size: 16px; }
+  .shopPager { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; min-height: 34px; gap: 12px; margin-top: 0; }
+  .shopPageArrow { width: 32px; height: 32px; font-size: 22px; }
+  .shopPageLabel { min-width: 44px; font-size: 18px; }
 }
 
 @media (max-width: 420px) {
@@ -430,20 +441,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  min-height: 34px;
+  gap: 14px;
+  min-height: 38px;
   margin-top: 0;
 }
 
 .shopPanel.shopPaged .shopPageArrow {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border-radius: 50%;
   border: 1px solid rgba(122,242,255,0.34);
   background: rgba(255,255,255,0.07);
   color: rgba(234,255,248,0.9);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 900;
   line-height: 1;
   display: grid;
@@ -457,9 +468,9 @@
 }
 
 .shopPanel.shopPaged .shopPageLabel {
-  min-width: 44px;
+  min-width: 46px;
   color: rgba(234,255,248,0.82);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 900;
   line-height: 1;
   text-align: center;

@@ -52,7 +52,9 @@
       loading: '\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c...',
       empty: '\u041f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u0432',
       unavailable: '\u0420\u0435\u0439\u0442\u0438\u043d\u0433 \u0431\u0443\u0434\u0435\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u043d\u0430 \u042f\u043d\u0434\u0435\u043a\u0441 \u0418\u0433\u0440\u0430\u0445',
-      close: '\u0417\u0430\u043a\u0440\u044b\u0442\u044c'
+      close: '\u0417\u0430\u043a\u0440\u044b\u0442\u044c',
+      playerProgress: '\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u0438\u0433\u0440\u043e\u043a\u0430',
+      chapterTrophies: '\u041a\u0443\u0431\u043a\u0438 \u0433\u043b\u0430\u0432'
     },
     en: {
       player: 'Player',
@@ -69,7 +71,9 @@
       loading: 'Loading...',
       empty: 'No results yet',
       unavailable: 'Leaderboard is available on Yandex Games',
-      close: 'Close'
+      close: 'Close',
+      playerProgress: 'Player progress',
+      chapterTrophies: 'Chapter trophies'
     }
   };
 
@@ -146,6 +150,7 @@
 
   function cacheDom() {
     dom.overlay = document.getElementById('metaModalOverlay');
+    dom.topBar = document.getElementById('metaTopBar');
     dom.profileButton = document.getElementById('metaProfileButton');
     dom.leaderboardButton = document.getElementById('metaLeaderboardButton');
     dom.soundButton = document.getElementById('metaSoundToggleBtn');
@@ -171,6 +176,7 @@
     dom.leaderboardHint = document.getElementById('metaLeaderboardHint');
     dom.leaderboardList = document.getElementById('metaLeaderboardList');
     dom.xpLeaderboardTitle = document.getElementById('metaXpLeaderboardTitle');
+    dom.xpLeaderboardHint = document.getElementById('metaXpLeaderboardHint');
     dom.xpLeaderboardList = document.getElementById('metaXpLeaderboardList');
   }
 
@@ -226,6 +232,10 @@
     if (thanks) thanks.textContent = tr('thanks');
     if (dom.leaderboardTitle) dom.leaderboardTitle.textContent = tr('rating');
     if (dom.xpLeaderboardTitle) dom.xpLeaderboardTitle.textContent = tr('xpLeaderboard');
+    if (dom.xpLeaderboardHint) dom.xpLeaderboardHint.textContent = tr('xpHint');
+    if (dom.topBar) dom.topBar.setAttribute('aria-label', tr('playerProgress'));
+    if (dom.trophyShelf) dom.trophyShelf.setAttribute('aria-label', tr('chapterTrophies'));
+    if (dom.leaderboardButton) dom.leaderboardButton.setAttribute('aria-label', tr('rating'));
     if (dom.profileClose) dom.profileClose.setAttribute('aria-label', tr('close'));
     if (dom.leaderboardClose) dom.leaderboardClose.setAttribute('aria-label', tr('close'));
     if (dom.xpLeaderboardClose) dom.xpLeaderboardClose.setAttribute('aria-label', tr('close'));

@@ -20,14 +20,12 @@
   }
 
   function goalText(level) {
-    const target = level?.starMode === 'completionTime'
-      ? Math.max(1, Math.floor(Number(level.target) || 1))
-      : Math.max(1, Math.floor(Number(level?.stars?.[2] ?? level?.target) || 1));
+    const target = Math.max(1, Math.floor(Number(level?.stars?.[2] ?? level?.target) || 1));
 
     if (lang() === 'en') {
       if (level.type === 'food') return `Collect ${target} food`;
       if (level.type === 'growth') return `Grow by ${target} stages`;
-      if (level.type === 'dna') return `Collect ${target} blue orbs`;
+      if (level.type === 'dna') return `Collect ${target} blue food`;
       if (level.type === 'tomato') return `Collect ${target} tomatoes`;
       if (level.type === 'score') return `Score ${target} points`;
       if (level.type === 'enemy') return `Eat ${target} enemies`;
@@ -37,7 +35,7 @@
 
     if (level.type === 'food') return `\u0421\u043e\u0431\u0435\u0440\u0438 ${target} ${pluralRu(target, '\u0435\u0434\u0438\u043d\u0438\u0446\u0443', '\u0435\u0434\u0438\u043d\u0438\u0446\u044b', '\u0435\u0434\u0438\u043d\u0438\u0446')} \u0435\u0434\u044b`;
     if (level.type === 'growth') return `\u0412\u044b\u0440\u0430\u0441\u0442\u0438 \u043d\u0430 ${target} ${pluralRu(target, '\u0441\u0442\u0443\u043f\u0435\u043d\u044c', '\u0441\u0442\u0443\u043f\u0435\u043d\u0438', '\u0441\u0442\u0443\u043f\u0435\u043d\u0435\u0439')}`;
-    if (level.type === 'dna') return `\u0421\u043e\u0431\u0435\u0440\u0438 ${target} ${pluralRu(target, '\u0441\u0438\u043d\u0438\u0439 \u043e\u0440\u0431', '\u0441\u0438\u043d\u0438\u0445 \u043e\u0440\u0431\u0430', '\u0441\u0438\u043d\u0438\u0445 \u043e\u0440\u0431\u043e\u0432')}`;
+    if (level.type === 'dna') return `\u0421\u043e\u0431\u0435\u0440\u0438 ${target} ${pluralRu(target, '\u0435\u0434\u0438\u043d\u0438\u0446\u0443', '\u0435\u0434\u0438\u043d\u0438\u0446\u044b', '\u0435\u0434\u0438\u043d\u0438\u0446')} \u0441\u0438\u043d\u0435\u0439 \u0435\u0434\u044b`;
     if (level.type === 'tomato') return `\u0421\u043e\u0431\u0435\u0440\u0438 ${target} ${pluralRu(target, '\u043f\u043e\u043c\u0438\u0434\u043e\u0440', '\u043f\u043e\u043c\u0438\u0434\u043e\u0440\u0430', '\u043f\u043e\u043c\u0438\u0434\u043e\u0440\u043e\u0432')}`;
     if (level.type === 'score') return `\u041d\u0430\u0431\u0435\u0440\u0438 ${target} \u043e\u0447\u043a\u043e\u0432`;
     if (level.type === 'enemy') return `\u0421\u044a\u0435\u0448\u044c ${target} ${pluralRu(target, '\u043f\u0440\u043e\u0442\u0438\u0432\u043d\u0438\u043a\u0430', '\u043f\u0440\u043e\u0442\u0438\u0432\u043d\u0438\u043a\u043e\u0432', '\u043f\u0440\u043e\u0442\u0438\u0432\u043d\u0438\u043a\u043e\u0432')}`;
@@ -46,11 +44,11 @@
   }
 
   function thresholdText(level, index) {
-    if (level.starMode === 'completionTime') {
-      const seconds = Math.max(1, Math.floor(Number(level.timeStars?.[index]) || 1));
-      return lang() === 'en' ? `${seconds}s` : `${seconds} \u0441`;
-    }
     const value = Math.max(0, Math.floor(Number(level.stars?.[index]) || 0));
+    if (level.type === 'growth') {
+      const target = Math.max(1, Math.floor(Number(level.stars?.[2] ?? level.target) || 1));
+      return `${value}/${target}`;
+    }
     if (level.type === 'survive') return lang() === 'en' ? `${value}s` : `${value} \u0441`;
     return String(value);
   }
