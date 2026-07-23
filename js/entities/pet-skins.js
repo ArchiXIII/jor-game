@@ -5,9 +5,9 @@
     jor_pet_medusa: { id: 'jor_pet_medusa', body: '#91eaff', dark: '#2f75c8', accent: '#e6fcff', eye: '#f6ffff', pupil: '#06334b', style: 'medusa', motion: 'float' },
     jor_pet_kaplik: { id: 'jor_pet_kaplik', body: '#8cff62', dark: '#2c8c36', accent: '#e7ffc7', eye: '#f9fff5', pupil: '#214018', style: 'kaplik', motion: 'bounce' },
     jor_pet_reef_clown: { id: 'jor_pet_reef_clown', body: '#ff8b2a', dark: '#1d1511', accent: '#fff2d8', eye: '#fff8ec', pupil: '#28110c', style: 'clown', motion: 'waggle' },
-    jor_pet_toothlet: { id: 'jor_pet_toothlet', body: '#a83bd6', dark: '#5d168a', accent: '#61cf45', eye: '#fff8ec', pupil: '#171008', style: 'toothlet', motion: 'snap' },
-    jor_pet_pink_glutton: { id: 'jor_pet_pink_glutton', body: '#ff7fbd', dark: '#b73680', accent: '#db4d68', eye: '#162032', pupil: '#162032', style: 'pink_glutton', motion: 'puff' },
-    jor_pet_ancient: { id: 'jor_pet_ancient', body: '#ffd83d', dark: '#c98912', accent: '#62f1e6', eye: '#10151a', pupil: '#10151a', style: 'ancient', motion: 'chomp' }
+    jor_pet_toothlet: { id: 'jor_pet_toothlet', body: '#a83bd6', dark: '#5d168a', accent: '#4fc98a', eye: '#fff8ec', pupil: '#171008', style: 'toothlet', motion: 'snap' },
+    jor_pet_pink_glutton: { id: 'jor_pet_pink_glutton', body: '#ff7fbd', dark: '#b73680', accent: '#c93678', eye: '#431936', pupil: '#ffd15c', style: 'pink_glutton', motion: 'puff' },
+    jor_pet_ancient: { id: 'jor_pet_ancient', body: '#ffd83d', dark: '#c98912', accent: '#62f1e6', eye: '#08794f', pupil: '#04251b', style: 'ancient', motion: 'chomp' }
   };
 
   function getPet(id) {
@@ -281,41 +281,120 @@
   }
   function drawPinkGlutton(ctx, pet, radius, phase) {
     const puff = 1 + Math.sin(phase * 1.6) * 0.05;
+    const leftFin = Math.sin(phase * 1.08) * 0.07;
+    const rightFin = Math.sin(phase * 0.94 + 1.7) * 0.07;
     ctx.save();
     ctx.scale(puff, 1 / puff);
     ctx.fillStyle = pet.accent;
-    ellipse(ctx, -radius * 0.57, radius * 0.67, radius * 0.29, radius * 0.19, -0.34);
-    ellipse(ctx, radius * 0.57, radius * 0.66, radius * 0.3, radius * 0.19, 0.34);
-    ellipse(ctx, -radius * 0.78, -radius * 0.02, radius * 0.19, radius * 0.18, -0.08);
-    ellipse(ctx, radius * 0.78, -radius * 0.02, radius * 0.19, radius * 0.18, 0.08);
+    ctx.save();
+    ctx.translate(-radius * 0.57, radius * 0.67);
+    ctx.rotate(2.28 + leftFin);
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.16, 0);
+    ctx.quadraticCurveTo(radius * 0.02, -radius * 0.2, radius * 0.3, -radius * 0.07);
+    ctx.quadraticCurveTo(radius * 0.36, 0, radius * 0.3, radius * 0.07);
+    ctx.quadraticCurveTo(radius * 0.02, radius * 0.2, -radius * 0.16, 0);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(radius * 0.57, radius * 0.66);
+    ctx.rotate(0.86 + rightFin);
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.16, 0);
+    ctx.quadraticCurveTo(radius * 0.02, -radius * 0.2, radius * 0.3, -radius * 0.07);
+    ctx.quadraticCurveTo(radius * 0.36, 0, radius * 0.3, radius * 0.07);
+    ctx.quadraticCurveTo(radius * 0.02, radius * 0.2, -radius * 0.16, 0);
+    ctx.fill();
+    ctx.restore();
+    ellipse(ctx, -radius * 0.8, -radius * 0.02, radius * 0.24, radius * 0.16, -0.08 + rightFin);
+    ellipse(ctx, radius * 0.8, -radius * 0.02, radius * 0.24, radius * 0.16, 0.08 + leftFin);
     ctx.fillStyle = bodyGradient(ctx, pet, radius, -0.28, -0.32);
-    ellipse(ctx, 0, 0, radius * 0.92, radius * 0.88, 0);
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.9, 0);
+    ctx.bezierCurveTo(-radius * 0.82, -radius * 0.46, -radius * 0.44, -radius * 0.82, 0, -radius * 0.88);
+    ctx.bezierCurveTo(radius * 0.5, -radius * 0.88, radius * 0.92, -radius * 0.53, radius * 0.94, 0);
+    ctx.bezierCurveTo(radius * 0.92, radius * 0.53, radius * 0.5, radius * 0.88, 0, radius * 0.88);
+    ctx.bezierCurveTo(-radius * 0.44, radius * 0.82, -radius * 0.82, radius * 0.46, -radius * 0.9, 0);
+    ctx.fill();
     ctx.fillStyle = 'rgba(255,214,236,0.82)';
     ellipse(ctx, radius * 0.24, radius * 0.1, radius * 0.25, radius * 0.18, -0.1);
     ctx.fillStyle = '#46213d';
     ellipse(ctx, radius * 0.48, radius * 0.02, radius * 0.19, radius * 0.24, 0.08);
     ctx.fillStyle = pet.eye;
     ctx.beginPath();
-    ctx.arc(radius * 0.13, -radius * 0.29, Math.max(1, radius * 0.055), 0, Math.PI * 2);
-    ctx.arc(radius * 0.34, -radius * 0.29, Math.max(1, radius * 0.055), 0, Math.PI * 2);
+    ctx.arc(radius * 0.09, -radius * 0.37, Math.max(1.4, radius * 0.105), 0, Math.PI * 2);
+    ctx.arc(radius * 0.38, -radius * 0.37, Math.max(1.4, radius * 0.105), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = pet.pupil;
+    ctx.beginPath();
+    ctx.arc(radius * 0.115, -radius * 0.36, Math.max(0.75, radius * 0.047), 0, Math.PI * 2);
+    ctx.arc(radius * 0.405, -radius * 0.36, Math.max(0.75, radius * 0.047), 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
   function drawAncient(ctx, pet, radius, phase) {
-    const mouth = 0.22 + (Math.sin(phase * 1.8) * 0.5 + 0.5) * 0.4;
+    const mouthWave = Math.sin(phase * 0.98) * 0.68 + Math.sin(phase * 0.43 + 1.4) * 0.32;
+    const upperMouth = 0.39;
+    const lowerMouth = 0.44 + mouthWave * 0.09;
+    const upperY = -Math.sin(upperMouth) * radius;
+    const lowerX = Math.cos(lowerMouth) * radius;
+    const lowerY = Math.sin(lowerMouth) * radius;
+    const mouthHingeX = radius * 0.025;
+    const mouthRound = radius * 0.065;
+    ctx.save();
+    ctx.scale(1.06, 0.97);
+    ctx.fillStyle = pet.dark;
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.52, -radius * 0.86);
+    ctx.lineTo(-radius * 0.4, -radius * 1.13);
+    ctx.lineTo(-radius * 0.23, -radius * 0.88);
+    ctx.lineTo(-radius * 0.08, -radius * 1.18);
+    ctx.lineTo(radius * 0.08, -radius * 0.88);
+    ctx.lineTo(radius * 0.21, -radius * 1.09);
+    ctx.lineTo(radius * 0.34, -radius * 0.84);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,239,137,0.72)';
+    ctx.lineWidth = Math.max(1, radius * 0.04);
+    ctx.stroke();
     ctx.fillStyle = pet.body;
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, radius, mouth, Math.PI * 2 - mouth, false);
+    ctx.moveTo(mouthHingeX, mouthRound);
+    ctx.quadraticCurveTo(radius * 0.52, lowerY * 0.88, lowerX, lowerY);
+    ctx.arc(0, 0, radius, lowerMouth, Math.PI * 2 - upperMouth, false);
+    ctx.quadraticCurveTo(radius * 0.52, upperY * 0.48, mouthHingeX, -mouthRound);
+    ctx.quadraticCurveTo(-radius * 0.025, 0, mouthHingeX, mouthRound);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,210,0.8)';
     ctx.lineWidth = Math.max(1, radius * 0.07);
     ctx.stroke();
+    ctx.strokeStyle = 'rgba(105,72,8,0.3)';
+    ctx.lineWidth = Math.max(1, radius * 0.045);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-radius * 0.72, radius * 0.25);
+    ctx.lineTo(-radius * 0.58, radius * 0.14);
+    ctx.lineTo(-radius * 0.44, radius * 0.26);
+    ctx.lineTo(-radius * 0.58, radius * 0.39);
+    ctx.closePath();
+    ctx.moveTo(-radius * 0.58, radius * 0.19);
+    ctx.lineTo(-radius * 0.58, radius * 0.34);
+    ctx.stroke();
     ctx.fillStyle = pet.eye;
     ctx.beginPath();
     ctx.arc(radius * 0.2, -radius * 0.46, Math.max(1.8, radius * 0.12), 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = pet.pupil;
+    ctx.beginPath();
+    ctx.arc(radius * 0.225, -radius * 0.455, Math.max(0.9, radius * 0.052), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(116,255,244,0.72)';
+    ctx.beginPath();
+    ctx.arc(radius * 0.18, -radius * 0.5, Math.max(0.6, radius * 0.025), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   function drawPet(ctx, petId, radius, phase = 0, direction = 0) {

@@ -7,6 +7,8 @@ const App = {
       usingBannerApi: true,
       bannerVisible: false,
       bannerRequestPending: false,
+      bannerResizeTimer: null,
+      bannerResizeBound: false,
       keepStickyBannerAlways: true,
       rewardedUsedThisEvolution: false,
       evolutionChoiceLockedUntil: 0,
@@ -201,6 +203,24 @@ const App = {
       } catch (error) {
         console.warn('hideBannerAdv error:', error);
       }
+    }
+
+    function scheduleStickyBannerSync() {
+      if (App.bannerResizeTimer !== null) {
+        clearTimeout(App.bannerResizeTimer);
+      }
+      App.bannerResizeTimer = setTimeout(() => {
+        App.bannerResizeTimer = null;
+        App.bannerVisible = false;
+        showEvolutionBanner();
+      }, 350);
+    }
+
+    function setupStickyBannerResizeSync() {
+      if (App.bannerResizeBound) return;
+      App.bannerResizeBound = true;
+      window.addEventListener('resize', scheduleStickyBannerSync, { passive: true });
+      window.visualViewport?.addEventListener('resize', scheduleStickyBannerSync, { passive: true });
     }
 
     async function showFullscreenAdBeforeMenu(onDone) {

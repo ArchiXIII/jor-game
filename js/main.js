@@ -71,6 +71,7 @@ const FIXED_STEP_MS = 1000 / 60;
       window.JorMetaUI?.init?.();
       window.JorCampaignUI?.init?.();
       window.JorShopUI?.init?.();
+      setupStickyBannerResizeSync();
       DOM.rewardAdBtn?.addEventListener('click', showRewardedRerollAd);
           document.addEventListener('pointerdown', unlockAudio, { passive: true });
           document.addEventListener('touchstart', unlockAudio, { passive: true });
