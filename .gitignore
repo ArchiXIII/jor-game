@@ -42,6 +42,10 @@ pnpm-debug.log*
 # Reference/source dump not used by the playable build
 primer/
 
+# Local Codex workspace data and one-off tools
+.agents/
+tools/
+
 # Yandex Games export artifacts
 *.crx
 *.pem
