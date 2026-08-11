@@ -1,5 +1,4 @@
 const App = {
-      ysdk: null,
       sdkReady: false,
       platformPaused: false,
       localPause: false,
@@ -23,7 +22,6 @@ const App = {
       // РЎвЂЎРЎвЂљР С•Р В±РЎвЂ№ Р Р…Р Вµ Р С”Р С•Р Р…РЎвЂћР В»Р С‘Р С”РЎвЂљР С•Р Р†Р В°РЎвЂљРЎРЉ РЎРѓ Р В°Р Р†РЎвЂљР С•Р С—Р В°РЎС“Р В·Р В°Р СР С‘ РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†Р С•Р С–Р С• РЎРЊР С”РЎР‚Р В°Р Р…Р В° / РЎРЊР Р†Р С•Р В»РЎР‹РЎвЂ Р С‘Р С‘ /
       // Р С•Р С”Р Р…Р В° РЎРѓР СР ВµРЎР‚РЎвЂљР С‘. Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµРЎвЂљРЎРѓРЎРЏ Р Р† updateGame() Р С”Р В°Р С” Р Т‘Р С•Р С—Р С•Р В»Р Р…Р С‘РЎвЂљР ВµР В»РЎРЉР Р…РЎвЂ№Р в„– Р С–Р ВµР в„–РЎвЂљ.
       userPaused: false,
-      player: null,
       leaderboardName: 'topScore',
       ourGamesUrl: null,
       ourGamesLoading: false,
@@ -34,40 +32,32 @@ const App = {
     // ------------------------------
     // Yandex SDK
     // ------------------------------
-    async function initYandexSdk() {
-      if (typeof YaGames === 'undefined') {
+    async function initPlatform() {
+      if (!window.JorPlatform) {
         DOM.sdkStatus.textContent = t('sdkLocal');
         updateOurGamesButtonState();
         return;
       }
 
       try {
-        App.ysdk = window.jorYandexSdkPromise
-          ? await window.jorYandexSdkPromise
-          : await YaGames.init();
-        if (!App.ysdk) throw window.jorYandexSdkInitError || new Error('Yandex SDK initialization failed');
-        App.sdkReady = true;
+        const platformState = await window.JorPlatform.init({
+          onPause: handlePlatformPause,
+          onResume: handlePlatformResume
+        });
+        App.sdkReady = !!platformState?.ready;
         App.loadingReadySent = !!window.jorLoadingReadySent;
         App.gameReadyMoment = true;
         // Р СћРЎР‚Р ВµР В±Р С•Р Р†Р В°Р Р…Р С‘Р Вµ Р Р‡Р Р…Р Т‘Р ВµР С”РЎРѓ.Р ВР С–РЎР‚ Р С—. 2.14: РЎРЏР В·РЎвЂ№Р С” Р С‘Р Р…РЎвЂљР ВµРЎР‚РЎвЂћР ВµР в„–РЎРѓР В° Р С•Р С—РЎР‚Р ВµР Т‘Р ВµР В»РЎРЏР ВµРЎвЂљРЎРѓРЎРЏ
         // РЎвЂЎР ВµРЎР‚Р ВµР В· ysdk.environment.i18n.lang. Р вЂќР ВµР В»Р В°Р ВµР С РЎРЊРЎвЂљР С• РЎРѓРЎР‚Р В°Р В·РЎС“ Р С—Р С•РЎРѓР В»Р Вµ init
         // Р С‘ Р С—Р ВµРЎР‚Р ВµР Т‘ Р Р†РЎРѓР ВµР СР С‘ Р С•РЎРѓРЎвЂљР В°Р В»РЎРЉР Р…РЎвЂ№Р СР С‘ UI-Р С•Р С—Р ВµРЎР‚Р В°РЎвЂ Р С‘РЎРЏР СР С‘.
-        const sdkLang = App.ysdk?.environment?.i18n?.lang;
+        const sdkLang = window.JorPlatform.getLanguage();
         if (sdkLang) {
           setLanguage(sdkLang);
         }
-        DOM.sdkStatus.textContent = t('sdkReady');
-
-        App.ysdk.on('game_api_pause', () => {
-          handlePlatformPause();
-        });
-
-        App.ysdk.on('game_api_resume', () => {
-          handlePlatformResume();
-        });
+        DOM.sdkStatus.textContent = App.sdkReady ? t('sdkReady') : t('sdkLocal');
 
         notifyGameReady();
-        await initYandexPlayer();
+        await initPlatformPlayer();
         await window.JorSaveManager?.load?.();
         await window.JorMetaUI?.syncPlayerProgress?.();
         await window.JorCampaignUI?.syncCloud?.();
@@ -81,40 +71,37 @@ const App = {
         }
         refreshOurGamesUrl();
       } catch (error) {
-        console.error('Yandex SDK init error:', error);
+        console.error('Platform init error:', error);
         DOM.sdkStatus.textContent = t('sdkError');
         updateOurGamesButtonState();
       }
     }
 
-    async function initYandexPlayer() {
-      if (!App.sdkReady || !App.ysdk?.getPlayer) return null;
-
+    async function initPlatformPlayer() {
       try {
-        App.player = await App.ysdk.getPlayer();
+        const player = await window.JorPlatform?.ensurePlayer?.();
         window.JorMetaUI?.refreshPlayer?.();
-        return App.player;
+        return player || null;
       } catch (error) {
-        console.error('Yandex player init error:', error);
-        App.player = null;
+        console.error('Platform player init error:', error);
         return null;
       }
     }
 
-    function isAuthorizedYandexPlayer() {
-      return !!(App.player && typeof App.player.isAuthorized === 'function' && App.player.isAuthorized());
+    function isAuthorizedPlatformPlayer() {
+      return !!window.JorPlatform?.isAuthorized?.();
     }
 
     async function submitScoreToLeaderboard(finalScore) {
-      if (!App.sdkReady || !App.ysdk?.leaderboards) return false;
-      if (!isAuthorizedYandexPlayer()) return false;
+      const leaderboard = window.JorPlatform?.getLeaderboardApi?.();
+      if (!leaderboard || !isAuthorizedPlatformPlayer()) return false;
 
       if (typeof window.JorMetaUI?.submitScore === 'function') {
         return window.JorMetaUI.submitScore(App.leaderboardName, finalScore);
       }
 
       try {
-        await App.ysdk.leaderboards.setScore(App.leaderboardName, finalScore);
+        await leaderboard.setScore(App.leaderboardName, finalScore);
         return true;
       } catch (error) {
         console.error('Leaderboard setScore error:', error);
@@ -123,7 +110,8 @@ const App = {
     }
 
     async function loadLeaderboardEntries(includeUser = true) {
-      if (!App.sdkReady || !App.ysdk?.leaderboards) return null;
+      const leaderboard = window.JorPlatform?.getLeaderboardApi?.();
+      if (!leaderboard) return null;
 
       try {
         const options = {
@@ -133,7 +121,7 @@ const App = {
           options.includeUser = true;
           options.quantityAround = 2;
         }
-        return await App.ysdk.leaderboards.getEntries(App.leaderboardName, options);
+        return await leaderboard.getEntries(App.leaderboardName, options);
       } catch (error) {
         console.error('Leaderboard getEntries error:', error);
         return null;
@@ -145,7 +133,7 @@ const App = {
       if (App.localPause || App.platformPaused || App.userPaused) return;
       if (App.gameplayMarked) return;
 
-      App.ysdk.features?.GameplayAPI?.start();
+      window.JorPlatform?.gameplayStart?.();
       App.gameplayMarked = true;
       showEvolutionBanner();
     }
@@ -154,7 +142,7 @@ const App = {
       if (!App.sdkReady) return;
       if (!App.gameplayMarked) return;
 
-      App.ysdk.features?.GameplayAPI?.stop();
+      window.JorPlatform?.gameplayStop?.();
       App.gameplayMarked = false;
     }
 
@@ -163,7 +151,7 @@ const App = {
     }
 
     async function showEvolutionBanner() {
-      if (!App.sdkReady || !App.ysdk?.adv?.showBannerAdv || !App.usingBannerApi) return;
+      if (!App.sdkReady || !window.JorPlatform?.hasFeature?.('stickyBanner') || !App.usingBannerApi) return;
       if (!shouldShowStickyBanner()) {
         await hideEvolutionBanner(true);
         return;
@@ -173,22 +161,7 @@ const App = {
 
       App.bannerRequestPending = true;
       try {
-        if (App.ysdk.adv.getBannerAdvStatus) {
-          const status = await App.ysdk.adv.getBannerAdvStatus();
-          if (status?.stickyAdvIsShowing) {
-            App.bannerVisible = true;
-            return;
-          }
-          if (status?.reason) {
-            console.warn('Sticky banner is not showing:', status.reason);
-          }
-        }
-
-        const result = await App.ysdk.adv.showBannerAdv();
-        App.bannerVisible = Boolean(result?.stickyAdvIsShowing ?? true);
-        if (!App.bannerVisible && result?.reason) {
-          console.warn('showBannerAdv did not show sticky banner:', result.reason);
-        }
+        App.bannerVisible = await window.JorPlatform.showStickyBanner();
       } catch (error) {
         console.warn('showBannerAdv error:', error);
       } finally {
@@ -199,10 +172,10 @@ const App = {
     async function hideEvolutionBanner(force = false) {
       if (!force) return;
       if (!force && App.keepStickyBannerAlways) return;
-      if (!App.sdkReady || !App.ysdk?.adv?.hideBannerAdv || !App.usingBannerApi) return;
+      if (!App.sdkReady || !window.JorPlatform?.hasFeature?.('stickyBanner') || !App.usingBannerApi) return;
 
       try {
-        const result = await App.ysdk.adv.hideBannerAdv();
+        await window.JorPlatform.hideStickyBanner();
         App.bannerVisible = false;
       } catch (error) {
         console.warn('hideBannerAdv error:', error);
@@ -238,7 +211,7 @@ const App = {
         try { onDone?.(); } catch (error) {}
       };
 
-      if (!App.sdkReady || !App.ysdk?.adv?.showFullscreenAdv) {
+      if (!App.sdkReady || !window.JorPlatform?.hasFeature?.('interstitialAds')) {
         complete();
         return;
       }
@@ -247,25 +220,24 @@ const App = {
       pauseAmbientMusic();
 
       try {
-        App.ysdk.adv.showFullscreenAdv({
-          callbacks: {
-            onOpen: () => {
-              App.platformPaused = true;
-              pauseAmbientMusic();
-            },
-            onClose: () => {
-              App.platformPaused = false;
-              complete();
-            },
-            onError: (error) => {
-              console.warn('showFullscreenAdv error:', error);
-              App.platformPaused = false;
-              complete();
-            }
+        await window.JorPlatform.showInterstitial({
+          onOpen: () => {
+            App.platformPaused = true;
+            pauseAmbientMusic();
+          },
+          onClose: () => {
+            App.platformPaused = false;
+            complete();
+          },
+          onError: (error) => {
+            console.warn('showInterstitial error:', error);
+            App.platformPaused = false;
+            complete();
           }
         });
+        complete();
       } catch (error) {
-        console.warn('showFullscreenAdv call error:', error);
+        console.warn('showInterstitial call error:', error);
         App.platformPaused = false;
         complete();
       }
@@ -299,13 +271,10 @@ function showStartScreen() {
     function notifyGameReady() {
       if (App.loadingReadySent) return;
       if (!App.gameReadyMoment) return;     // РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… Р ВµРЎвЂ°РЎвЂ Р Р…Р Вµ Р С—Р С•Р С”Р В°Р В·Р В°Р Р…
-      if (!App.sdkReady || !App.ysdk) return; // SDK Р ВµРЎвЂ°РЎвЂ Р Р…Р Вµ Р С‘Р Р…Р С‘РЎвЂ Р С‘Р В°Р В»Р С‘Р В·Р С‘РЎР‚Р С•Р Р†Р В°Р В»РЎРѓРЎРЏ РІР‚вЂќ Р С—Р С•Р Р†РЎвЂљР С•РЎР‚Р С‘Р С Р С—Р С•Р В·Р В¶Р Вµ
+      if (!App.sdkReady || !window.JorPlatform) return;
       try {
-        const api = App.ysdk.features?.LoadingAPI;
-        if (api && typeof api.ready === 'function') {
-          api.ready();
-          App.loadingReadySent = true;
-        }
+        window.JorPlatform.notifyGameReady();
+        App.loadingReadySent = true;
       } catch (error) {
         console.error('LoadingAPI.ready error:', error);
       }
@@ -409,7 +378,7 @@ function showStartScreen() {
     }
 
     async function refreshOurGamesUrl() {
-      if (!App.sdkReady || !App.ysdk?.features?.GamesAPI?.getAllGames) {
+      if (!App.sdkReady || !window.JorPlatform?.hasFeature?.('developerGames')) {
         App.ourGamesUrl = null;
         updateOurGamesButtonState();
         return;
@@ -420,10 +389,9 @@ function showStartScreen() {
       updateOurGamesButtonState();
 
       try {
-        const { developerURL, games } = await App.ysdk.features.GamesAPI.getAllGames();
-        App.ourGamesUrl = developerURL || games?.[0]?.url || null;
+        App.ourGamesUrl = await window.JorPlatform.getDeveloperGamesUrl() || null;
       } catch (error) {
-        console.warn('GamesAPI.getAllGames error:', error);
+        console.warn('Developer games request error:', error);
         App.ourGamesUrl = null;
       } finally {
         App.ourGamesLoading = false;

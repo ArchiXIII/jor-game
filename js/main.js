@@ -122,7 +122,7 @@ DOM.startPlayBtn.addEventListener('click', startGameFromMenu);
     currentLang = detectPreferredLanguage();
     document.documentElement.lang = currentLang;
     applyLocalization();
-    initYandexSdk();
+    initPlatform();
     resetGame();
     showStartScreen();
     loop();

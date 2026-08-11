@@ -111,11 +111,7 @@
   }
 
   function isAuthorizedPlayer() {
-    try {
-      return !!App?.player?.isAuthorized?.();
-    } catch (error) {
-      return false;
-    }
+    return !!window.JorPlatform?.isAuthorized?.();
   }
 
   function formatNumber(value) {
@@ -143,11 +139,7 @@
   }
 
   function playerName() {
-    try {
-      if (App?.player?.getName) return App.player.getName() || tr('player');
-      if (App?.player?.getUniqueID) return App.player.getUniqueID() || tr('player');
-    } catch (error) {}
-    return tr('player');
+    return window.JorPlatform?.getPlayerName?.() || window.JorPlatform?.getPlayerId?.() || tr('player');
   }
 
   function cacheDom() {
@@ -450,16 +442,7 @@
   }
 
   async function getLeaderboardsApi() {
-    if (!App?.sdkReady || !App?.ysdk) return null;
-    if (App.ysdk.leaderboards) return App.ysdk.leaderboards;
-    if (typeof App.ysdk.getLeaderboards === 'function') {
-      try {
-        return await App.ysdk.getLeaderboards();
-      } catch (error) {
-        return null;
-      }
-    }
-    return null;
+    return window.JorPlatform?.getLeaderboardApi?.() || null;
   }
 
   function rememberLeaderboardBestScore(name, value) {
@@ -517,10 +500,6 @@
       if (score <= currentBest) return true;
       const waitMs = Math.max(0, LEADERBOARD_SUBMIT_INTERVAL - (Date.now() - lastLeaderboardSubmitAt));
       if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
-      if (typeof App?.ysdk?.isAvailableMethod === 'function') {
-        const available = await App.ysdk.isAvailableMethod('leaderboards.setScore');
-        if (!available) return false;
-      }
       if (typeof api.setScore === 'function') {
         await api.setScore(name, score);
       } else if (typeof api.setLeaderboardScore === 'function') {
@@ -580,10 +559,7 @@
   }
 
   function mapEntries(result) {
-    let currentUserId = '';
-    try {
-      currentUserId = App?.player?.getUniqueID?.() || '';
-    } catch (error) {}
+    const currentUserId = window.JorPlatform?.getPlayerId?.() || '';
     return (result?.entries || []).map((entry) => {
       const uniqueId = entry.player?.uniqueID || '';
       return {

@@ -119,9 +119,7 @@ function escapeHtml(value) {
     }
 
     function buildLeaderboardHtml(finalScore, entries, isAuthorized, state = 'ready', goldfishUnlocked = false) {
-      const currentUserId = App.player && typeof App.player.getUniqueID === 'function'
-        ? App.player.getUniqueID()
-        : '';
+      const currentUserId = window.JorPlatform?.getPlayerId?.() || '';
       const rows = state === 'ready' ? getGameOverLeaderboardRows(entries, currentUserId) : [];
       const enemiesEatenLabel = t('enemiesEaten');
       const enemiesEatenValue = formatCompactScore(enemiesEatenThisRound);
@@ -171,12 +169,12 @@ function escapeHtml(value) {
         'congrats'
       );
 
-      if (App.sdkReady && !App.player) {
-        await initYandexPlayer();
+      if (App.sdkReady && !window.JorPlatform?.getPlayerId?.()) {
+        await initPlatformPlayer();
         if (sessionId !== runtimeSessionId || !gameOver) return;
       }
 
-      const isAuthorized = isAuthorizedYandexPlayer();
+      const isAuthorized = isAuthorizedPlatformPlayer();
 
       if (isAuthorized) {
         await submitScoreToLeaderboard(App.bestEndlessScore);
@@ -294,9 +292,7 @@ function escapeHtml(value) {
     }
 
     function buildCampaignStarsLeaderboardHtml(entries, state = 'loading') {
-      const currentUserId = App.player && typeof App.player.getUniqueID === 'function'
-        ? App.player.getUniqueID()
-        : '';
+      const currentUserId = window.JorPlatform?.getPlayerId?.() || '';
       const rows = state === 'ready' ? getCampaignStarsRows(entries, currentUserId) : [];
       const title = currentLang === 'en' ? 'STARS RATING' : '\u0420\u0415\u0419\u0422\u0418\u041d\u0413 \u0417\u0412\u0401\u0417\u0414';
       const content = state === 'loading'
@@ -347,14 +343,15 @@ function escapeHtml(value) {
       if (typeof window.JorMetaUI?.submitStars === 'function') {
         await window.JorMetaUI.submitStars();
       }
-      if (!App.sdkReady || !App.ysdk?.leaderboards) {
+      const leaderboard = window.JorPlatform?.getLeaderboardApi?.();
+      if (!leaderboard) {
         return localValue > 0
           ? { entries: [{ rank: 1, name: getLeaderboardPlayerFallbackName(), score: localValue, isUser: true }], state: 'ready' }
           : { entries: null, state: 'error' };
       }
 
       try {
-        const entries = await App.ysdk.leaderboards.getEntries('jorStars', {
+        const entries = await leaderboard.getEntries('jorStars', {
           quantityTop: 3,
           includeUser: true,
           quantityAround: 1,

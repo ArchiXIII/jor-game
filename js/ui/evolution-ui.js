@@ -19,7 +19,7 @@ async function showRewardedRerollAd() {
     return;
   }
 
-  if (!App.sdkReady || !App.ysdk?.adv?.showRewardedVideo) {
+  if (!App.sdkReady || !window.JorPlatform?.hasFeature?.('rewardedAds')) {
     unlockRewardMutationChoice();
     renderEvolutionChoices();
     updateRewardButtonState();
@@ -31,28 +31,23 @@ async function showRewardedRerollAd() {
   }
   markGameplayStop(false);
 
-  App.ysdk.adv.showRewardedVideo({
-    callbacks: {
-      onOpen: () => {
-        handlePlatformPause();
-      },
-      onRewarded: () => {
-        unlockRewardMutationChoice();
-        renderEvolutionChoices();
-        updateRewardButtonState();
-      },
-      onClose: () => {
-        handlePlatformResume();
-
-        if (!App.rewardedUsedThisEvolution) {
-          updateRewardButtonState();
-        }
-      },
-      onError: (error) => {
-        console.error('Rewarded video error:', error);
-        handlePlatformResume();
-        updateRewardButtonState();
-      }
+  await window.JorPlatform.showRewarded({
+    onOpen: () => {
+      handlePlatformPause();
+    },
+    onRewarded: () => {
+      unlockRewardMutationChoice();
+      renderEvolutionChoices();
+      updateRewardButtonState();
+    },
+    onClose: () => {
+      handlePlatformResume();
+      if (!App.rewardedUsedThisEvolution) updateRewardButtonState();
+    },
+    onError: (error) => {
+      console.error('Rewarded video error:', error);
+      handlePlatformResume();
+      updateRewardButtonState();
     }
   });
 }
