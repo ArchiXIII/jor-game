@@ -39,20 +39,12 @@
   }
 
   function isAuthorized() {
-    try {
-      return !!App?.player?.isAuthorized?.();
-    } catch (error) {
-      return false;
-    }
+    return !!window.JorPlatform?.isAuthorized?.();
   }
 
   function playerId() {
     if (!isAuthorized()) return 'guest';
-    try {
-      return String(App.player.getUniqueID?.() || 'authorized');
-    } catch (error) {
-      return 'authorized';
-    }
+    return String(window.JorPlatform?.getPlayerId?.() || 'authorized');
   }
 
   function ownerId() {
@@ -83,7 +75,7 @@
   function loadLocal(owner = ownerId()) {
     const current = readJson(localKey(owner));
     if (current) return normalize(current);
-    if (typeof YaGames !== 'undefined') return createEmptySave();
+    if (window.JorPlatform?.hasCloudStorage?.()) return createEmptySave();
     return normalize({
       campaign: readJson('jor-campaign-progress-v1'),
       shop: readJson('jor-shop-v1'),
@@ -195,12 +187,13 @@
     }
   }
 
-  function queueCloudSave(snapshot, flush, player) {
+  function queueCloudSave(snapshot, flush) {
     const saved = copy(snapshot);
     const operation = saveChain.then(async () => {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          await player.setData({ [CLOUD_KEY]: saved }, !!flush);
+          const success = await window.JorPlatform.saveData({ [CLOUD_KEY]: saved }, !!flush);
+          if (!success) throw new Error('Cloud save unavailable');
           return true;
         } catch (error) {
           if (attempt > 0) {
@@ -219,14 +212,14 @@
   async function persist(flush = false) {
     const owner = ensureOwnerData();
     saveLocal(owner);
-    if (!isAuthorized() || !App?.player?.setData) return true;
+    if (!isAuthorized() || !window.JorPlatform?.hasCloudStorage?.()) return true;
     if (cloudOwner !== owner) return load();
-    return queueCloudSave(data, flush, App.player);
+    return queueCloudSave(data, flush);
   }
 
   async function load() {
     const owner = ownerId();
-    if (!isAuthorized() || !App?.player?.getData) {
+    if (!isAuthorized() || !window.JorPlatform?.hasCloudStorage?.()) {
       ensureOwnerData();
       return true;
     }
@@ -237,12 +230,11 @@
       return load();
     }
 
-    const cloudPlayer = App.player;
     loadPromiseOwner = owner;
     loadPromise = (async () => {
       const local = loadLocal(owner);
       try {
-        const server = await cloudPlayer.getData([CLOUD_KEY, 'jorCampaign', 'jorShop']);
+        const server = await window.JorPlatform.loadData([CLOUD_KEY, 'jorCampaign', 'jorShop']);
         if (ownerId() !== owner) return false;
         const unified = objectSource(server?.[CLOUD_KEY]);
         const resolved = resolveSave(server, local);
@@ -262,7 +254,7 @@
         loaded = true;
         saveLocal(owner);
         if (!unified || !sameSave(unified, resolved)) {
-          await queueCloudSave(resolved, true, cloudPlayer);
+          await queueCloudSave(resolved, true);
         }
         return true;
       } catch (error) {
@@ -312,7 +304,7 @@
     return setSection(name, next, flush);
   }
 
-  if (typeof YaGames === 'undefined') {
+  if (!window.JorPlatform?.hasCloudStorage?.()) {
     dataOwner = 'guest';
     data = loadLocal(dataOwner);
     loaded = true;

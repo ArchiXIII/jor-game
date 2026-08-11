@@ -5,24 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <title>Gulp &mdash; Yandex Games</title>
   <script src="/sdk.js"></script>
-  <script>
-    window.jorYandexSdkPromise = typeof YaGames === 'undefined'
-      ? null
-      : YaGames.init().then(function (sdk) {
-          try {
-            if (typeof sdk.features?.LoadingAPI?.ready === 'function') {
-              sdk.features.LoadingAPI.ready();
-              window.jorLoadingReadySent = true;
-            }
-          } catch (error) {
-            window.jorLoadingReadyError = error;
-          }
-          return sdk;
-        }).catch(function (error) {
-          window.jorYandexSdkInitError = error;
-          return null;
-        });
-  </script>
+  <script src="platforms/yandex/early.js"></script>
   <link rel="preload" href="fonts/CrystalUI.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/game.css" />
   <link rel="stylesheet" href="css/meta-ui.css" />
@@ -243,6 +226,9 @@
     </section>
   </div>
 
+  <script src="platforms/yandex/config.js"></script>
+  <script src="js/platform-core.js"></script>
+  <script src="platforms/yandex/adapter.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/config.js"></script>
   <script src="js/audio.js"></script>

@@ -15,6 +15,7 @@ node_modules/
 dist/
 build/
 out/
+output/
 .cache/
 .parcel-cache/
 .vite/
@@ -44,7 +45,6 @@ primer/
 
 # Local Codex workspace data and one-off tools
 .agents/
-tools/
 
 # Yandex Games export artifacts
 *.crx

@@ -102,16 +102,10 @@
   }
 
   async function getPayments() {
-    if (!App?.sdkReady || !App.ysdk?.getPayments) return null;
+    if (!App?.sdkReady || !window.JorPlatform?.hasFeature?.('purchases')) return null;
     if (state.payments) return state.payments;
-    try {
-      state.payments = await App.ysdk.getPayments();
-      return state.payments;
-    } catch (error) {
-      state.payments = null;
-      console.warn('Payments init error:', error);
-      return null;
-    }
+    state.payments = window.JorPlatform;
+    return state.payments;
   }
 
   async function refreshPayments() {
