@@ -10,7 +10,7 @@
   justify-content: center;
   padding: 18px max(20px, env(safe-area-inset-right)) calc(18px + var(--safe-bottom)) max(20px, env(safe-area-inset-left));
   background: transparent;
-  font-family: Arial, sans-serif;
+  font-family: "CrystalUI", Arial, Helvetica, sans-serif;
 }
 
 .campaignRoundIntroOverlay.active {
@@ -33,14 +33,14 @@
   color: #8ff3ff;
   font-size: 17px;
   line-height: 1;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .campaignRoundIntroGoal {
   margin-top: 14px;
   font-size: 25px;
   line-height: 1.12;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .campaignRoundIntroStars {
@@ -63,6 +63,7 @@
   background: rgba(2, 20, 29, 0.64);
   color: #fff0b2;
   font-size: 15px;
+  font-weight: 600;
 }
 
 .campaignRoundIntroStarIcons {
@@ -87,7 +88,7 @@
   background: linear-gradient(180deg, #c7fbff 0%, #55dcf4 55%, #1aa9cf 100%);
   color: #032033;
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 700;
   cursor: pointer;
 }
 

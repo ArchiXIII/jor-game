@@ -45,7 +45,7 @@
         if (viewport.height <= 500) return [640, 280];
         if (viewport.height <= 560) return [680, 390];
         return [680, 570];
-      case 'shop': return viewport.height <= 520 || viewport.width <= 660 ? [700, 420] : [740, 560];
+      case 'shop': return viewport.height <= 520 || viewport.width <= 660 ? [620, 340] : [740, 560];
       case 'roundIntro': return viewport.height <= 520 || viewport.width <= 700 ? [390, 190] : [430, 240];
       case 'pause': return [400, 180];
       case 'exitConfirm': return compact ? [336, 196] : [410, 220];

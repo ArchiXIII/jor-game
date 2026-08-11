@@ -393,7 +393,7 @@
     const availableToSelect = owned && isSelectable(item) && !selected;
     const title = productTitle(item);
     const card = document.createElement('article');
-    card.className = 'shopItem' + (isCharacterItem(item) || isGrowthEffectItem(item) || isPetItem(item) ? ' characterPreview' : '') + (isIconItem(item) ? ' profileIconPreview' : '') + (isAdItem(item) ? ' adPreview' : '') + (title.length >= 15 ? ' compactTitle' : '') + (owned ? ' owned' : '') + (selected ? ' selected' : '') + (availableToSelect ? ' availableToSelect' : '') + (gameplayLocked ? ' gameplayLocked' : '');
+    card.className = 'shopItem' + (isCharacterItem(item) || isGrowthEffectItem(item) || isPetItem(item) ? ' characterPreview' : '') + (isIconItem(item) ? ' profileIconPreview' : '') + (isAdItem(item) ? ' adPreview' : '') + (title.length >= 14 ? ' compactTitle' : '') + (owned ? ' owned' : '') + (selected ? ' selected' : '') + (availableToSelect ? ' availableToSelect' : '') + (gameplayLocked ? ' gameplayLocked' : '');
     card.style.setProperty('--shop-accent', item.color || '#7af2ff');
     const activeUntil = isTimedAdItem(item) ? timedUntil(item.id) : 0;
     const action = owned

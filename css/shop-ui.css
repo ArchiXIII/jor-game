@@ -1,4 +1,4 @@
-﻿.startSecondaryRow {
+.startSecondaryRow {
   display: flex;
   justify-content: center;
   gap: 12px;
@@ -58,7 +58,7 @@
   color: #eafff8;
   font-size: 24px;
   line-height: 1;
-  font-weight: 900;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -96,7 +96,7 @@
   background: #050d14;
   color: rgba(234,255,248,0.58);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -111,7 +111,7 @@
 }
 
 .shopContent { grid-column: 2; min-width: 0; min-height: 0; display: flex; flex-direction: column; padding-top: 0; }
-.shopStatus { min-height: 18px; margin-bottom: 8px; color: rgba(234,255,248,0.7); font-size: 13px; font-weight: 800; text-align: center; }
+.shopStatus { min-height: 18px; margin-bottom: 8px; color: rgba(234,255,248,0.7); font-size: 13px; font-weight: 600; text-align: center; }
 .shopStatus:empty { display: none; }
 .shopGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; flex: 1 1 auto; min-height: 0; overflow: hidden; padding-right: 0; align-content: start; }
 .shopPager { display: none; }
@@ -150,10 +150,10 @@
 .shopItem.adPreview .shopItemBody { align-self: start; min-height: 92px; }
 .shopItem h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.1; }
 .shopItem.compactTitle h3 { font-size: 13px; white-space: normal; overflow-wrap: anywhere; }
-.shopItem p { margin: 0; color: rgba(234,255,248,0.76); font-size: 12px; line-height: 1.28; }
+.shopItem p { margin: 0; color: rgba(234,255,248,0.76); font-size: 12px; line-height: 1.15; font-weight: 500; }
 .shopItem p.shopBonusDesc { color: #bfffea; }
 .shopItem .shopBonusValue { color: #ffe071; }
-.shopBuyBtn { position: relative; grid-column: 2; min-height: 34px; border-radius: 12px; border: 1px solid rgba(230,255,252,0.7); background: linear-gradient(180deg, #d9ffff 0%, #7aefff 52%, #1395b4 100%); color: #04141b; font-weight: 900; cursor: pointer; }
+.shopBuyBtn { position: relative; grid-column: 2; min-height: 34px; border-radius: 12px; border: 1px solid rgba(230,255,252,0.7); background: linear-gradient(180deg, #d9ffff 0%, #7aefff 52%, #1395b4 100%); color: #04141b; font-weight: 700; cursor: pointer; }
 .shopItem.availableToSelect .shopBuyBtn {
   border-color: #d9ffea;
   background: linear-gradient(180deg, #d9ffea 0%, #5cffb4 48%, #12b98c 100%);
@@ -173,7 +173,7 @@
   background: #2cdd72;
   color: #052414;
   font-size: 16px;
-  font-weight: 1000;
+  font-weight: 700;
   line-height: 1;
   pointer-events: none;
 }
@@ -193,7 +193,7 @@
   bottom: 8px;
   color: rgba(255,232,132,0.94);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.18;
   text-align: center;
   pointer-events: none;
@@ -232,9 +232,9 @@
   .shopItem:not(.adPreview) .shopBuyBtn { width: 126px; height: 30px; }
   .shopItem.adPreview .shopBuyBtn { width: 126px; height: 30px; }
   .shopPager { position: absolute; left: 0; right: 0; bottom: -12px; display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 38px; margin-top: 0; }
-  .shopPageArrow { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(122,242,255,0.28); background: rgba(255,255,255,0.055); color: rgba(234,255,248,0.88); font-size: 24px; font-weight: 900; line-height: 1; }
+  .shopPageArrow { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(122,242,255,0.28); background: rgba(255,255,255,0.055); color: rgba(234,255,248,0.88); font-size: 24px; font-weight: 700; line-height: 1; }
   .shopPageArrow:disabled { opacity: 0.28; }
-  .shopPageLabel { min-width: 46px; color: rgba(234,255,248,0.78); font-size: 20px; font-weight: 900; text-align: center; }
+  .shopPageLabel { min-width: 46px; color: rgba(234,255,248,0.78); font-size: 20px; font-weight: 700; text-align: center; }
 }
 
 @media (max-width: 660px), (pointer: coarse) {
@@ -455,7 +455,7 @@
   background: rgba(255,255,255,0.07);
   color: rgba(234,255,248,0.9);
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -471,13 +471,13 @@
   min-width: 46px;
   color: rgba(234,255,248,0.82);
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
   text-align: center;
 }
 
 .shopItem {
-  aspect-ratio: 2.05 / 1;
+  aspect-ratio: 2 / 1;
   box-sizing: border-box;
   container-type: inline-size;
 }

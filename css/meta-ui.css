@@ -26,7 +26,7 @@
 .metaTabs button,
 .metaXpCard {
   appearance: none;
-  font-family: Arial, sans-serif;
+  font-family: "CrystalUI", Arial, Helvetica, sans-serif;
   cursor: pointer;
 }
 
@@ -177,14 +177,14 @@
 .metaPlayerName {
   color: #eafff8;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.08;
 }
 
 .metaRankName {
   color: #ffe590;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.08;
 }
 
@@ -303,7 +303,7 @@
   background: linear-gradient(180deg, rgba(15, 55, 71, 0.97), rgba(5, 20, 30, 0.99));
   color: #eafff8;
   text-align: center;
-  font-family: Arial, sans-serif;
+  font-family: "CrystalUI", Arial, Helvetica, sans-serif;
 }
 
 .metaModal.active {
@@ -328,7 +328,7 @@
   background: radial-gradient(circle at 35% 24%, rgba(176, 250, 255, 0.9), rgba(57, 174, 196, 0.82) 52%, rgba(14, 66, 84, 0.95));
   color: rgba(7, 37, 48, 0.96);
   font-size: 26px;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -362,7 +362,7 @@
   color: #eafff8;
   font-size: 28px;
   line-height: 1.08;
-  font-weight: 900;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -373,7 +373,7 @@
   color: #ffe590;
   font-size: 21px;
   line-height: 1.08;
-  font-weight: 900;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -399,7 +399,7 @@
 .metaLeaderboardHint {
   color: #7af2ff;
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.1;
   text-transform: uppercase;
 }
@@ -409,7 +409,7 @@
   color: #eafff8;
   font-size: 40px;
   line-height: 1;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .metaXpAction {
@@ -426,7 +426,7 @@
   color: rgba(234, 255, 248, 0.82);
   font-size: 14px;
   line-height: 1.35;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .metaLeaderboardModal {
@@ -472,7 +472,7 @@
   background: transparent;
   color: rgba(234, 255, 248, 0.72);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -495,7 +495,7 @@
   color: #eafff8;
   font-size: 25px;
   line-height: 1.08;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -534,7 +534,7 @@
   text-align: center;
   color: rgba(234, 255, 248, 0.82);
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .metaLeaderboardGap {
@@ -543,7 +543,7 @@
   place-items: center;
   color: rgba(122, 242, 255, 0.58);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .metaLeaderboardGap::before {
@@ -570,7 +570,7 @@
 .metaLeaderboardRank {
   color: #7af2ff;
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 700;
   text-align: center;
 }
 
@@ -581,13 +581,13 @@
   white-space: nowrap;
   color: #eafff8;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .metaLeaderboardScore {
   color: #eafff8;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 700;
   white-space: nowrap;
 }
 

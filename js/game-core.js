@@ -734,6 +734,14 @@
         event.preventDefault();
       });
 
+      document.addEventListener('dragstart', (event) => {
+        event.preventDefault();
+      });
+
+      document.addEventListener('selectstart', (event) => {
+        event.preventDefault();
+      });
+
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
           handlePlatformPause();

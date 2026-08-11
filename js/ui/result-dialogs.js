@@ -179,7 +179,7 @@ function escapeHtml(value) {
       const isAuthorized = isAuthorizedYandexPlayer();
 
       if (isAuthorized) {
-        await submitScoreToLeaderboard(finalScore);
+        await submitScoreToLeaderboard(App.bestEndlessScore);
         if (sessionId !== runtimeSessionId || !gameOver) return;
       }
 

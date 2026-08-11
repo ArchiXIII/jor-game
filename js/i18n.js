@@ -3,7 +3,7 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
 
     const i18n = {
       ru: {
-        documentTitle: 'Gluttony \u2014 Yandex Games',
+        documentTitle: 'Gulp \u2014 Yandex Games',
         startBadge: 'Milevora team',
         startTitle: '\u0416\u043e\u0440',
         hudTitle: '\u0416\u043e\u0440',
@@ -62,10 +62,10 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
         },
       },
       en: {
-        documentTitle: 'Gluttony \u2014 Yandex Games',
+        documentTitle: 'Gulp \u2014 Yandex Games',
         startBadge: 'Milevora team',
-        startTitle: 'Gluttony',
-        hudTitle: 'Gluttony',
+        startTitle: 'Gulp',
+        hudTitle: 'Gulp',
         startSubtitle: 'Consume food, grow, unlock mutations, and enter the endless survival phase',
         play: 'Endless mode',
         campaign: 'Campaign',

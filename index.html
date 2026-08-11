@@ -3,8 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <title>Gluttony &mdash; Yandex Games</title>
+  <title>Gulp &mdash; Yandex Games</title>
   <script src="/sdk.js"></script>
+  <script>
+    window.jorYandexSdkPromise = typeof YaGames === 'undefined'
+      ? null
+      : YaGames.init().then(function (sdk) {
+          try {
+            if (typeof sdk.features?.LoadingAPI?.ready === 'function') {
+              sdk.features.LoadingAPI.ready();
+              window.jorLoadingReadySent = true;
+            }
+          } catch (error) {
+            window.jorLoadingReadyError = error;
+          }
+          return sdk;
+        }).catch(function (error) {
+          window.jorYandexSdkInitError = error;
+          return null;
+        });
+  </script>
+  <link rel="preload" href="fonts/CrystalUI.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/game.css" />
   <link rel="stylesheet" href="css/meta-ui.css" />
   <link rel="stylesheet" href="css/campaign-ui.css" />
@@ -279,6 +298,13 @@
   <script src="js/endless-mode.js"></script>
   <script src="js/ui-fit.js"></script>
   <script src="js/main.js"></script>
+  <script>
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () {
+        window.JorUIFit?.refresh?.();
+      });
+    }
+  </script>
 </body>
 </html>
 

@@ -7,6 +7,8 @@
   let leaderboardSubmitChain = Promise.resolve();
   let lastLeaderboardSubmitAt = 0;
   const leaderboardSubmissions = Object.create(null);
+  const leaderboardBestScores = Object.create(null);
+  const leaderboardBestLoads = Object.create(null);
 
   const rankThresholds = [
     0, 2500, 6500, 12500, 22000,
@@ -460,12 +462,61 @@
     return null;
   }
 
+  function rememberLeaderboardBestScore(name, value) {
+    const score = Math.max(0, Math.floor(Number(value) || 0));
+    const previous = Object.prototype.hasOwnProperty.call(leaderboardBestScores, name)
+      ? leaderboardBestScores[name]
+      : 0;
+    const best = Math.max(previous, score);
+    leaderboardBestScores[name] = best;
+    if (name !== App?.leaderboardName) return best;
+    const savedMeta = window.JorSaveManager?.getSection?.('meta', {}) || {};
+    const savedBest = Math.max(0, Math.floor(Number(savedMeta.bestEndlessScore) || 0));
+    App.bestEndlessScore = Math.max(0, Math.floor(Number(App.bestEndlessScore) || 0), savedBest, best);
+    if (App.bestEndlessScore > savedBest) {
+      window.JorSaveManager?.updateSection?.('meta', (meta) => ({ ...meta, bestEndlessScore: App.bestEndlessScore }), true);
+    }
+    return best;
+  }
+
+  function loadLeaderboardBestScore(name, api) {
+    if (Object.prototype.hasOwnProperty.call(leaderboardBestScores, name)) {
+      return Promise.resolve(leaderboardBestScores[name]);
+    }
+    if (leaderboardBestLoads[name]) return leaderboardBestLoads[name];
+    const operation = (async () => {
+      try {
+        let entry;
+        if (typeof api.getPlayerEntry === 'function') {
+          entry = await api.getPlayerEntry(name);
+        } else if (typeof api.getLeaderboardPlayerEntry === 'function') {
+          entry = await api.getLeaderboardPlayerEntry(name);
+        } else {
+          throw new Error('Leaderboard player entry API is unavailable');
+        }
+        return rememberLeaderboardBestScore(name, entry?.score);
+      } catch (error) {
+        if (error?.code === 'LEADERBOARD_PLAYER_NOT_PRESENT') {
+          return rememberLeaderboardBestScore(name, 0);
+        }
+        throw error;
+      }
+    })();
+    leaderboardBestLoads[name] = operation;
+    operation.finally(() => {
+      if (leaderboardBestLoads[name] === operation) delete leaderboardBestLoads[name];
+    }).catch(() => {});
+    return operation;
+  }
+
   async function sendLeaderboardScore(name, score) {
-    const waitMs = Math.max(0, LEADERBOARD_SUBMIT_INTERVAL - (Date.now() - lastLeaderboardSubmitAt));
-    if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
     const api = await getLeaderboardsApi();
     if (!api) return false;
     try {
+      const currentBest = await loadLeaderboardBestScore(name, api);
+      if (score <= currentBest) return true;
+      const waitMs = Math.max(0, LEADERBOARD_SUBMIT_INTERVAL - (Date.now() - lastLeaderboardSubmitAt));
+      if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
       if (typeof App?.ysdk?.isAvailableMethod === 'function') {
         const available = await App.ysdk.isAvailableMethod('leaderboards.setScore');
         if (!available) return false;
@@ -477,6 +528,7 @@
       } else {
         return false;
       }
+      rememberLeaderboardBestScore(name, score);
       lastLeaderboardSubmitAt = Date.now();
       return true;
     } catch (error) {
@@ -518,7 +570,10 @@
       const result = typeof api.getEntries === 'function'
         ? await api.getEntries(name, options)
         : await api.getLeaderboardEntries(name, options);
-      return { error: '', entries: mapEntries(result) };
+      const entries = mapEntries(result);
+      const playerEntry = entries.find((entry) => entry.isPlayer);
+      if (playerEntry) rememberLeaderboardBestScore(name, playerEntry.score);
+      return { error: '', entries };
     } catch (error) {
       return { error: tr('unavailable'), entries: [] };
     }
