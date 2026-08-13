@@ -114,6 +114,10 @@
     return !!window.JorPlatform?.isAuthorized?.();
   }
 
+  function hasFeature(name) {
+    return window.JorPlatform?.hasFeature?.(name) !== false;
+  }
+
   function formatNumber(value) {
     const locale = lang() === 'en' ? 'en-US' : 'ru-RU';
     return Math.max(0, Math.floor(value || 0)).toLocaleString(locale);
@@ -186,11 +190,13 @@
     dom.profileClose?.addEventListener('click', closeModal);
     dom.leaderboardClose?.addEventListener('click', closeModal);
     dom.xpLeaderboardClose?.addEventListener('click', closeModal);
-    dom.xpButton?.addEventListener('click', openXpLeaderboard);
+    dom.xpButton?.addEventListener('click', () => {
+      if (hasFeature('profileXpLeaderboard')) openXpLeaderboard();
+    });
     dom.xpButton?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        openXpLeaderboard();
+        if (hasFeature('profileXpLeaderboard')) openXpLeaderboard();
       }
     });
     dom.leaderboardTabs?.addEventListener('click', (event) => {
@@ -223,6 +229,21 @@
     const thanks = dom.profileModal?.querySelector('.metaThanks');
     if (xpLabel) xpLabel.textContent = tr('totalXp');
     if (xpAction) xpAction.textContent = tr('xpLeaderboard');
+    const xpLeaderboardEnabled = hasFeature('profileXpLeaderboard');
+    if (dom.xpButton) {
+      dom.xpButton.classList.toggle('static', !xpLeaderboardEnabled);
+      if (xpLeaderboardEnabled) {
+        dom.xpButton.setAttribute('role', 'button');
+        dom.xpButton.setAttribute('tabindex', '0');
+      } else {
+        dom.xpButton.removeAttribute('role');
+        dom.xpButton.removeAttribute('tabindex');
+      }
+    }
+    if (xpAction) xpAction.hidden = !xpLeaderboardEnabled;
+    const singleEndless = hasFeature('singleEndlessLeaderboard');
+    dom.leaderboardModal?.classList.toggle('singleEndless', singleEndless);
+    if (dom.leaderboardTabs) dom.leaderboardTabs.hidden = singleEndless;
     if (thanks) thanks.textContent = tr('thanks');
     if (dom.leaderboardTitle) dom.leaderboardTitle.textContent = tr('rating');
     if (dom.xpLeaderboardTitle) dom.xpLeaderboardTitle.textContent = tr('xpLeaderboard');
@@ -295,11 +316,11 @@
   function openProfile() {
     render();
     setModal('profile');
-    loadXpLeaderboard(true);
+    if (hasFeature('profileXpLeaderboard')) loadXpLeaderboard(true);
   }
 
   async function openLeaderboard(tab = 'stars') {
-    state.activeLeaderboardTab = tab === 'endless' ? 'endless' : 'stars';
+    state.activeLeaderboardTab = hasFeature('singleEndlessLeaderboard') || tab === 'endless' ? 'endless' : 'stars';
     state.leaderboardLoading = true;
     state.leaderboardError = '';
     state.leaderboardEntries = [];
@@ -385,10 +406,10 @@
     container.innerHTML = rows.map((row) => {
       if (row.type === 'gap') return '<div class="metaLeaderboardGap" aria-hidden="true"></div>';
       const entry = row.entry;
-      const rankClass = entry.rank <= 3 ? ` top${entry.rank}` : '';
+      const rankClass = Number.isFinite(entry.rank) && entry.rank <= 3 ? ` top${entry.rank}` : '';
       return `
         <div class="metaLeaderboardRow${entry.isPlayer ? ' isPlayer' : ''}${rankClass}">
-          <div class="metaLeaderboardRank">${escapeHtml(entry.rank)}</div>
+          <div class="metaLeaderboardRank">${escapeHtml(Number.isFinite(entry.rank) ? entry.rank : '')}</div>
           <div class="metaLeaderboardName">${escapeHtml(entry.name || tr('player'))}</div>
           <div class="metaLeaderboardScore">${escapeHtml(formatNumber(entry.score))}</div>
         </div>
@@ -400,6 +421,7 @@
     const sorted = (entries || [])
       .filter((entry) => entry && Number.isFinite(entry.rank))
       .sort((a, b) => a.rank - b.rank);
+    const unrankedPlayer = (entries || []).find((entry) => entry?.isPlayer && !Number.isFinite(entry.rank));
     const result = [];
     const added = new Set();
     const add = (entry) => {
@@ -412,6 +434,10 @@
     if (player && !added.has(player.rank)) {
       if (result.length) result.push({ type: 'gap' });
       sorted.filter((entry) => Math.abs(entry.rank - player.rank) <= 2).forEach(add);
+    }
+    if (unrankedPlayer) {
+      if (result.length) result.push({ type: 'gap' });
+      result.push({ type: 'row', entry: unrankedPlayer });
     }
     return result;
   }
@@ -562,13 +588,15 @@
     const currentUserId = window.JorPlatform?.getPlayerId?.() || '';
     return (result?.entries || []).map((entry) => {
       const uniqueId = entry.player?.uniqueID || '';
+      const rank = Number(entry.rank);
+      const isPlayer = !!entry.isUser || (!!uniqueId && !!currentUserId && uniqueId === currentUserId);
       return {
-        rank: Number(entry.rank),
+        rank: Number.isFinite(rank) && rank > 0 ? rank : null,
         name: entry.player?.publicName || uniqueId || tr('player'),
         score: Math.max(0, Math.floor(entry.score || 0)),
-        isPlayer: !!entry.isUser || (!!uniqueId && !!currentUserId && uniqueId === currentUserId)
+        isPlayer
       };
-    }).filter((entry) => Number.isFinite(entry.rank));
+    }).filter((entry) => Number.isFinite(entry.rank) || entry.isPlayer);
   }
 
   function setFullXp(value) {

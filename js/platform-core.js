@@ -43,6 +43,7 @@
         const state = result && typeof result === 'object' ? result : {};
         initialized = true;
         ready = !!state.ready;
+        if (state.name || adapter?.name) this.name = String(state.name || adapter.name);
         language = String(state.language || call('getLanguage') || '');
         return state;
       }).catch((error) => {

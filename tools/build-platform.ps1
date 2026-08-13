@@ -1,7 +1,8 @@
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet('yandex', 'local')]
-  [string]$Platform
+  [ValidateSet('yandex', 'vk', 'local')]
+  [string]$Platform,
+  [switch]$SkipArchive
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,7 +19,7 @@ if (-not $destination.StartsWith($outputPrefix, [StringComparison]::OrdinalIgnor
 if (Test-Path -LiteralPath $destination) {
   Remove-Item -LiteralPath $destination -Recurse -Force
 }
-if (Test-Path -LiteralPath $zipPath) {
+if (-not $SkipArchive -and (Test-Path -LiteralPath $zipPath)) {
   Remove-Item -LiteralPath $zipPath -Force
 }
 
@@ -38,26 +39,38 @@ if ($Platform -ne 'yandex') {
   $index = $index.Replace('platforms/yandex/config.js', ("platforms/{0}/config.js" -f $Platform))
   $index = $index.Replace('platforms/yandex/adapter.js', ("platforms/{0}/adapter.js" -f $Platform))
   $index = $index.Replace('<title>Gulp &mdash; Yandex Games</title>', '<title>Gulp</title>')
+  if ($Platform -eq 'vk') {
+    $configScript = '  <script src="platforms/vk/config.js"></script>'
+    $bridgeScript = '  <script src="platforms/vk/vk-bridge.min.js"></script>'
+    $adapterScript = '  <script src="platforms/vk/adapter.js"></script>'
+    $backendScript = '  <script src="platforms/vk/backend-client.js"></script>'
+    $index = $index.Replace($configScript, $bridgeScript + [Environment]::NewLine + $configScript)
+    $index = $index.Replace($adapterScript, $backendScript + [Environment]::NewLine + $adapterScript)
+  }
 }
 [IO.File]::WriteAllText($indexPath, $index, (New-Object Text.UTF8Encoding($false)))
 
-Add-Type -AssemblyName System.IO.Compression
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$archive = [IO.Compression.ZipFile]::Open($zipPath, [IO.Compression.ZipArchiveMode]::Create)
-try {
-  $sourcePrefix = $destination.TrimEnd('\') + '\'
-  foreach ($file in Get-ChildItem -LiteralPath $destination -File -Recurse) {
-    $entryName = $file.FullName.Substring($sourcePrefix.Length).Replace('\', '/')
-    [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
-      $archive,
-      $file.FullName,
-      $entryName,
-      [IO.Compression.CompressionLevel]::Optimal
-    ) | Out-Null
+if (-not $SkipArchive) {
+  Add-Type -AssemblyName System.IO.Compression
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $archive = [IO.Compression.ZipFile]::Open($zipPath, [IO.Compression.ZipArchiveMode]::Create)
+  try {
+    $sourcePrefix = $destination.TrimEnd('\') + '\'
+    foreach ($file in Get-ChildItem -LiteralPath $destination -File -Recurse) {
+      $entryName = $file.FullName.Substring($sourcePrefix.Length).Replace('\', '/')
+      [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+        $archive,
+        $file.FullName,
+        $entryName,
+        [IO.Compression.CompressionLevel]::Optimal
+      ) | Out-Null
+    }
+  } finally {
+    $archive.Dispose()
   }
-} finally {
-  $archive.Dispose()
 }
 
 Write-Output $destination
-Write-Output $zipPath
+if (-not $SkipArchive) {
+  Write-Output $zipPath
+}

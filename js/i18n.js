@@ -161,7 +161,7 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
 
     function applyLocalization() {
       document.documentElement.lang = currentLang;
-      document.title = t('documentTitle');
+      document.title = window.JorPlatformConfig?.documentTitle || t('documentTitle');
       if (DOM.startBadge) DOM.startBadge.textContent = t('startBadge');
       if (DOM.startTitle) DOM.startTitle.textContent = t('startTitle');
       if (DOM.hudTitle) DOM.hudTitle.textContent = t('hudTitle');

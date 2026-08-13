@@ -38,35 +38,43 @@ function escapeHtml(value) {
       const rows = Array.isArray(entries?.entries) ? entries.entries : [];
       return rows
         .map(entry => {
-          const rank = Number(entry?.rank);
-          if (!Number.isFinite(rank)) return null;
+          const rawRank = Number(entry?.rank);
           const uniqueId = entry?.player?.uniqueID || '';
+          const isPlayer = !!entry?.isUser || (!!uniqueId && !!currentUserId && uniqueId === currentUserId);
+          const rank = Number.isFinite(rawRank) && rawRank > 0 ? rawRank : null;
+          if (!Number.isFinite(rank) && !isPlayer) return null;
           return {
             rank,
             name: entry?.player?.publicName || getLeaderboardPlayerFallbackName(),
             score: Math.max(0, Math.round(entry?.score || 0)),
-            isPlayer: !!uniqueId && !!currentUserId && uniqueId === currentUserId,
+            isPlayer,
           };
         })
         .filter(Boolean)
-        .sort((a, b) => a.rank - b.rank);
+        .sort((a, b) => (Number.isFinite(a.rank) ? a.rank : Number.MAX_SAFE_INTEGER) - (Number.isFinite(b.rank) ? b.rank : Number.MAX_SAFE_INTEGER));
     }
 
     function getGameOverLeaderboardRows(entries, currentUserId) {
       const sorted = normalizeGameOverLeaderboardEntries(entries, currentUserId);
-      const top = sorted.filter(entry => entry.rank <= 5).slice(0, 5);
+      const top = sorted.filter(entry => Number.isFinite(entry.rank) && entry.rank <= 5).slice(0, 5);
       const player = sorted.find(entry => entry.isPlayer);
       const rows = top.slice();
 
       if (player && !top.some(entry => entry.rank === player.rank)) {
-        const around = sorted.filter(entry => (
+        const around = Number.isFinite(player.rank) ? sorted.filter(entry => (
+          Number.isFinite(entry.rank) &&
           Math.abs(entry.rank - player.rank) <= 2 &&
           !rows.some(row => row.rank === entry.rank)
-        ));
+        )) : [];
         if (around.length) {
           rows.push({ divider: true });
           around.forEach(entry => rows.push(entry));
         }
+      }
+
+      if (player && !Number.isFinite(player.rank)) {
+        if (rows.length) rows.push({ divider: true });
+        rows.push(player);
       }
 
       if (!rows.length && sorted.length) return sorted.slice(0, 7);
@@ -108,7 +116,7 @@ function escapeHtml(value) {
         const rankClass = Number.isFinite(row.rank) && row.rank <= 3 ? ` top${row.rank}` : '';
         return `
           <div class="leaderboardRow${row.isPlayer ? ' currentUser' : ''}${rankClass}">
-            <div class="leaderboardRank">${escapeHtml(row.rank)}</div>
+            <div class="leaderboardRank">${escapeHtml(Number.isFinite(row.rank) ? row.rank : '')}</div>
             <div class="leaderboardNameWrap">
               <div class="leaderboardName">${escapeHtml(row.name)}</div>
             </div>
@@ -258,7 +266,7 @@ function escapeHtml(value) {
 
       const rows = top.slice();
 
-      if (player && !top.some(entry => entry.rank === player.rank)) {
+      if (player && Number.isFinite(player.rank) && !top.some(entry => entry.rank === player.rank)) {
         const around = sorted.filter(entry => (
           Math.abs(entry.rank - player.rank) <= 1 &&
           !rows.some(row => row.rank === entry.rank)
@@ -333,7 +341,7 @@ function escapeHtml(value) {
           <div class="campaignResultStars">${buildCampaignStarRow(stars)}</div>
           ${hasNewTrophy ? '<div class="campaignResultTrophy"><img src="sprites/ui/chapter_trophy.png" alt="" aria-hidden="true"><span>' + escapeHtml(trophyLabel) + '</span></div>' : ''}
           ${unlockLabel ? `<div class="campaignResultUnlock">${escapeHtml(unlockLabel)}</div>` : ''}
-          ${buildCampaignStarsLeaderboardHtml(leaderboardEntries, leaderboardState)}
+          ${window.JorPlatform?.hasFeature?.('campaignLeaderboard') === false ? '' : buildCampaignStarsLeaderboardHtml(leaderboardEntries, leaderboardState)}
         </div>
       `;
     }
@@ -387,7 +395,7 @@ function escapeHtml(value) {
       updateCampaignTimer();
       if (leaderboardState === 'ready') revealCampaignLeaderboardPlayer();
 
-      if (leaderboardState === 'loading') {
+      if (leaderboardState === 'loading' && window.JorPlatform?.hasFeature?.('campaignLeaderboard') !== false) {
         const result = await loadCampaignStarsLeaderboard();
         if (DOM.messageTitle?.dataset?.messageKey !== 'campaignComplete') return;
         const leaderboard = DOM.messageText.querySelector('.campaignResultLeaderboard');

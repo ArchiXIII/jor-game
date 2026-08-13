@@ -10,7 +10,10 @@
       rewardedAds: false,
       interstitialAds: false,
       stickyBanner: false,
-      developerGames: false
+      developerGames: false,
+      singleEndlessLeaderboard: false,
+      profileXpLeaderboard: true,
+      campaignLeaderboard: true
     }
   };
 })();

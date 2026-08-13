@@ -30,6 +30,10 @@
   cursor: pointer;
 }
 
+.metaXpCard.static {
+  cursor: default;
+}
+
 .metaProfileButton {
   width: 196px;
   height: 56px;
@@ -759,7 +763,19 @@
   }
 }
 
+.metaLeaderboardModal.singleEndless .metaCloseButton {
+  top: 12px;
+}
 
+.metaLeaderboardModal.singleEndless .metaTabs {
+  display: none;
+}
 
+.metaLeaderboardModal.singleEndless h2 {
+  margin-top: 50px;
+}
 
+.metaLeaderboardModal.singleEndless .metaLeaderboardList {
+  top: 104px;
+}
 
