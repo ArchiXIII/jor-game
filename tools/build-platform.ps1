@@ -38,7 +38,8 @@ if ($Platform -ne 'yandex') {
   $index = [Text.RegularExpressions.Regex]::Replace($index, '(?m)^\s*<script src="platforms/yandex/early\.js"></script>\r?\n?', '')
   $index = $index.Replace('platforms/yandex/config.js', ("platforms/{0}/config.js" -f $Platform))
   $index = $index.Replace('platforms/yandex/adapter.js', ("platforms/{0}/adapter.js" -f $Platform))
-  $index = $index.Replace('<title>Gulp &mdash; Yandex Games</title>', '<title>Gulp</title>')
+  $platformTitle = if ($Platform -eq 'vk') { '&#1046;&#1086;&#1088;' } else { 'Gulp' }
+  $index = $index.Replace('<title>Gulp &mdash; Yandex Games</title>', ("<title>{0}</title>" -f $platformTitle))
   if ($Platform -eq 'vk') {
     $configScript = '  <script src="platforms/vk/config.js"></script>'
     $bridgeScript = '  <script src="platforms/vk/vk-bridge.min.js"></script>'

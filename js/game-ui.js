@@ -367,13 +367,20 @@ function showStartScreen() {
     }
 
     function updateOurGamesButtonState() {
+      const featureEnabled = Boolean(window.JorPlatform?.hasFeature?.('developerGames'));
       const available = Boolean(App.ourGamesUrl);
       const disabled = !available || App.ourGamesLoading;
       const ariaDisabled = available && !App.ourGamesLoading ? 'false' : 'true';
-      for (const button of [DOM.startOurGamesBtn, DOM.messageOurGamesBtn]) {
-        if (!button) continue;
-        button.disabled = disabled;
-        button.setAttribute('aria-disabled', ariaDisabled);
+      if (DOM.startOurGamesBtn) {
+        DOM.startOurGamesBtn.hidden = !featureEnabled;
+        DOM.startOurGamesBtn.disabled = disabled;
+        DOM.startOurGamesBtn.setAttribute('aria-disabled', ariaDisabled);
+      }
+      if (DOM.messageOurGamesBtn) {
+        const isCampaignAction = DOM.messageOurGamesBtn.dataset.action === 'nextCampaignRound';
+        DOM.messageOurGamesBtn.hidden = !isCampaignAction && !featureEnabled;
+        DOM.messageOurGamesBtn.disabled = isCampaignAction ? false : disabled;
+        DOM.messageOurGamesBtn.setAttribute('aria-disabled', isCampaignAction ? 'false' : ariaDisabled);
       }
     }
 
