@@ -25,6 +25,7 @@
     vkToken: '',
     submitPromise: null,
     purchasePromise: null,
+    adInFlight: false,
 
     async init(handlers) {
       this.rawLaunchParams = String(window.location.search || '').replace(/^\?/, '');
@@ -378,6 +379,27 @@
 
     consumePurchase() {
       return Promise.resolve(true);
+    },
+
+    async showRewarded(handlers) {
+      if (!this.bridge || this.adInFlight) {
+        handlers?.onError?.(new Error('REWARDED_AD_UNAVAILABLE'));
+        return false;
+      }
+      this.adInFlight = true;
+      handlers?.onOpen?.();
+      try {
+        const response = await this.bridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
+        const rewarded = !!response?.result;
+        if (rewarded) handlers?.onRewarded?.();
+        handlers?.onClose?.(rewarded);
+        return rewarded;
+      } catch (error) {
+        handlers?.onError?.(error);
+        return false;
+      } finally {
+        this.adInFlight = false;
+      }
     }
   };
 

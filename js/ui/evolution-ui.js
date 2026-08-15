@@ -20,8 +20,6 @@ async function showRewardedRerollAd() {
   }
 
   if (!App.sdkReady || !window.JorPlatform?.hasFeature?.('rewardedAds')) {
-    unlockRewardMutationChoice();
-    renderEvolutionChoices();
     updateRewardButtonState();
     return;
   }

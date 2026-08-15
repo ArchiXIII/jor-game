@@ -20,7 +20,7 @@
       cloudStorage: true,
       leaderboards: true,
       purchases: true,
-      rewardedAds: false,
+      rewardedAds: true,
       interstitialAds: false,
       stickyBanner: false,
       developerGames: false,
