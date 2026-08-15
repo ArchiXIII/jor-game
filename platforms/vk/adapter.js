@@ -357,7 +357,11 @@
       this.purchasePromise = (async () => {
         const language = this.getLanguage().toLowerCase();
         const localizedId = `${id}__${language && !language.startsWith('ru') ? 'en' : 'ru'}`;
-        await this.bridge.send('VKWebAppShowOrderBox', { type: 'item', item: localizedId });
+        try {
+          await this.bridge.send('VKWebAppShowOrderBox', { type: 'item', item: localizedId });
+        } catch (error) {
+          if (!this.isOk()) throw error;
+        }
         const delays = [300, 1500, 4000];
         for (const delay of delays) {
           await new Promise((resolve) => window.setTimeout(resolve, delay));
