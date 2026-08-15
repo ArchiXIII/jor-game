@@ -64,6 +64,11 @@
     getOkLeaderboard() {
       return this.request('/v1/ok/jor/leaderboards/endless');
     }
+
+    getPurchases(platform) {
+      const name = platform === 'ok' ? 'ok' : 'vk';
+      return this.request(`/v1/${name}/jor/purchases`);
+    }
   }
 
   window.JorVkBackendClient = JorVkBackendClient;

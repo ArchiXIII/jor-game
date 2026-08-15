@@ -24,6 +24,8 @@
     leaderboardLoadPromise: null,
     vkToken: '',
     submitPromise: null,
+    purchasePromise: null,
+    okFapiPromise: null,
 
     async init(handlers) {
       this.rawLaunchParams = String(window.location.search || '').replace(/^\?/, '');
@@ -332,6 +334,115 @@
       if (name !== TOP_SCORE) throw new Error('LEADERBOARD_UNAVAILABLE');
       const entries = this.isOk() ? await this.loadOkLeaderboard(false) : await this.loadVkLeaderboard();
       return this.toPlatformEntries(entries);
+    },
+
+    getCatalog() {
+      const suffix = this.isOk() ? ' \u041e\u041a' : (this.getLanguage().toLowerCase().startsWith('ru') ? ' \u0433\u043e\u043b\u043e\u0441\u043e\u0432' : ' votes');
+      const source = config.products || {};
+      return Object.keys(source).map((id) => ({
+        id,
+        price: String(this.isOk() ? source[id].okPrice : source[id].votes) + suffix
+      }));
+    },
+
+    getPurchases() {
+      if (!this.backend || !this.isAuthorized()) return Promise.resolve({ purchases: [], authoritative: false });
+      return this.backend.getPurchases(this.isOk() ? 'ok' : 'vk');
+    },
+
+    loadOkFapi() {
+      if (this.okFapiPromise) return this.okFapiPromise;
+      this.okFapiPromise = new Promise((resolve, reject) => {
+        const initialize = () => {
+          const fapi = window.FAPI;
+          if (!fapi?.Util?.getRequestParameters || !fapi?.init || !fapi?.UI?.showPayment) {
+            reject(new Error('OK_PAYMENTS_UNAVAILABLE'));
+            return;
+          }
+          const params = fapi.Util.getRequestParameters();
+          if (!params.api_server || !params.apiconnection) {
+            reject(new Error('OK_PAYMENTS_UNAVAILABLE'));
+            return;
+          }
+          fapi.init(params.api_server, params.apiconnection, () => resolve(fapi), reject);
+        };
+        if (window.FAPI) {
+          initialize();
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://api.ok.ru/js/fapi5.js';
+        script.async = true;
+        script.onload = initialize;
+        script.onerror = () => reject(new Error('OK_PAYMENTS_UNAVAILABLE'));
+        document.head.appendChild(script);
+      }).catch((error) => {
+        this.okFapiPromise = null;
+        throw error;
+      });
+      return this.okFapiPromise;
+    },
+
+    async showOkPayment(id, options) {
+      const product = config.products[id];
+      const fapi = await this.loadOkFapi();
+      await new Promise((resolve, reject) => {
+        const previous = window.API_callback;
+        const timeout = window.setTimeout(() => finish(false, new Error('PURCHASE_TIMEOUT')), 120000);
+        const finish = (success, value) => {
+          window.clearTimeout(timeout);
+          window.API_callback = previous;
+          success ? resolve(value) : reject(value);
+        };
+        window.API_callback = (method, result, data) => {
+          if (method !== 'showPayment') {
+            if (typeof previous === 'function') previous(method, result, data);
+            return;
+          }
+          if (result === 'ok' || data === 'ok' || data === 'phone' || data === 'card') finish(true, data);
+          else finish(false, new Error(data === 'cancel' ? 'PURCHASE_CANCELLED' : 'PURCHASE_FAILED'));
+        };
+        try {
+          fapi.UI.showPayment(
+            String(options?.title || id).slice(0, 80),
+            String(options?.description || '').replace(/\s+/g, ' ').slice(0, 160),
+            id,
+            product.okPrice,
+            null,
+            null,
+            'ok',
+            'true'
+          );
+        } catch (error) {
+          finish(false, error);
+        }
+      });
+    },
+
+    async purchase(options) {
+      const id = String(options?.id || '');
+      if (!id || !config.products?.[id] || !this.bridge || !this.backend || this.purchasePromise) {
+        throw new Error('PURCHASE_UNAVAILABLE');
+      }
+      this.purchasePromise = (async () => {
+        if (this.isOk()) await this.showOkPayment(id, options);
+        else await this.bridge.send('VKWebAppShowOrderBox', { type: 'item', item: id });
+        const delays = [300, 1500, 4000];
+        for (const delay of delays) {
+          await new Promise((resolve) => window.setTimeout(resolve, delay));
+          const payload = await this.getPurchases();
+          const purchase = (payload?.purchases || []).find((entry) => entry?.productId === id);
+          if (purchase) return purchase;
+        }
+        throw new Error('PURCHASE_CONFIRMATION_PENDING');
+      })().finally(() => {
+        this.purchasePromise = null;
+      });
+      return this.purchasePromise;
+    },
+
+    consumePurchase() {
+      return Promise.resolve(true);
     }
   };
 

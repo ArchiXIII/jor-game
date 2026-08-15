@@ -8,6 +8,8 @@
     timed: {},
     catalog: {},
     payments: null,
+    paymentsLoaded: false,
+    paymentsRefreshPromise: null,
     pendingId: '',
     status: '',
     pages: {},
@@ -109,6 +111,20 @@
   }
 
   async function refreshPayments() {
+    if (state.paymentsLoaded) {
+      render();
+      return;
+    }
+    if (state.paymentsRefreshPromise) return state.paymentsRefreshPromise;
+    state.paymentsRefreshPromise = refreshPaymentsOnce();
+    try {
+      await state.paymentsRefreshPromise;
+    } finally {
+      state.paymentsRefreshPromise = null;
+    }
+  }
+
+  async function refreshPaymentsOnce() {
     await loadCloud();
     const payments = await getPayments();
     if (!payments?.getCatalog) {
@@ -125,11 +141,15 @@
       });
       if (payments.getPurchases) {
         try {
-          const purchases = await payments.getPurchases();
-          await applyPurchaseList(purchases, payments);
+          const payload = await payments.getPurchases();
+          const purchases = Array.isArray(payload) ? payload : (payload?.purchases || []);
+          await applyPurchaseList(purchases, payments, payload?.authoritative === true);
+          state.paymentsLoaded = true;
         } catch (error) {
           console.warn('Payments purchases restore error:', error);
         }
+      } else {
+        state.paymentsLoaded = true;
       }
       render();
     } catch (error) {
@@ -149,28 +169,37 @@
     }
   }
 
-  function grantTimed(item) {
+  function grantTimed(item, expiresAt = 0) {
     const days = Number(item?.flags?.noSideAdsDays || 0);
     if (days <= 0) return;
+    const absolute = Math.max(0, Math.floor(Number(expiresAt) || 0));
+    if (absolute > nowMs()) {
+      state.timed[item.id] = Math.max(timedUntil(item.id), absolute);
+      window.hideEvolutionBanner?.(true);
+      return;
+    }
     const duration = days * 24 * 60 * 60 * 1000;
     const base = Math.max(nowMs(), timedUntil(item.id));
     state.timed[item.id] = base + duration;
     window.hideEvolutionBanner?.(true);
   }
 
-  async function applyPurchaseList(list, payments = null) {
+  async function applyPurchaseList(list, payments = null, authoritative = false) {
     let changed = false;
     const purchasesToConsume = [];
+    const serverIds = new Set();
     for (const purchase of (Array.isArray(list) ? list : [])) {
       const id = purchase?.productID || purchase?.productId || purchase?.id;
       const item = byId(id);
       if (!item) continue;
+      serverIds.add(id);
       if (isTimedAdItem(item)) {
-        if (!isTimedActive(item.id)) {
-          grantTimed(item);
+        const before = timedUntil(item.id);
+        grantTimed(item, purchase?.expiresAt);
+        if (timedUntil(item.id) !== before) {
           changed = true;
         }
-        purchasesToConsume.push(purchase);
+        if (!authoritative) purchasesToConsume.push(purchase);
         continue;
       }
       if (state.owned[item.id]) continue;
@@ -178,6 +207,23 @@
       if (isSelectable(item)) state.selected[item.category] = item.id;
       if (item.flags?.noRewardAd) state.selected.ads = item.id;
       changed = true;
+    }
+    if (authoritative) {
+      for (const item of products()) {
+        if (!item.priceYan || hasGameplayUnlock(item) || serverIds.has(item.id)) continue;
+        if (state.owned[item.id]) {
+          delete state.owned[item.id];
+          changed = true;
+        }
+        if (state.timed[item.id]) {
+          delete state.timed[item.id];
+          changed = true;
+        }
+        if (state.selected[item.category] === item.id) {
+          state.selected[item.category] = '';
+          changed = true;
+        }
+      }
     }
     if (changed || purchasesToConsume.length) {
       const saved = await persistShopState();
@@ -297,9 +343,9 @@
     return await window.JorSaveManager?.setSection?.('shop', { owned: state.owned, selected: state.selected, timed: state.timed }, true);
   }
 
-  async function grant(item) {
+  async function grant(item, purchase = null) {
     if (isTimedAdItem(item)) {
-      grantTimed(item);
+      grantTimed(item, purchase?.expiresAt);
     } else {
       state.owned[item.id] = true;
       if (isSelectable(item)) state.selected[item.category] = item.id;
@@ -325,10 +371,14 @@
     state.status = '';
     render();
     try {
-      const purchase = await payments.purchase({ id: item.id });
+      const purchase = await payments.purchase({
+        id: item.id,
+        title: tr(item.ru, item.en),
+        description: tr(item.descRu, item.descEn)
+      });
       const productId = purchase?.productID || purchase?.productId || purchase?.id || item.id;
       const bought = byId(productId) || item;
-      const saved = await grant(bought);
+      const saved = await grant(bought, purchase);
       if (saved && bought.flags?.consumePurchase && payments.consumePurchase) await consumePurchase(payments, purchase);
       state.status = saved
         ? tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0430', 'Purchase applied')
