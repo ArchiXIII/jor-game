@@ -446,11 +446,6 @@ function showStartScreen() {
     }
 
     function returnToMainMenuFromRoundEnd() {
-      if (!gameOver) {
-        returnToMainMenu();
-        return;
-      }
-
       showInterstitialBeforeTransition(returnToMainMenu);
     }
 
