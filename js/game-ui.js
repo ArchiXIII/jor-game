@@ -149,14 +149,14 @@ const App = {
       else hideEvolutionBanner(true);
     }
 
-    function usesMenuOnlyMobileStickyBanner() {
+    function usesDisabledMobileStickyBanner() {
       const platform = String(window.JorPlatform?.name || '');
       return (platform === 'vk' || platform === 'ok') && typeof hasTouchControls === 'function' && hasTouchControls();
     }
 
     function shouldShowStickyBanner() {
       if (!App.keepStickyBannerAlways || window.JorShopUI?.hasNoSideAds?.()) return false;
-      return !usesMenuOnlyMobileStickyBanner() || !App.gameplayMarked;
+      return !usesDisabledMobileStickyBanner();
     }
 
     async function showEvolutionBanner() {
@@ -239,6 +239,7 @@ const App = {
 
       if (!App.sdkReady ||
           !window.JorPlatform?.hasFeature?.('interstitialAds') ||
+          window.JorShopUI?.hasNoTransitionAds?.() ||
           Date.now() - getLastInterstitialAdAt() < INTERSTITIAL_COOLDOWN_MS) {
         complete();
         return;

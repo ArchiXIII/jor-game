@@ -19,6 +19,10 @@
 
   function lang() { return typeof currentLang === 'string' && currentLang === 'en' ? 'en' : 'ru'; }
   function tr(ru, en) { return lang() === 'en' ? en : ru; }
+  function isVkOrOk() {
+    const platform = String(window.JorPlatform?.name || '');
+    return platform === 'vk' || platform === 'ok';
+  }
   function products() { return window.JorShopData?.products || []; }
   function categories() { return window.JorShopData?.categories || []; }
   function byId(id) { return products().find((item) => item.id === id) || null; }
@@ -175,13 +179,13 @@
     const absolute = Math.max(0, Math.floor(Number(expiresAt) || 0));
     if (absolute > nowMs()) {
       state.timed[item.id] = Math.max(timedUntil(item.id), absolute);
-      window.hideEvolutionBanner?.(true);
+      if (!isVkOrOk()) window.hideEvolutionBanner?.(true);
       return;
     }
     const duration = days * 24 * 60 * 60 * 1000;
     const base = Math.max(nowMs(), timedUntil(item.id));
     state.timed[item.id] = base + duration;
-    window.hideEvolutionBanner?.(true);
+    if (!isVkOrOk()) window.hideEvolutionBanner?.(true);
   }
 
   async function applyPurchaseList(list, payments = null, authoritative = false) {
@@ -241,8 +245,14 @@
     return lang() === 'en' ? `${item.priceYan} YAN` : `${item.priceYan} \u044f\u043d`;
   }
 
-  function productTitle(item) { return lang() === 'en' ? item.en : item.ru; }
-  function productDesc(item) { return lang() === 'en' ? item.descEn : item.descRu; }
+  function productTitle(item) {
+    if (isVkOrOk()) return lang() === 'en' ? (item.platformEn || item.en) : (item.platformRu || item.ru);
+    return lang() === 'en' ? item.en : item.ru;
+  }
+  function productDesc(item) {
+    if (isVkOrOk()) return lang() === 'en' ? (item.platformDescEn || item.descEn) : (item.platformDescRu || item.descRu);
+    return lang() === 'en' ? item.descEn : item.descRu;
+  }
 
   function escapeHtml(value) {
     return String(value || '')
@@ -373,8 +383,8 @@
     try {
       const purchase = await payments.purchase({
         id: item.id,
-        title: tr(item.ru, item.en),
-        description: tr(item.descRu, item.descEn)
+        title: productTitle(item),
+        description: productDesc(item)
       });
       const productId = purchase?.productID || purchase?.productId || purchase?.id || item.id;
       const bought = byId(productId) || item;
@@ -578,7 +588,11 @@
   }
 
   function hasNoSideAds() {
-    return products().some((item) => isTimedAdItem(item) && isTimedActive(item.id));
+    return !isVkOrOk() && products().some((item) => isTimedAdItem(item) && isTimedActive(item.id));
+  }
+
+  function hasNoTransitionAds() {
+    return isVkOrOk() && products().some((item) => isTimedAdItem(item) && isTimedActive(item.id));
   }
 
   function init() {
@@ -600,7 +614,7 @@
     render();
   }
 
-  window.JorShopUI = { init, open, close, refreshPayments, getBonuses, getGrowthVisual, hasNoRewardAds, hasNoSideAds, selectedCharacterSkinId, selectedPetId, selectedProfileIconId, bestEndlessScore };
+  window.JorShopUI = { init, open, close, refreshPayments, getBonuses, getGrowthVisual, hasNoRewardAds, hasNoSideAds, hasNoTransitionAds, selectedCharacterSkinId, selectedPetId, selectedProfileIconId, bestEndlessScore };
 })();
 
 
