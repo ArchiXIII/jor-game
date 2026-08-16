@@ -26,6 +26,9 @@
     submitPromise: null,
     purchasePromise: null,
     adInFlight: false,
+    stickyBannerVisible: false,
+    stickyBannerShowPromise: null,
+    stickyBannerWanted: false,
 
     async init(handlers) {
       this.rawLaunchParams = String(window.location.search || '').replace(/^\?/, '');
@@ -51,6 +54,11 @@
           const type = event?.detail?.type || '';
           if (type === 'VKWebAppViewHide') handlers?.onPause?.();
           else if (type === 'VKWebAppViewRestore') handlers?.onResume?.();
+          else if (type === 'VKWebAppBannerAdUpdated') {
+            this.stickyBannerVisible = event?.detail?.data?.result !== false;
+          } else if (type === 'VKWebAppBannerAdClosedByUser') {
+            this.stickyBannerVisible = false;
+          }
         });
       }
       return { ready: true, language: this.getLanguage() };
@@ -379,6 +387,69 @@
 
     consumePurchase() {
       return Promise.resolve(true);
+    },
+
+    sendBannerCommand(method, params, timeoutMs = 4000) {
+      let timer = null;
+      return Promise.race([
+        this.bridge.send(method, params),
+        new Promise((resolve) => {
+          timer = window.setTimeout(() => resolve(null), timeoutMs);
+        })
+      ]).finally(() => {
+        if (timer !== null) window.clearTimeout(timer);
+      });
+    },
+
+    showStickyBanner() {
+      if (!this.bridge) return Promise.resolve(false);
+      this.stickyBannerWanted = true;
+      if (this.stickyBannerVisible) return Promise.resolve(true);
+      if (this.stickyBannerShowPromise) return this.stickyBannerShowPromise;
+
+      this.stickyBannerShowPromise = (async () => {
+        try {
+          const available = await this.sendBannerCommand('VKWebAppCheckBannerAd');
+          if (!this.stickyBannerWanted || !available || available.result === false) return false;
+          const response = await this.sendBannerCommand('VKWebAppShowBannerAd', {
+            banner_location: 'bottom',
+            banner_align: 'center',
+            layout_type: 'resize',
+            can_close: false
+          });
+          this.stickyBannerVisible = !!response && response.result !== false;
+          if (this.stickyBannerVisible && !this.stickyBannerWanted) {
+            await this.sendBannerCommand('VKWebAppHideBannerAd');
+            this.stickyBannerVisible = false;
+          }
+          return this.stickyBannerVisible;
+        } catch (error) {
+          this.stickyBannerVisible = false;
+          return false;
+        }
+      })().finally(() => {
+        this.stickyBannerShowPromise = null;
+      });
+      return this.stickyBannerShowPromise;
+    },
+
+    async hideStickyBanner() {
+      if (!this.bridge) return false;
+      this.stickyBannerWanted = false;
+      if (this.stickyBannerShowPromise) {
+        try {
+          await this.stickyBannerShowPromise;
+        } catch (error) {}
+      }
+      if (this.stickyBannerWanted) return this.stickyBannerVisible;
+      if (!this.stickyBannerVisible) return false;
+      try {
+        await this.sendBannerCommand('VKWebAppHideBannerAd');
+      } catch (error) {
+        return false;
+      }
+      this.stickyBannerVisible = false;
+      return true;
     },
 
     async showRewarded(handlers) {

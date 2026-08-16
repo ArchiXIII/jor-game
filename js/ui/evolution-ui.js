@@ -28,6 +28,7 @@ async function showRewardedRerollAd() {
     DOM.rewardAdBtn.disabled = true;
   }
   markGameplayStop(false);
+  await hideEvolutionBanner(true);
 
   await window.JorPlatform.showRewarded({
     onOpen: () => {
@@ -40,11 +41,13 @@ async function showRewardedRerollAd() {
     },
     onClose: () => {
       handlePlatformResume();
+      showEvolutionBanner();
       if (!App.rewardedUsedThisEvolution) updateRewardButtonState();
     },
     onError: (error) => {
       console.error('Rewarded video error:', error);
       handlePlatformResume();
+      showEvolutionBanner();
       updateRewardButtonState();
     }
   });

@@ -132,23 +132,31 @@ const App = {
     function markGameplayStart() {
       if (!App.sdkReady) return;
       if (App.localPause || App.platformPaused || App.userPaused) return;
-      if (App.gameplayMarked) return;
-
-      window.JorPlatform?.gameplayStart?.();
-      App.gameplayMarked = true;
+      if (!App.gameplayMarked) {
+        window.JorPlatform?.gameplayStart?.();
+        App.gameplayMarked = true;
+      }
       showEvolutionBanner();
     }
 
     function markGameplayStop(showStickyBanner = true) {
       if (!App.sdkReady) return;
-      if (!App.gameplayMarked) return;
+      if (App.gameplayMarked) {
+        window.JorPlatform?.gameplayStop?.();
+        App.gameplayMarked = false;
+      }
+      if (showStickyBanner) showEvolutionBanner();
+      else hideEvolutionBanner(true);
+    }
 
-      window.JorPlatform?.gameplayStop?.();
-      App.gameplayMarked = false;
+    function usesMenuOnlyMobileStickyBanner() {
+      const platform = String(window.JorPlatform?.name || '');
+      return (platform === 'vk' || platform === 'ok') && typeof hasTouchControls === 'function' && hasTouchControls();
     }
 
     function shouldShowStickyBanner() {
-      return App.keepStickyBannerAlways && !window.JorShopUI?.hasNoSideAds?.();
+      if (!App.keepStickyBannerAlways || window.JorShopUI?.hasNoSideAds?.()) return false;
+      return !usesMenuOnlyMobileStickyBanner() || !App.gameplayMarked;
     }
 
     async function showEvolutionBanner() {
@@ -157,7 +165,6 @@ const App = {
         await hideEvolutionBanner(true);
         return;
       }
-      if (App.bannerVisible) return;
       if (App.bannerRequestPending) return;
 
       App.bannerRequestPending = true;
@@ -189,7 +196,7 @@ const App = {
       }
       App.bannerResizeTimer = setTimeout(() => {
         App.bannerResizeTimer = null;
-        App.bannerVisible = false;
+        if (window.JorPlatform?.name === 'yandex') App.bannerVisible = false;
         showEvolutionBanner();
       }, 350);
     }
@@ -238,6 +245,7 @@ const App = {
       }
 
       markGameplayStop(false);
+      await hideEvolutionBanner(true);
       pauseAmbientMusic();
 
       try {

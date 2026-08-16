@@ -22,7 +22,7 @@
       purchases: true,
       rewardedAds: true,
       interstitialAds: true,
-      stickyBanner: false,
+      stickyBanner: true,
       developerGames: false,
       singleEndlessLeaderboard: true,
       profileXpLeaderboard: false,
