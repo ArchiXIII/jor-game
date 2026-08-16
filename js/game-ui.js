@@ -26,6 +26,7 @@ const App = {
       ourGamesUrl: null,
       ourGamesLoading: false,
       fullscreenAdPending: false,
+      lastInterstitialAdAt: 0,
       metaXpAwardedSession: null,
     };
 
@@ -200,7 +201,25 @@ const App = {
       window.visualViewport?.addEventListener('resize', scheduleStickyBannerSync, { passive: true });
     }
 
-    async function showFullscreenAdBeforeMenu(onDone) {
+    const INTERSTITIAL_COOLDOWN_MS = 2 * 60 * 1000;
+    const INTERSTITIAL_STORAGE_KEY = 'jor-interstitial-last-shown-v1';
+
+    function getLastInterstitialAdAt() {
+      if (App.lastInterstitialAdAt > 0) return App.lastInterstitialAdAt;
+      try {
+        App.lastInterstitialAdAt = Math.max(0, Number(localStorage.getItem(INTERSTITIAL_STORAGE_KEY)) || 0);
+      } catch (error) {}
+      return App.lastInterstitialAdAt;
+    }
+
+    function markInterstitialAdShown() {
+      App.lastInterstitialAdAt = Date.now();
+      try {
+        localStorage.setItem(INTERSTITIAL_STORAGE_KEY, String(App.lastInterstitialAdAt));
+      } catch (error) {}
+    }
+
+    async function showInterstitialBeforeTransition(onDone) {
       if (App.fullscreenAdPending) return;
       App.fullscreenAdPending = true;
       let finished = false;
@@ -211,7 +230,9 @@ const App = {
         try { onDone?.(); } catch (error) {}
       };
 
-      if (!App.sdkReady || !window.JorPlatform?.hasFeature?.('interstitialAds')) {
+      if (!App.sdkReady ||
+          !window.JorPlatform?.hasFeature?.('interstitialAds') ||
+          Date.now() - getLastInterstitialAdAt() < INTERSTITIAL_COOLDOWN_MS) {
         complete();
         return;
       }
@@ -220,21 +241,20 @@ const App = {
       pauseAmbientMusic();
 
       try {
-        await window.JorPlatform.showInterstitial({
+        const shown = await window.JorPlatform.showInterstitial({
           onOpen: () => {
             App.platformPaused = true;
             pauseAmbientMusic();
           },
           onClose: () => {
             App.platformPaused = false;
-            complete();
           },
           onError: (error) => {
             console.warn('showInterstitial error:', error);
             App.platformPaused = false;
-            complete();
           }
         });
+        if (shown) markInterstitialAdShown();
         complete();
       } catch (error) {
         console.warn('showInterstitial call error:', error);
@@ -431,7 +451,7 @@ function showStartScreen() {
         return;
       }
 
-      showFullscreenAdBeforeMenu(returnToMainMenu);
+      showInterstitialBeforeTransition(returnToMainMenu);
     }
 
     function startNextCampaignRound() {
@@ -441,9 +461,11 @@ function showStartScreen() {
         returnToMainMenuFromRoundEnd();
         return;
       }
-      App.campaignLevel = nextLevel;
-      App.campaignChapter = Math.max(0, Math.floor((nextLevel - 1) / 10));
-      retryCurrentCampaignRound();
+      showInterstitialBeforeTransition(() => {
+        App.campaignLevel = nextLevel;
+        App.campaignChapter = Math.max(0, Math.floor((nextLevel - 1) / 10));
+        retryCurrentCampaignRound();
+      });
     }
 
     function retryCurrentCampaignRound() {

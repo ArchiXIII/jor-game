@@ -400,6 +400,26 @@
       } finally {
         this.adInFlight = false;
       }
+    },
+
+    async showInterstitial(handlers) {
+      if (!this.bridge || this.adInFlight) {
+        handlers?.onError?.(new Error('INTERSTITIAL_AD_UNAVAILABLE'));
+        return false;
+      }
+      this.adInFlight = true;
+      handlers?.onOpen?.();
+      try {
+        const response = await this.bridge.send('VKWebAppShowNativeAds', { ad_format: 'interstitial' });
+        const shown = !!response?.result;
+        handlers?.onClose?.(shown);
+        return shown;
+      } catch (error) {
+        handlers?.onError?.(error);
+        return false;
+      } finally {
+        this.adInFlight = false;
+      }
     }
   };
 

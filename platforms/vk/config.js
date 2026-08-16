@@ -21,7 +21,7 @@
       leaderboards: true,
       purchases: true,
       rewardedAds: true,
-      interstitialAds: false,
+      interstitialAds: true,
       stickyBanner: false,
       developerGames: false,
       singleEndlessLeaderboard: true,
