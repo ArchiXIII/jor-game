@@ -641,12 +641,3 @@
 .shopPanel.shopPaged .shopItem.adPreview .shopItemBody {
   min-height: 0;
 }
-
-.shopPanel.shopPaged.shopCompactPlatformText .shopItem h3 {
-  font-size: clamp(11px, 3.4cqw, 14px);
-}
-
-.shopPanel.shopPaged.shopCompactPlatformText .shopItem p {
-  font-size: clamp(9px, 2.8cqw, 11px);
-  line-height: 1.14;
-}

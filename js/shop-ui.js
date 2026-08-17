@@ -540,7 +540,6 @@
     const horizontal = paged && isHorizontalShopLayout();
     dom.panel?.classList.toggle('shopPaged', paged);
     dom.panel?.classList.toggle('shopPagedHorizontal', horizontal);
-    dom.panel?.classList.toggle('shopCompactPlatformText', paged && isVkOrOk());
     const gridRect = dom.grid.getBoundingClientRect();
     const cardGap = 10;
     const cardAspect = 2.05;
