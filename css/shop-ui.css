@@ -269,8 +269,8 @@
   .shopItem {
     grid-template-columns: 56px minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) 30px;
-    gap: 6px 7px;
-    padding: 9px;
+    gap: 4px 7px;
+    padding: 7px 9px;
   }
   .shopItem.characterPreview { grid-template-columns: 68px minmax(0, 1fr); }
   .shopItem.profileIconPreview { grid-template-columns: 58px minmax(0, 1fr); }
