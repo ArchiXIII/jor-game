@@ -70,6 +70,7 @@ const FIXED_STEP_MS = 1000 / 60;
     function setupUiEvents() {
       window.JorMetaUI?.init?.();
       window.JorCampaignUI?.init?.();
+      window.JorDailyBonus?.init?.();
       window.JorShopUI?.init?.();
       setupStickyBannerResizeSync();
       DOM.rewardAdBtn?.addEventListener('click', showRewardedRerollAd);

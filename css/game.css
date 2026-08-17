@@ -1005,6 +1005,7 @@
     }
 
     .startCard {
+      position: relative;
       width: min(560px, calc(100vw - 32px));
       max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 116px);
       overflow: hidden;
@@ -1069,6 +1070,7 @@
     .startCampaignBtn,
     .startPlayBtn,
     .startShopBtn,
+    .startDailyBonusBtn,
     .startOurGamesBtn {
       border: 0;
       min-width: 220px;
@@ -1102,7 +1104,7 @@
     }
 
     .startSecondaryRow .startShopBtn,
-    .startSecondaryRow .startOurGamesBtn {
+    .startSecondaryRow .startDailyBonusBtn {
       min-width: 176px;
       width: auto;
       flex: 0 0 auto;
@@ -1120,6 +1122,7 @@
     }
 
     .startShopBtn,
+    .startDailyBonusBtn,
     .startOurGamesBtn {
       background: rgba(145, 238, 255, 0.16);
       border: 1px solid rgba(164, 242, 255, 0.34);
@@ -1129,6 +1132,7 @@
     .startCampaignBtn:hover,
     .startPlayBtn:hover,
     .startShopBtn:hover,
+    .startDailyBonusBtn:hover,
     .startOurGamesBtn:hover:not(:disabled) {
       transform: translateY(-2px);
       filter: brightness(1.04);
@@ -1424,7 +1428,7 @@
       }
 
       .startSecondaryRow .startShopBtn,
-      .startSecondaryRow .startOurGamesBtn {
+      .startSecondaryRow .startDailyBonusBtn {
         min-width: 176px;
         width: auto;
         flex: 0 0 auto;
@@ -2436,7 +2440,7 @@
 
 /* Keep the main menu buttons compact on narrow/tall viewports. */
 .startSecondaryRow .startShopBtn,
-.startSecondaryRow .startOurGamesBtn {
+.startSecondaryRow .startDailyBonusBtn {
   height: 52px;
   min-height: 0;
   max-height: 52px;
@@ -2460,7 +2464,7 @@
   }
 
   .startSecondaryRow .startShopBtn,
-  .startSecondaryRow .startOurGamesBtn {
+  .startSecondaryRow .startDailyBonusBtn {
     height: 46px;
     max-height: 46px;
     padding: 0 12px;
@@ -2473,7 +2477,7 @@
   }
 
   .startSecondaryRow .startShopBtn,
-  .startSecondaryRow .startOurGamesBtn {
+  .startSecondaryRow .startDailyBonusBtn {
     min-width: 0;
     width: calc((100% - 8px) / 2);
     flex: 1 1 calc((100% - 8px) / 2);
@@ -2829,5 +2833,31 @@
 @media (pointer: coarse) {
   html.platformVkOk {
     --platform-mobile-left-inset: 44px;
+  }
+}
+
+.startCard > .startOurGamesBtn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 2;
+  width: auto;
+  min-width: 0;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 13px;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px), (max-height: 620px) {
+  .startCard > .startOurGamesBtn {
+    top: 8px;
+    right: 10px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 11px;
   }
 }

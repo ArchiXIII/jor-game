@@ -196,6 +196,7 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
 
       window.JorMetaUI?.render?.();
       window.JorCampaignUI?.render?.();
+      window.JorDailyBonus?.render?.();
       if (gameOver && DOM.messageTitle?.dataset?.messageKey === 'congrats') {
         DOM.messageTitle.textContent = t('congratsTitle');
 

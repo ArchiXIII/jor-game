@@ -49,6 +49,7 @@
         if (viewport.height <= 520 && viewport.width > 660) return [620, 344];
         if (viewport.width <= 660) return [620, 340];
         return [740, 560];
+      case 'dailyBonus': return viewport.height <= 520 ? [520, 210] : [520, 280];
       case 'roundIntro': return viewport.height <= 520 || viewport.width <= 700 ? [390, 190] : [430, 240];
       case 'pause': return [400, 180];
       case 'exitConfirm': return compact ? [336, 196] : [410, 220];
@@ -148,6 +149,7 @@
   register('.startCard', 'start', true);
   register('.campaignPanel', 'campaign', true);
   register('.shopPanel', 'shop');
+  register('.dailyBonusPanel', 'dailyBonus', false, false, true);
   register('.campaignRoundIntro', 'roundIntro', false, true, true);
   register('.pauseCard', 'pause', false, true, true);
   register('.exitConfirmCard', 'exitConfirm', false, true, true);

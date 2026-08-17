@@ -58,6 +58,10 @@
       return initialized;
     },
 
+    whenInitialized() {
+      return initPromise || Promise.resolve(null);
+    },
+
     isReady() {
       return ready;
     },

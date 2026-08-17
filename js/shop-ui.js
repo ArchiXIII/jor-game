@@ -595,6 +595,10 @@
         total[key] += Number(item.bonuses[key] || 0);
       });
     });
+    const daily = window.JorDailyBonus?.getBonuses?.() || {};
+    Object.keys(total).forEach((key) => {
+      total[key] += Number(daily[key] || 0);
+    });
     return total;
   }
 

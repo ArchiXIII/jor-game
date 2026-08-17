@@ -63,7 +63,7 @@
   .startCard.uiFitTarget .startModeRow .startCampaignBtn,
   .startCard.uiFitTarget .startModeRow .startPlayBtn,
   .startCard.uiFitTarget .startSecondaryRow .startShopBtn,
-  .startCard.uiFitTarget .startSecondaryRow .startOurGamesBtn {
+  .startCard.uiFitTarget .startSecondaryRow .startDailyBonusBtn {
     height: 48px;
     max-height: 48px;
     border-radius: 14px;
@@ -71,7 +71,7 @@
   }
 
   .startCard.uiFitTarget .startSecondaryRow .startShopBtn,
-  .startCard.uiFitTarget .startSecondaryRow .startOurGamesBtn {
+  .startCard.uiFitTarget .startSecondaryRow .startDailyBonusBtn {
     min-width: 0;
     width: 0;
     flex: 1 1 0;

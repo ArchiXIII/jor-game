@@ -468,7 +468,13 @@
   }
 
   async function getLeaderboardsApi() {
-    return window.JorPlatform?.getLeaderboardApi?.() || null;
+    let api = window.JorPlatform?.getLeaderboardApi?.() || null;
+    if (api || window.JorPlatform?.isInitialized?.()) return api;
+    try {
+      await window.JorPlatform?.whenInitialized?.();
+    } catch (error) {}
+    api = window.JorPlatform?.getLeaderboardApi?.() || null;
+    return api;
   }
 
   function rememberLeaderboardBestScore(name, value) {

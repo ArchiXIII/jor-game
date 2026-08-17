@@ -1,0 +1,191 @@
+.dailyBonusOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 12px) calc(var(--safe-right) + 12px) calc(var(--safe-bottom) + 12px) calc(var(--safe-left) + 12px);
+  background: rgba(0, 8, 14, 0.72);
+}
+
+.dailyBonusOverlay.visible {
+  display: flex;
+}
+
+.dailyBonusPanel {
+  position: relative;
+  width: min(520px, calc(100vw - var(--safe-left) - var(--safe-right) - 24px));
+  padding: 28px 28px 24px;
+  border: 2px solid rgba(126, 225, 255, 0.55);
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(19, 69, 82, 0.98), rgba(5, 25, 36, 0.99));
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.dailyBonusClose {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid rgba(143, 232, 255, 0.55);
+  border-radius: 50%;
+  background: rgba(3, 23, 32, 0.86);
+  color: #efffff;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dailyBonusPanel h2 {
+  margin: 0 46px 8px;
+  color: #f4ffff;
+  font-size: 28px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.dailyBonusPanel > p {
+  margin: 0 auto 18px;
+  color: rgba(225, 248, 252, 0.82);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.dailyBonusChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dailyBonusChoice {
+  min-width: 0;
+  min-height: 132px;
+  padding: 18px 12px;
+  border: 2px solid rgba(126, 225, 255, 0.42);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(54, 126, 143, 0.72), rgba(8, 47, 61, 0.92));
+  color: #efffff;
+  cursor: pointer;
+}
+
+.dailyBonusChoice:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.dailyBonusChoice.selected {
+  border-color: #ffe37b;
+  background: linear-gradient(180deg, rgba(104, 112, 50, 0.88), rgba(36, 58, 36, 0.96));
+}
+
+.dailyBonusChoice:disabled:not(.selected) {
+  opacity: 0.48;
+}
+
+.dailyBonusChoiceTitle,
+.dailyBonusChoiceValue {
+  display: block;
+}
+
+.dailyBonusChoiceTitle {
+  min-height: 2.2em;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.dailyBonusChoiceValue {
+  margin-top: 12px;
+  color: #ffe37b;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dailyBonusStatus {
+  min-height: 20px;
+  margin-top: 14px;
+  color: #c9ffde;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.startDailyBonusBtn {
+  position: relative;
+  border: 1px solid rgba(255, 225, 113, 0.58);
+  background: linear-gradient(180deg, rgba(115, 102, 43, 0.72), rgba(50, 63, 48, 0.92));
+  color: #fff1ad;
+}
+
+.startDailyBonusBtn:not(.active)::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffe16d;
+  box-shadow: 0 0 10px rgba(255, 225, 109, 0.9);
+}
+
+.startDailyBonusBtn.active {
+  border-color: rgba(126, 255, 185, 0.62);
+  background: linear-gradient(180deg, rgba(45, 115, 84, 0.76), rgba(24, 63, 55, 0.94));
+  color: #d7ffe9;
+}
+
+@media (max-width: 620px), (max-height: 520px) {
+  .dailyBonusPanel {
+    padding: 16px 18px 14px;
+    border-radius: 20px;
+  }
+
+  .dailyBonusClose {
+    top: 7px;
+    right: 8px;
+    width: 34px;
+    height: 34px;
+    font-size: 24px;
+  }
+
+  .dailyBonusPanel h2 {
+    margin-bottom: 5px;
+    font-size: 22px;
+  }
+
+  .dailyBonusPanel > p {
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+
+  .dailyBonusChoices {
+    gap: 10px;
+  }
+
+  .dailyBonusChoice {
+    min-height: 100px;
+    padding: 12px 8px;
+    border-radius: 15px;
+  }
+
+  .dailyBonusChoiceTitle {
+    font-size: 16px;
+  }
+
+  .dailyBonusChoiceValue {
+    margin-top: 8px;
+    font-size: 19px;
+  }
+
+  .dailyBonusStatus {
+    min-height: 16px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+}

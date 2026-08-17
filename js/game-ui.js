@@ -62,6 +62,7 @@ const App = {
         notifyGameReady();
         await initPlatformPlayer();
         await window.JorSaveManager?.load?.();
+        window.JorDailyBonus?.syncFromSave?.();
         await window.JorMetaUI?.syncPlayerProgress?.();
         await window.JorCampaignUI?.syncCloud?.();
         await window.JorShopUI?.refreshPayments?.();
