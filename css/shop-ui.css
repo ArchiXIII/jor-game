@@ -641,3 +641,21 @@
 .shopPanel.shopPaged .shopItem.adPreview .shopItemBody {
   min-height: 0;
 }
+
+.shopPanel.shopPaged .shopItem.shopTextTight h3 {
+  font-size: clamp(11.5px, 3.5cqw, 14px);
+}
+
+.shopPanel.shopPaged .shopItem.shopTextTight p {
+  font-size: clamp(9.5px, 2.95cqw, 11px);
+  line-height: 1.15;
+}
+
+.shopPanel.shopPaged .shopItem.shopTextTighter h3 {
+  font-size: clamp(11px, 3.2cqw, 13px);
+}
+
+.shopPanel.shopPaged .shopItem.shopTextTighter p {
+  font-size: clamp(9px, 2.75cqw, 10px);
+  line-height: 1.12;
+}

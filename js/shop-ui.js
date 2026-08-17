@@ -531,6 +531,23 @@
     dom.pager.append(prev, label, next);
   }
 
+  function shopCardTextOverflows(card) {
+    const body = card.querySelector('.shopItemBody');
+    const description = body?.querySelector('p');
+    const button = card.querySelector('.shopBuyBtn');
+    const overlapsButton = button && body && body.getBoundingClientRect().bottom > button.getBoundingClientRect().top - 4;
+    return !!body && (overlapsButton || body.scrollHeight > body.clientHeight + 1 || (description && description.scrollHeight > description.clientHeight + 1));
+  }
+
+  function fitShopCardText(card) {
+    if (!isVkOrOk() || !isMobileLayout()) return;
+    card.classList.remove('shopTextTight', 'shopTextTighter');
+    if (!shopCardTextOverflows(card)) return;
+    card.classList.add('shopTextTight');
+    if (!shopCardTextOverflows(card)) return;
+    card.classList.add('shopTextTighter');
+  }
+
   function renderProducts() {
     if (!dom.grid) return;
     dom.grid.replaceChildren();
@@ -551,7 +568,11 @@
     const page = Math.min(activePage(), totalPages - 1);
     if (page !== activePage()) setActivePage(page);
     const visibleItems = paged ? items.slice(page * perPage, page * perPage + perPage) : items;
-    visibleItems.forEach((item) => dom.grid.appendChild(createProductCard(item)));
+    visibleItems.forEach((item) => {
+      const card = createProductCard(item);
+      dom.grid.appendChild(card);
+      fitShopCardText(card);
+    });
     renderPager(totalPages, page);
     startPreviewAnimation();
   }
