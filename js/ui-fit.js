@@ -57,7 +57,16 @@
       case 'xpLeaderboard': return compact ? [460, 360] : [460, 560];
       case 'evolution': return viewport.height <= 520 ? [560, 230] : [980, 310];
       case 'message':
-        if (element.classList.contains('campaignCompleteDialog')) return compact ? [500, 320] : [540, 520];
+        if (element.classList.contains('campaignCompleteDialog')) {
+          if (element.classList.contains('campaignCompactResult')) {
+            const hasRetry = !!element.querySelector('#messageRetryBtn:not([hidden])');
+            let height = compact ? (hasRetry ? 220 : 175) : (hasRetry ? 290 : 230);
+            if (element.querySelector('.campaignResultTrophy')) height += 52;
+            if (element.querySelector('.campaignResultUnlock')) height += 34;
+            return [compact ? 500 : 540, height];
+          }
+          return compact ? [500, 320] : [540, 520];
+        }
         if (element.classList.contains('leaderboardDialog')) return compact ? [460, 360] : [460, 540];
         if (element.classList.contains('levelFailedDialog')) return compact ? [410, 300] : [410, 360];
         return compact ? [500, 260] : [560, 300];

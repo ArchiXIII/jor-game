@@ -2808,3 +2808,19 @@
 .centerMessage.levelFailedDialog #messageRetryBtn {
   order: 2;
 }
+
+.centerMessage.campaignCompleteDialog.campaignCompactResult .messageButtons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 238px));
+  width: 100%;
+}
+
+.centerMessage.campaignCompleteDialog.campaignCompactResult .messageButtons button {
+  width: 100%;
+}
+
+.centerMessage.campaignCompleteDialog.campaignCompactResult #messageRetryBtn {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(238px, calc(50% - 5px));
+}

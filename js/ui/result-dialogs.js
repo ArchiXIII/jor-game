@@ -373,6 +373,9 @@ function escapeHtml(value) {
     async function showCampaignCompleteMessage(level, stars, progressValue = 0, elapsedFrames = 0, leaderboardEntries = null, leaderboardState = 'loading') {
       App.localPause = true;
       markGameplayStop();
+      const platformName = String(window.JorPlatform?.name || '');
+      const compactPlatformResult = platformName === 'vk' || platformName === 'ok';
+      const canRetry = compactPlatformResult && Math.max(0, Math.min(3, Math.floor(Number(stars) || 0))) < 3;
       DOM.messageTitle.textContent = getCampaignCompleteTitleForLevel(level?.n || App.campaignLevel || 1);
       DOM.messageTitle.dataset.messageKey = 'campaignComplete';
       DOM.messageText.innerHTML = buildCampaignCompleteHtml(level, stars, progressValue, elapsedFrames, leaderboardEntries, leaderboardState);
@@ -380,8 +383,10 @@ function escapeHtml(value) {
       DOM.messageText.dataset.messageMode = 'campaignComplete';
       DOM.centerMessage.classList.remove('leaderboardDialog', 'levelFailedDialog');
       DOM.centerMessage.classList.add('campaignCompleteDialog');
+      DOM.centerMessage.classList.toggle('campaignCompactResult', compactPlatformResult);
       if (DOM.messageRetryBtn) {
-        DOM.messageRetryBtn.hidden = true;
+        DOM.messageRetryBtn.hidden = !canRetry;
+        DOM.messageRetryBtn.textContent = currentLang === 'en' ? 'RETRY' : '\u041f\u0415\u0420\u0415\u0418\u0413\u0420\u0410\u0422\u042c';
       }
       if (DOM.restartBtn) DOM.restartBtn.textContent = currentLang === 'en' ? 'MAIN MENU' : '\u0413\u041b\u0410\u0412\u041d\u041e\u0415 \u041c\u0415\u041d\u042e';
       if (DOM.messageOurGamesBtn) {

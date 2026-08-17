@@ -516,7 +516,7 @@ function showStartScreen() {
 
     function hideCenterMessage() {
       hideElement(DOM.centerMessage);
-      DOM.centerMessage?.classList.remove('leaderboardDialog', 'levelFailedDialog', 'campaignCompleteDialog');
+      DOM.centerMessage?.classList.remove('leaderboardDialog', 'levelFailedDialog', 'campaignCompleteDialog', 'campaignCompactResult');
       if (DOM.messageRetryBtn) DOM.messageRetryBtn.hidden = true;
       if (DOM.messageOurGamesBtn) {
         DOM.messageOurGamesBtn.dataset.action = '';
