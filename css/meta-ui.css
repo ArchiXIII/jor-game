@@ -1,7 +1,7 @@
 .metaTopBar {
   position: fixed;
   top: calc(var(--safe-top) + 12px);
-  left: calc(var(--safe-left) + 18px);
+  left: calc(var(--safe-left) + 18px + var(--platform-mobile-left-inset));
   right: calc(var(--safe-right) + 18px);
   z-index: 45;
   height: 64px;
@@ -625,7 +625,7 @@
 @media (max-width: 430px), (max-height: 700px) {
   .metaTopBar {
     top: calc(var(--safe-top) + 8px);
-    left: calc(var(--safe-left) + 10px);
+    left: calc(var(--safe-left) + 10px + var(--platform-mobile-left-inset));
     right: calc(var(--safe-right) + 10px);
     height: 56px;
     padding: 0 14px;
@@ -778,4 +778,3 @@
 .metaLeaderboardModal.singleEndless .metaLeaderboardList {
   top: 104px;
 }
-

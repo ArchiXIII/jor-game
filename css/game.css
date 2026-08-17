@@ -23,6 +23,7 @@
       --safe-bottom: max(env(safe-area-inset-bottom), 0px);
       --safe-left: max(env(safe-area-inset-left), 0px);
       --ui-gap: 14px;
+      --platform-mobile-left-inset: 0px;
     }
 
     html, body {
@@ -96,7 +97,7 @@
     .topProgress {
       position: fixed;
       top: calc(var(--safe-top) + var(--ui-gap));
-      left: calc(var(--safe-left) + var(--ui-gap));
+      left: calc(var(--safe-left) + var(--ui-gap) + var(--platform-mobile-left-inset));
       transform: none;
       user-select: none;
       pointer-events: none;
@@ -108,7 +109,7 @@
       border: none;
       padding: 0;
       min-width: 0;
-      max-width: calc(100vw - 28px);
+      max-width: calc(100vw - 28px - var(--platform-mobile-left-inset));
       height: auto;
     }
 
@@ -2823,4 +2824,10 @@
   grid-column: 1 / -1;
   justify-self: center;
   width: min(238px, calc(50% - 5px));
+}
+
+@media (pointer: coarse) {
+  html.platformVkOk {
+    --platform-mobile-left-inset: 44px;
+  }
 }

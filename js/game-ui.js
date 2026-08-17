@@ -34,6 +34,8 @@ const App = {
     // Yandex SDK
     // ------------------------------
     async function initPlatform() {
+      const platformName = String(window.JorPlatform?.name || '');
+      document.documentElement.classList.toggle('platformVkOk', platformName === 'vk' || platformName === 'ok');
       if (!window.JorPlatform) {
         DOM.sdkStatus.textContent = t('sdkLocal');
         updateOurGamesButtonState();
