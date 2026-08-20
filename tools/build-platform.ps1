@@ -49,6 +49,13 @@ if ($Platform -ne 'yandex') {
     $index = $index.Replace($adapterScript, $backendScript + [Environment]::NewLine + $adapterScript)
   }
 }
+$platformConfigRelative = "platforms/{0}/config.js" -f $Platform
+$platformConfigPath = Join-Path $destination $platformConfigRelative
+$platformConfigHash = (Get-FileHash -LiteralPath $platformConfigPath -Algorithm SHA256).Hash.Substring(0, 12).ToLowerInvariant()
+$index = $index.Replace(
+  ('src="{0}"' -f $platformConfigRelative),
+  ('src="{0}?v={1}"' -f $platformConfigRelative, $platformConfigHash)
+)
 [IO.File]::WriteAllText($indexPath, $index, (New-Object Text.UTF8Encoding($false)))
 
 if (-not $SkipArchive) {
