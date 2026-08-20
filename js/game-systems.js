@@ -22,6 +22,7 @@
     let endlessMode = false;
     let endlessTransition = 0;
     let score = 0;
+    let scoreXpBonus = 0;
     let enemiesEatenThisRound = 0;
     let endlessTime = 0;
     let endlessDifficulty = 0;
@@ -549,7 +550,8 @@ function createEnemy(sizeFactor = 1) {
     }
 
     function addScore(amount) {
-      score += Math.max(0, Math.round(amount));
+      const baseAmount = Math.max(0, Math.round(amount));
+      score += baseAmount * (1 + scoreXpBonus);
     }
 
 
@@ -559,6 +561,8 @@ function resetGame() {
       updateWorldSize({ keepExisting: false });
       world.seed = Math.max(1, Math.floor(Math.random() * 2147483647));
       player = new Player();
+      scoreXpBonus = Math.max(0, Number(window.JorShopUI?.getBonuses?.().xp || 0))
+        + Math.max(0, Number(window.JorDailyBonus?.getScoreBonus?.() || 0));
       const selectedPetId = window.JorShopUI?.selectedPetId?.() || '';
       activePet = selectedPetId && typeof PlayerPet === 'function' ? new PlayerPet(selectedPetId, player) : null;
       camera.x = player.x - canvas.width * 0.5;

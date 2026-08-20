@@ -247,15 +247,15 @@
       return this.vkToken;
     },
 
-    async loadVkLeaderboard() {
-      const token = await this.getVkToken();
+    async loadVkLeaderboard(token = '') {
+      const accessToken = token || await this.getVkToken();
       const response = await this.bridge.send('VKWebAppCallAPIMethod', {
         method: 'apps.getLeaderboard',
         params: {
           type: 'score',
           global: 1,
           extended: 1,
-          access_token: token,
+          access_token: accessToken,
           v: String(config.apiVersion || '5.199')
         }
       });
@@ -275,7 +275,22 @@
       }).filter((entry) => entry.rank <= 10 || entry.userId === this.getPlayerId());
     },
 
-    toPlatformEntries(entries) {
+    async loadVkPlayerScore(token = '') {
+      const accessToken = token || await this.getVkToken();
+      const userId = Math.floor(Number(this.getPlayerId()) || 0);
+      if (userId <= 0) throw new Error('VK_USER_ID_UNAVAILABLE');
+      const response = await this.bridge.send('VKWebAppCallAPIMethod', {
+        method: 'apps.getScore',
+        params: {
+          user_id: userId,
+          access_token: accessToken,
+          v: String(config.apiVersion || '5.199')
+        }
+      });
+      return Math.max(0, Math.floor(Number(response?.response ?? response) || 0));
+    },
+
+    toPlatformEntries(entries, playerScore = 0, useLocalFallback = true) {
       const userId = this.getPlayerId();
       const top = entries.filter((entry) => Number.isFinite(entry.rank) && entry.rank <= 10).slice(0, 10);
       const own = entries.find((entry) => entry.userId === userId && !top.includes(entry));
@@ -293,11 +308,13 @@
           player: { uniqueID: own.userId, publicName: own.name || this.getPlayerName() }
         });
       }
-      const localBest = this.loadNumber(BEST_KEY);
-      if (localBest > 0 && !rows.some((entry) => entry.isUser)) {
+      const ownScore = useLocalFallback
+        ? this.loadNumber(BEST_KEY)
+        : Math.max(0, Math.floor(Number(playerScore) || 0));
+      if (ownScore > 0 && !rows.some((entry) => entry.isUser)) {
         rows.push({
           rank: null,
-          score: localBest,
+          score: ownScore,
           isUser: true,
           player: { uniqueID: userId, publicName: this.getPlayerName() }
         });
@@ -307,6 +324,7 @@
 
     async getLeaderboardPlayerEntry(name) {
       if (name !== TOP_SCORE) throw new Error('LEADERBOARD_UNAVAILABLE');
+      if (!this.isOk()) return { score: await this.loadVkPlayerScore() };
       return { score: this.loadNumber(BEST_KEY) };
     },
 
@@ -314,7 +332,7 @@
       if (name !== TOP_SCORE || !this.backend) return false;
       const score = Math.max(this.loadNumber(BEST_KEY), Math.floor(Number(value) || 0));
       this.saveNumber(BEST_KEY, score);
-      if (!score || score <= this.loadNumber(SUBMITTED_KEY)) return true;
+      if (!score || (this.isOk() && score <= this.loadNumber(SUBMITTED_KEY))) return true;
       if (this.submitPromise) return this.submitPromise;
       this.submitPromise = (async () => {
         if (this.isOk()) {
@@ -340,8 +358,13 @@
 
     async getLeaderboardEntries(name) {
       if (name !== TOP_SCORE) throw new Error('LEADERBOARD_UNAVAILABLE');
-      const entries = this.isOk() ? await this.loadOkLeaderboard(false) : await this.loadVkLeaderboard();
-      return this.toPlatformEntries(entries);
+      if (this.isOk()) return this.toPlatformEntries(await this.loadOkLeaderboard(false));
+      const token = await this.getVkToken();
+      const [entries, playerScore] = await Promise.all([
+        this.loadVkLeaderboard(token),
+        this.loadVkPlayerScore(token).catch(() => 0)
+      ]);
+      return this.toPlatformEntries(entries, playerScore, false);
     },
 
     getCatalog() {

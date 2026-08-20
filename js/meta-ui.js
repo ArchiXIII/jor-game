@@ -330,17 +330,30 @@
     const leaderboardName = state.activeLeaderboardTab === 'stars'
       ? STARS_LEADERBOARD
       : (App?.leaderboardName || 'topScore');
-    const localValue = state.activeLeaderboardTab === 'stars' ? state.totalStars : Math.max(0, Math.floor(App?.lastLeaderboardScore || 0));
+    const localValue = state.activeLeaderboardTab === 'stars'
+      ? state.totalStars
+      : Math.max(0, Math.floor(App?.bestEndlessScore || 0), Math.floor(App?.lastLeaderboardScore || 0));
 
-    if (state.activeLeaderboardTab === 'stars' && state.totalStars > 0) {
-      await submitLeaderboardScore(STARS_LEADERBOARD, state.totalStars);
-    }
+    const shouldSyncBeforeLoad = state.activeLeaderboardTab === 'stars'
+      || String(window.JorPlatform?.name || '') === 'vk';
+    const syncPromise = localValue > 0 && shouldSyncBeforeLoad
+      ? submitLeaderboardScore(leaderboardName, localValue)
+      : null;
 
     const result = await loadLeaderboardRows(leaderboardName, localValue, 10, 2);
     state.leaderboardLoading = false;
     state.leaderboardEntries = result.entries;
     state.leaderboardError = result.error;
     renderLeaderboard();
+
+    const platformScore = result.entries.find((entry) => entry.isPlayer)?.score || 0;
+    if (syncPromise && localValue > platformScore && await syncPromise) {
+      const refreshed = await loadLeaderboardRows(leaderboardName, localValue, 10, 2);
+      if (state.activeModal !== 'leaderboard') return;
+      state.leaderboardEntries = refreshed.entries;
+      state.leaderboardError = refreshed.error;
+      renderLeaderboard();
+    }
   }
 
   async function loadXpLeaderboard(force = false) {
@@ -656,9 +669,7 @@
   async function awardXp(amount) {
     const baseValue = Math.max(0, Math.floor(amount || 0));
     if (baseValue <= 0) return;
-    const xpBonus = Math.max(0, Number(window.JorShopUI?.getBonuses?.().xp || 0));
-    const value = Math.max(0, Math.floor(baseValue * (1 + xpBonus)));
-    setFullXp(state.fullXp + value);
+    setFullXp(state.fullXp + baseValue);
     state.xpLeaderboardLoaded = false;
     render();
     await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);

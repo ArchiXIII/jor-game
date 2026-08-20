@@ -212,7 +212,14 @@ const App = {
     }
 
     const INTERSTITIAL_COOLDOWN_MS = 2 * 60 * 1000;
+    const YANDEX_INTERSTITIAL_COOLDOWN_MS = 3 * 60 * 1000;
     const INTERSTITIAL_STORAGE_KEY = 'jor-interstitial-last-shown-v1';
+
+    function getInterstitialCooldown() {
+      return String(window.JorPlatform?.name || '') === 'yandex'
+        ? YANDEX_INTERSTITIAL_COOLDOWN_MS
+        : INTERSTITIAL_COOLDOWN_MS;
+    }
 
     function getLastInterstitialAdAt() {
       if (App.lastInterstitialAdAt > 0) return App.lastInterstitialAdAt;
@@ -243,7 +250,7 @@ const App = {
       if (!App.sdkReady ||
           !window.JorPlatform?.hasFeature?.('interstitialAds') ||
           window.JorShopUI?.hasNoTransitionAds?.() ||
-          Date.now() - getLastInterstitialAdAt() < INTERSTITIAL_COOLDOWN_MS) {
+          Date.now() - getLastInterstitialAdAt() < getInterstitialCooldown()) {
         complete();
         return;
       }

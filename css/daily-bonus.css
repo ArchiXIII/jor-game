@@ -51,7 +51,7 @@
 
 .dailyBonusPanel > p {
   margin: 0 auto 18px;
-  color: rgba(225, 248, 252, 0.82);
+  color: #efffff;
   font-size: 15px;
   line-height: 1.25;
 }
@@ -105,14 +105,6 @@
   font-size: 23px;
   font-weight: 800;
   line-height: 1;
-}
-
-.dailyBonusStatus {
-  min-height: 20px;
-  margin-top: 14px;
-  color: #c9ffde;
-  font-size: 14px;
-  font-weight: 700;
 }
 
 .startDailyBonusBtn {
@@ -183,9 +175,4 @@
     font-size: 19px;
   }
 
-  .dailyBonusStatus {
-    min-height: 16px;
-    margin-top: 8px;
-    font-size: 12px;
-  }
 }

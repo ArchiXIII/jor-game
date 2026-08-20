@@ -6,7 +6,7 @@
     { id: 'defense', ru: 'Прочный панцирь', en: 'Strong Shell', valueRu: '+5% защиты', valueEn: '+5% defense', bonuses: { defense: 0.05 } },
     { id: 'growth', ru: 'Большой аппетит', en: 'Big Appetite', valueRu: '+5% роста', valueEn: '+5% growth', bonuses: { growth: 0.05 } },
     { id: 'enemyGrowth', ru: 'Инстинкт охотника', en: 'Hunter Instinct', valueRu: '+6% роста за врагов', valueEn: '+6% enemy growth', bonuses: { enemyGrowth: 0.06 } },
-    { id: 'xp', ru: 'Быстрое развитие', en: 'Fast Development', valueRu: '+8% опыта', valueEn: '+8% XP', bonuses: { xp: 0.08 } }
+    { id: 'xp', ru: 'Быстрое развитие', en: 'Fast Development', valueRu: '+8% опыта', valueEn: '+8% XP', bonuses: { score: 0.08 } }
   ];
   const byId = new Map(bonuses.map((bonus) => [bonus.id, bonus]));
   const dom = {};
@@ -81,6 +81,11 @@
     return active ? { ...active.bonuses } : {};
   }
 
+  function getScoreBonus() {
+    const active = activeBonus();
+    return Math.max(0, Number(active?.bonuses.score || 0));
+  }
+
   function setOpen(open) {
     if (!dom.overlay) return;
     dom.overlay.classList.toggle('visible', open);
@@ -119,15 +124,12 @@
     }
     if (dom.title) dom.title.textContent = text('Бонус дня', 'Daily bonus');
     if (dom.hint) dom.hint.textContent = active
-      ? text('Выбранный бонус действует до конца местного дня', 'The selected bonus lasts until the end of your local day')
-      : text('Выбери один бонус до следующего дня', 'Choose one bonus until the next day');
+      ? text('Выбранный бонус действует до конца дня', 'The selected bonus lasts until the end of your local day')
+      : text('Выбери бонус на сегодня', 'Choose today\'s bonus');
     if (dom.close) dom.close.setAttribute('aria-label', text('Закрыть', 'Close'));
     if (dom.choices) {
       dom.choices.replaceChildren(...optionIds().map((id) => renderChoice(byId.get(id), active)));
     }
-    if (dom.status) dom.status.textContent = active
-      ? `${text('Активно', 'Active')}: ${text(active.valueRu, active.valueEn)}`
-      : '';
   }
 
   function refresh() {
@@ -166,7 +168,6 @@
     dom.title = document.getElementById('dailyBonusTitle');
     dom.hint = document.getElementById('dailyBonusHint');
     dom.choices = document.getElementById('dailyBonusChoices');
-    dom.status = document.getElementById('dailyBonusStatus');
     dom.button?.addEventListener('click', open);
     dom.close?.addEventListener('click', close);
     dom.overlay?.addEventListener('click', (event) => {
@@ -185,5 +186,5 @@
     syncFromSave();
   }
 
-  window.JorDailyBonus = { init, open, close, render, refresh, syncFromSave, getBonuses, getActiveBonus: activeBonus, getDayKey: dayKey, getOptionIds: optionIds };
+  window.JorDailyBonus = { init, open, close, render, refresh, syncFromSave, getBonuses, getScoreBonus, getActiveBonus: activeBonus, getDayKey: dayKey, getOptionIds: optionIds };
 })();
