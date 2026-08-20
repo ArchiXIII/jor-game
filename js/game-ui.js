@@ -27,6 +27,8 @@ const App = {
       ourGamesLoading: false,
       fullscreenAdPending: false,
       lastInterstitialAdAt: 0,
+      lastRewardedAdAt: 0,
+      interstitialSessionStartedAt: 0,
       metaXpAwardedSession: null,
     };
 
@@ -136,6 +138,7 @@ const App = {
       if (!App.sdkReady) return;
       if (App.localPause || App.platformPaused || App.userPaused) return;
       if (!App.gameplayMarked) {
+        if (App.interstitialSessionStartedAt <= 0) App.interstitialSessionStartedAt = Date.now();
         window.JorPlatform?.gameplayStart?.();
         App.gameplayMarked = true;
       }
@@ -213,6 +216,8 @@ const App = {
 
     const INTERSTITIAL_COOLDOWN_MS = 2 * 60 * 1000;
     const YANDEX_INTERSTITIAL_COOLDOWN_MS = 3 * 60 * 1000;
+    const FIRST_INTERSTITIAL_GAMEPLAY_MS = 3 * 60 * 1000;
+    const REWARDED_INTERSTITIAL_DELAY_MS = 90 * 1000;
     const INTERSTITIAL_STORAGE_KEY = 'jor-interstitial-last-shown-v1';
 
     function getInterstitialCooldown() {
@@ -236,6 +241,16 @@ const App = {
       } catch (error) {}
     }
 
+    function isFirstInterstitialDelayActive() {
+      return App.interstitialSessionStartedAt <= 0 ||
+        Date.now() - App.interstitialSessionStartedAt < FIRST_INTERSTITIAL_GAMEPLAY_MS;
+    }
+
+    function isRewardedInterstitialDelayActive() {
+      return App.lastRewardedAdAt > 0 &&
+        Date.now() - App.lastRewardedAdAt < REWARDED_INTERSTITIAL_DELAY_MS;
+    }
+
     async function showInterstitialBeforeTransition(onDone) {
       if (App.fullscreenAdPending) return;
       App.fullscreenAdPending = true;
@@ -250,6 +265,8 @@ const App = {
       if (!App.sdkReady ||
           !window.JorPlatform?.hasFeature?.('interstitialAds') ||
           window.JorShopUI?.hasNoTransitionAds?.() ||
+          isFirstInterstitialDelayActive() ||
+          isRewardedInterstitialDelayActive() ||
           Date.now() - getLastInterstitialAdAt() < getInterstitialCooldown()) {
         complete();
         return;
@@ -369,7 +386,7 @@ function showStartScreen() {
 
     function confirmExitToMainMenu() {
       hideExitConfirm();
-      returnToMainMenuFromRoundEnd();
+      returnToMainMenu();
     }
 
     function setUserPaused(value) {

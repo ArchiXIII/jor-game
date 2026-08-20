@@ -30,7 +30,7 @@ async function showRewardedRerollAd() {
   markGameplayStop(false);
   await hideEvolutionBanner(true);
 
-  await window.JorPlatform.showRewarded({
+  const rewarded = await window.JorPlatform.showRewarded({
     onOpen: () => {
       handlePlatformPause();
     },
@@ -51,6 +51,7 @@ async function showRewardedRerollAd() {
       updateRewardButtonState();
     }
   });
+  if (rewarded) App.lastRewardedAdAt = Date.now();
 }
 
 function updateRewardButtonState() {
