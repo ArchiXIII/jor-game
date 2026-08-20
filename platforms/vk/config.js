@@ -50,7 +50,7 @@
       jor_icon_dark_eye: product(13, 59),
       jor_icon_gold_shell: product(18, 89),
       jor_icon_ancient_eye: product(23, 119),
-      jor_no_side_ads_30d: product(10, 49),
+      jor_no_side_ads_30d: product(10, 79),
       jor_no_reward_ads: product(45, 239)
     }
   };
