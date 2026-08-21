@@ -60,6 +60,11 @@
       height: var(--app-vh, 100dvh);
     }
 
+    html.startupPending .startScreen,
+    html.startupPending .metaTopBar {
+      visibility: hidden;
+    }
+
     #game {
       display: block;
       width: var(--app-vw, 100vw);
@@ -1682,6 +1687,144 @@
   scrollbar-width: thin;
 }
 
+html.orientationBlocked body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 35%, #174555 0%, #0a2633 48%, #041018 100%);
+}
+
+html.orientationBlocked body > * {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.tutorialGuide {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--safe-top) + 62px);
+  transform: translate(-50%, -8px);
+  z-index: 21;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(620px, calc(100vw - var(--safe-left) - var(--safe-right) - 28px));
+  padding: 11px 12px 11px 17px;
+  border: 1px solid rgba(126, 230, 243, 0.48);
+  border-radius: 18px;
+  color: #eafff8;
+  background: linear-gradient(180deg, rgba(20, 71, 84, 0.86), rgba(7, 33, 44, 0.9));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.16s ease-out, transform 0.16s ease-out;
+}
+
+.tutorialGuide.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.tutorialGuideCopy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tutorialGuideCopy strong {
+  color: #ffe28a;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.tutorialGuideCopy span {
+  color: #eafff8;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.tutorialGuide button {
+  flex: 0 0 auto;
+  width: 108px;
+  min-width: 108px;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid rgba(135, 237, 255, 0.48);
+  border-radius: 13px;
+  color: #dffaff;
+  background: rgba(4, 20, 29, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.08;
+  white-space: pre-line;
+  pointer-events: auto;
+}
+
+.centerMessage.tutorialCompleteDialog {
+  width: min(440px, calc(100vw - var(--safe-left) - var(--safe-right) - 24px));
+  min-width: 0;
+  padding: 24px 22px 20px;
+  border: 2px solid rgba(255, 221, 112, 0.68);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(24, 80, 91, 0.98), rgba(7, 31, 42, 0.99));
+}
+
+.centerMessage.tutorialCompleteDialog h2 {
+  margin: 0 0 14px;
+  color: #ffe589;
+  font-size: 26px;
+}
+
+.tutorialCompleteMessage {
+  margin-bottom: 22px;
+  color: #dffaff;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.centerMessage.tutorialCompleteDialog .messageButtons {
+  justify-content: center;
+}
+
+.centerMessage.tutorialCompleteDialog #restartBtn {
+  width: min(250px, 100%);
+  color: #3b2507;
+  background: linear-gradient(180deg, #ffe996 0%, #f6bd4c 55%, #d58b26 100%);
+  border-color: rgba(255, 239, 177, 0.9);
+}
+
+@media (max-width: 620px), (max-height: 470px) {
+  .tutorialGuide {
+    top: calc(var(--safe-top) + 54px);
+    width: min(520px, calc(100vw - var(--safe-left) - var(--safe-right) - 20px));
+    padding: 8px 9px 8px 13px;
+    gap: 9px;
+    background: linear-gradient(180deg, rgba(20, 71, 84, 0.78), rgba(7, 33, 44, 0.84));
+  }
+
+  .tutorialGuideCopy strong {
+    font-size: 11px;
+  }
+
+  .tutorialGuideCopy span {
+    font-size: 12px;
+  }
+
+  .tutorialGuide button {
+    width: 82px;
+    min-width: 82px;
+    min-height: 34px;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+}
+
 .centerMessage.leaderboardDialog::before {
   content: '';
   position: fixed;
@@ -2044,7 +2187,7 @@
 
 .centerMessage.levelFailedDialog h2 {
   margin: 0 0 18px;
-  color: #eafff8;
+  color: #ffe79a;
   font-size: 26px;
   line-height: 1.08;
   font-weight: 700;
@@ -2073,7 +2216,7 @@
 }
 
 .campaignFailedReason {
-  color: rgba(234, 255, 248, 0.82);
+  color: #ffb6a2;
   font-size: 20px;
   font-weight: 700;
   text-transform: uppercase;
@@ -2092,13 +2235,13 @@
 }
 
 .campaignFailedProgress span {
-  color: rgba(232, 252, 255, 0.78);
+  color: #9fefff;
   font-size: 13px;
   font-weight: 600;
 }
 
 .campaignFailedProgress strong {
-  color: #eafff8;
+  color: #ffe27a;
   font-size: 16px;
   font-weight: 700;
 }
@@ -2132,6 +2275,12 @@
   color: #eafff8;
   background: linear-gradient(180deg, rgba(31, 55, 64, 0.94), rgba(6, 18, 25, 0.96));
   border-color: rgba(122, 242, 255, 0.52);
+}
+
+.centerMessage.levelFailedDialog #messageRetryBtn {
+  color: #3b2507;
+  background: linear-gradient(180deg, #ffe996 0%, #f6bd4c 55%, #d58b26 100%);
+  border-color: rgba(255, 239, 177, 0.9);
 }
 
 .centerMessage.campaignCompleteDialog {

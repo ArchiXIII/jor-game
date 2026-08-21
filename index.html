@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="startupPending">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
@@ -131,6 +131,14 @@
     <div class="topProgressScore" id="topProgressScore">0</div>
   </div>
   <div class="campaignTimer" id="campaignTimer" aria-hidden="true">0:00</div>
+
+  <div class="tutorialGuide" id="tutorialGuide" aria-hidden="true">
+    <div class="tutorialGuideCopy">
+      <strong id="tutorialGuideTitle"></strong>
+      <span id="tutorialGuideText"></span>
+    </div>
+    <button id="tutorialSkipBtn" type="button"></button>
+  </div>
 
   <div class="campaignRoundIntroOverlay" id="campaignRoundIntroOverlay" aria-hidden="true">
     <section class="campaignRoundIntro" role="dialog" aria-modal="true" aria-labelledby="campaignRoundIntroTitle">
@@ -291,6 +299,7 @@
   <script src="js/campaign/levels-chapter-10.js"></script>
   <script src="js/campaign-levels.js"></script>
   <script src="js/campaign-run.js"></script>
+  <script src="js/tutorial.js"></script>
   <script src="js/campaign/campaign-mechanics.js"></script>
   <script src="js/ui/campaign-intro.js"></script>
   <script src="js/endless-mode.js"></script>

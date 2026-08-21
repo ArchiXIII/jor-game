@@ -39,7 +39,7 @@ let displayedTopScore = 0;
       const measuredFrame = clamp(deltaMs, 8, 80);
       averageFrameMs += (measuredFrame - averageFrameMs) * 0.055;
 
-      const gameplayActive = App?.hasStarted && !App.localPause && !App.platformPaused && !App.userPaused;
+      const gameplayActive = App?.hasStarted && !App.localPause && !App.platformPaused && !App.orientationBlocked && !App.userPaused;
       if (!gameplayActive) {
         performanceQuality += (1 - performanceQuality) * 0.012;
         performanceQuality = clamp(performanceQuality, 0.55, 1);

@@ -3,7 +3,7 @@ const enemyAiFrameContext = {};
 function prepareEnemyAiFrameContext() {
   const context = enemyAiFrameContext;
   context.endlessState = endlessMode ? getEndlessPressureState() : null;
-  context.campaignLevel = !endlessMode && App.gameMode === 'campaign'
+  context.campaignLevel = !endlessMode && (App.gameMode === 'campaign' || App.gameMode === 'tutorial')
     ? App.campaignRun?.level || (typeof getActiveCampaignLevel === 'function' ? getActiveCampaignLevel() : null)
     : null;
   context.campaignThreat = window.getCampaignThreatProgress(context.campaignLevel);

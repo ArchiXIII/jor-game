@@ -489,6 +489,9 @@ if (endlessMode) {
     }
 
 function createEnemy(sizeFactor = 1) {
+      if (App.gameMode === 'tutorial') {
+        return window.JorTutorial?.createEnemy?.(sizeFactor) || new Enemy(sizeFactor);
+      }
       let shieldChance = 0.16;
       const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
       if (campaignLevel && Number.isFinite(Number(campaignLevel.shieldChance))) {
@@ -563,7 +566,7 @@ function resetGame() {
       player = new Player();
       scoreXpBonus = Math.max(0, Number(window.JorShopUI?.getBonuses?.().xp || 0))
         + Math.max(0, Number(window.JorDailyBonus?.getScoreBonus?.() || 0));
-      const selectedPetId = window.JorShopUI?.selectedPetId?.() || '';
+      const selectedPetId = App.gameMode === 'tutorial' ? '' : window.JorShopUI?.selectedPetId?.() || '';
       activePet = selectedPetId && typeof PlayerPet === 'function' ? new PlayerPet(selectedPetId, player) : null;
       camera.x = player.x - canvas.width * 0.5;
       camera.y = player.y - canvas.height * 0.5;
@@ -662,6 +665,7 @@ function resetGame() {
       }
 
       applyCampaignStartConditions();
+      window.JorTutorial?.onRunStarted?.(player);
       if (typeof startCampaignRunIfNeeded === 'function') startCampaignRunIfNeeded();
       setupAmbient();
       seedInitialEntities();
@@ -671,6 +675,11 @@ function resetGame() {
     }
 
     function updateEnemyEvolution() {
+
+      if (App.gameMode === 'tutorial') {
+        rebuildSpatialIndex();
+        return;
+      }
 
       if (!endlessMode) {
         for (const enemy of enemies) {
@@ -711,7 +720,7 @@ function resetGame() {
     }
 
     function updateGame() {
-      if (gameOver || victory || evolutionPending || App.localPause || App.platformPaused || App.userPaused) return;
+      if (gameOver || victory || evolutionPending || App.localPause || App.platformPaused || App.orientationBlocked || App.userPaused) return;
       simulationFrame += 1;
       hudDirty = true;
 
@@ -750,6 +759,7 @@ function resetGame() {
       if (typeof applyCampaignCurrents === 'function') applyCampaignCurrents();
 
       handlePlayerCollisions();
+      window.JorTutorial?.update?.(player, enemiesEatenThisRound);
       updateEnemyEvolution();
       cullStreamedEntities();
       refillAmbientParticles();
@@ -765,9 +775,11 @@ function resetGame() {
       }
 
       const campaignLevel = getCampaignLevelBalance();
-      const tomatoMaxCount = endlessMode
-        ? ENDLESS_CONFIG.TOMATO_MAX_COUNT
-        : Math.max(1, Math.floor(Number(campaignLevel?.tomatoMaxCount) || ENDLESS_CONFIG.TOMATO_MAX_COUNT));
+      const tomatoMaxCount = App.gameMode === 'tutorial'
+        ? 0
+        : endlessMode
+          ? ENDLESS_CONFIG.TOMATO_MAX_COUNT
+          : Math.max(1, Math.floor(Number(campaignLevel?.tomatoMaxCount) || ENDLESS_CONFIG.TOMATO_MAX_COUNT));
       if (tomatoFoods.length < tomatoMaxCount) {
         spawnTomatoTimer -= 1;
         if (spawnTomatoTimer <= 0) {

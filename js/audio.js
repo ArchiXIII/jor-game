@@ -1,32 +1,41 @@
 const AUDIO = {
-      button: new Audio('audio/button.wav'),
-      death: new Audio('audio/death.wav'),
-      eating: new Audio('audio/eating.wav'),
-      flash: new Audio('audio/flash.wav'),
+      urls: {
+        button: 'audio/button.wav',
+        death: 'audio/death.wav',
+        eating: 'audio/eating.wav',
+        flash: 'audio/flash.wav',
+      },
+      volumes: {
+        button: 0.5,
+        death: 0.7,
+        eating: 0.45,
+        flash: 0.55,
+      },
+      maxVoices: {
+        button: 4,
+        death: 2,
+        eating: 3,
+        flash: 2,
+      },
+      buffers: Object.create(null),
+      loading: Object.create(null),
+      activeCounts: Object.create(null),
+      sfxMaster: null,
+      readyPromise: null,
       unlocked: false,
       muted: false,
+      platformMuted: false,
     };
     const AUDIO_MUTED_STORAGE_KEY = 'jorAudioMuted';
-    try {
-      AUDIO.muted = window.localStorage.getItem(AUDIO_MUTED_STORAGE_KEY) === '1';
-    } catch (error) {}
-    AUDIO.button.preload = 'auto';
-    AUDIO.death.preload = 'auto';
-    AUDIO.eating.preload = 'auto';
-    AUDIO.flash.preload = 'auto';
-    AUDIO.button.volume = 0.5;
-    AUDIO.death.volume = 0.7;
-    AUDIO.eating.volume = 0.45;
-    AUDIO.flash.volume = 0.55;
-    AUDIO.eatingMaxVoices = 3;
-    AUDIO.eatingVoices = [];
-    AUDIO.eatingVoiceIndex = 0;
-    for (let i = 0; i < AUDIO.eatingMaxVoices; i += 1) {
-      const voice = new Audio('audio/eating.wav');
-      voice.preload = 'auto';
-      voice.volume = AUDIO.eating.volume;
-      voice.load();
-      AUDIO.eatingVoices.push(voice);
+    if (window.JorPlatform?.features?.sdkManagedStorage !== true) {
+      try {
+        AUDIO.muted = window.localStorage.getItem(AUDIO_MUTED_STORAGE_KEY) === '1';
+      } catch (error) {}
+    }
+    function isAudioMuted() {
+      return AUDIO.muted
+        || AUDIO.platformMuted
+        || (typeof App !== 'undefined' && (App.platformPaused || App.orientationBlocked));
     }
 
     // -----------------------------------------------------------------------
@@ -62,10 +71,15 @@ const AUDIO = {
         try {
           const AC = window.AudioContext || window.webkitAudioContext;
           if (!AC) return false;
-          this.ctx = new AC();
+          try {
+            this.ctx = new AC({ latencyHint: 'interactive' });
+          } catch (error) {
+            this.ctx = new AC();
+          }
           this.master = this.ctx.createGain();
           this.master.gain.value = 0.0;
           this.master.connect(this.ctx.destination);
+          setupSfxOutput();
 
           // Простой реверб через delay+feedback с демпфированием —
           // даёт ощущение «подводного пространства».
@@ -84,6 +98,7 @@ const AUDIO = {
           delay.connect(wet);
           wet.connect(this.master);
           this.reverbIn = delay;
+          preloadSfxBuffers();
           return true;
         } catch (e) {
           this.ctx = null;
@@ -309,9 +324,86 @@ const AUDIO = {
       },
     };
 
+    function setupSfxOutput() {
+      const ctx = ProcMusic.ctx;
+      if (!ctx || AUDIO.sfxMaster) return;
+      AUDIO.sfxMaster = ctx.createGain();
+      AUDIO.sfxMaster.gain.value = isAudioMuted() ? 0 : 1;
+      AUDIO.sfxMaster.connect(ctx.destination);
+    }
+
+    function updateSfxOutput() {
+      const ctx = ProcMusic.ctx;
+      const master = AUDIO.sfxMaster;
+      if (!ctx || !master) return;
+      const now = ctx.currentTime;
+      master.gain.cancelScheduledValues(now);
+      master.gain.setValueAtTime(isAudioMuted() ? 0 : 1, now);
+    }
+
+    function loadSfxBuffer(name) {
+      if (AUDIO.buffers[name]) return Promise.resolve(AUDIO.buffers[name]);
+      if (AUDIO.loading[name]) return AUDIO.loading[name];
+      const url = AUDIO.urls[name];
+      if (!url || !ProcMusic.init() || !ProcMusic.ctx || !window.fetch) return Promise.resolve(null);
+      const request = window.fetch(url)
+        .then((response) => {
+          if (!response.ok) throw new Error(`Sound not found: ${url}`);
+          return response.arrayBuffer();
+        })
+        .then((data) => ProcMusic.ctx.decodeAudioData(data))
+        .then((buffer) => {
+          AUDIO.buffers[name] = buffer;
+          return buffer;
+        })
+        .catch(() => null)
+        .finally(() => {
+          delete AUDIO.loading[name];
+        });
+      AUDIO.loading[name] = request;
+      return request;
+    }
+
+    function preloadSfxBuffers() {
+      if (AUDIO.readyPromise) return AUDIO.readyPromise;
+      const names = Object.keys(AUDIO.urls);
+      const requests = new Array(names.length);
+      for (let i = 0; i < names.length; i += 1) requests[i] = loadSfxBuffer(names[i]);
+      AUDIO.readyPromise = Promise.all(requests);
+      window.JorAudioReady = AUDIO.readyPromise;
+      return AUDIO.readyPromise;
+    }
+
+    function playSfx(name) {
+      if (isAudioMuted()) return;
+      reviveAudio();
+      const ctx = ProcMusic.ctx;
+      const buffer = AUDIO.buffers[name];
+      if (!ctx || !buffer || !AUDIO.sfxMaster) {
+        loadSfxBuffer(name);
+        return;
+      }
+      const active = AUDIO.activeCounts[name] || 0;
+      if (active >= (AUDIO.maxVoices[name] || 2)) return;
+      const source = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      source.buffer = buffer;
+      gain.gain.value = AUDIO.volumes[name] || 0.5;
+      source.connect(gain);
+      gain.connect(AUDIO.sfxMaster);
+      AUDIO.activeCounts[name] = active + 1;
+      source.onended = () => {
+        AUDIO.activeCounts[name] = Math.max(0, (AUDIO.activeCounts[name] || 1) - 1);
+        source.disconnect();
+        gain.disconnect();
+      };
+      source.start(ctx.currentTime);
+    }
+
     function reviveAudio() {
       try {
         ProcMusic.init();
+        preloadSfxBuffers();
         if (ProcMusic.ctx && ProcMusic.ctx.state === 'suspended') {
           const resumePromise = ProcMusic.ctx.resume();
           if (resumePromise && typeof resumePromise.then === 'function') {
@@ -328,22 +420,7 @@ const AUDIO = {
 
     function unlockAudio() {
       reviveAudio();
-      for (let i = 0; i < AUDIO.eatingVoices.length; i += 1) {
-        if (AUDIO.eatingVoices[i].readyState < 2) AUDIO.eatingVoices[i].load();
-      }
       if (AUDIO.unlocked && (!ProcMusic.ctx || ProcMusic.ctx.state === 'running')) return;
-      try {
-        const unlockClone = AUDIO.button.cloneNode();
-        unlockClone.volume = 0;
-        const promise = unlockClone.play();
-        if (promise && typeof promise.then === 'function') {
-          promise.then(() => {
-            AUDIO.unlocked = true;
-            unlockClone.pause();
-            unlockClone.currentTime = 0;
-          }).catch(() => {});
-        }
-      } catch (error) {}
       // Инициализируем AudioContext именно по жесту пользователя —
       // это снимает автоплей-блокировку в браузерах.
       try { ProcMusic.init(); } catch (e) {}
@@ -356,57 +433,25 @@ const AUDIO = {
 
     function playButtonSound() {
       try {
-        if (AUDIO.muted) return;
-        reviveAudio();
-        const sfx = AUDIO.button.cloneNode();
-        sfx.volume = AUDIO.button.volume;
-        const promise = sfx.play();
-        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+        playSfx('button');
       } catch (error) {}
     }
 
     function playDeathSound() {
       try {
-        if (AUDIO.muted) return;
-        reviveAudio();
-        const sfx = AUDIO.death.cloneNode();
-        sfx.volume = AUDIO.death.volume;
-        const promise = sfx.play();
-        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+        playSfx('death');
       } catch (error) {}
     }
 
     function playEatingSound() {
       try {
-        if (AUDIO.muted) return;
-        reviveAudio();
-        const voices = AUDIO.eatingVoices;
-        let voice = null;
-        for (let i = 0; i < voices.length; i += 1) {
-          const candidate = voices[(AUDIO.eatingVoiceIndex + i) % voices.length];
-          if (candidate.paused || candidate.ended) {
-            voice = candidate;
-            AUDIO.eatingVoiceIndex = (AUDIO.eatingVoiceIndex + i + 1) % voices.length;
-            break;
-          }
-        }
-        if (!voice) {
-          voice = voices[AUDIO.eatingVoiceIndex];
-          AUDIO.eatingVoiceIndex = (AUDIO.eatingVoiceIndex + 1) % voices.length;
-          voice.pause();
-        }
-        voice.currentTime = 0;
-        voice.volume = AUDIO.eating.volume;
-        const promise = voice.play();
-        if (promise && typeof promise.catch === 'function') {
-          promise.catch(() => {});
-        }
+        playSfx('eating');
       } catch (error) {}
     }
 
     function playGrowthSound() {
       try {
-        if (AUDIO.muted) return;
+        if (isAudioMuted()) return;
         reviveAudio();
         if (!AUDIO.unlocked) return;
         if (!ProcMusic.init() || !ProcMusic.ctx) return;
@@ -427,8 +472,7 @@ const AUDIO = {
         out.gain.linearRampToValueAtTime(0.2, now + 0.025);
         out.gain.exponentialRampToValueAtTime(0.0001, now + 0.56);
         filter.connect(out);
-        out.connect(ctx.destination);
-        if (ProcMusic.reverbIn && ProcMusic.master) out.connect(ProcMusic.reverbIn);
+        out.connect(AUDIO.sfxMaster || ctx.destination);
 
         const low = ctx.createOscillator();
         low.type = 'sine';
@@ -458,12 +502,13 @@ const AUDIO = {
 
     function ensureAmbientMusic(force = false) {
       try {
-        if (AUDIO.muted) {
+        if (isAudioMuted()) {
           pauseAmbientMusic();
           return;
         }
         if (!AUDIO.unlocked) return;
         if (App.userPaused) return;
+        if (App.orientationBlocked) return;
         if (!force && (App.localPause || App.platformPaused || document.hidden)) return;
         ProcMusic.start();
       } catch (error) {}
@@ -475,16 +520,22 @@ const AUDIO = {
       } catch (error) {}
     }
 
-    function setAudioMuted(value) {
+    function setAudioMuted(value, persist = true) {
       AUDIO.muted = Boolean(value);
-      try {
-        window.localStorage.setItem(AUDIO_MUTED_STORAGE_KEY, AUDIO.muted ? '1' : '0');
-      } catch (error) {}
-      if (AUDIO.muted) {
-        for (let i = 0; i < AUDIO.eatingVoices.length; i += 1) {
-          AUDIO.eatingVoices[i].pause();
-          AUDIO.eatingVoices[i].currentTime = 0;
+      if (persist) {
+        if (window.JorPlatform?.features?.sdkManagedStorage === true) {
+          window.JorSaveManager?.updateSection?.('settings', (settings) => ({
+            ...settings,
+            audioMuted: AUDIO.muted
+          }), true);
+        } else {
+          try {
+            window.localStorage.setItem(AUDIO_MUTED_STORAGE_KEY, AUDIO.muted ? '1' : '0');
+          } catch (error) {}
         }
+      }
+      updateSfxOutput();
+      if (isAudioMuted()) {
         pauseAmbientMusic();
       } else {
         ensureAmbientMusic();
@@ -492,11 +543,31 @@ const AUDIO = {
     }
 
     function toggleAudioMuted() {
+      if (AUDIO.platformMuted) return;
       setAudioMuted(!AUDIO.muted);
+    }
+
+    function setPlatformAudioMuted(value) {
+      AUDIO.platformMuted = Boolean(value);
+      updateSfxOutput();
+      if (isAudioMuted()) {
+        pauseAmbientMusic();
+      } else {
+        ensureAmbientMusic();
+      }
+      if (typeof updateAudioToggleButton === 'function') updateAudioToggleButton();
+      window.JorMetaUI?.render?.();
+    }
+
+    function syncAudioSettingsFromSave() {
+      if (window.JorPlatform?.features?.sdkManagedStorage !== true) return;
+      const settings = window.JorSaveManager?.getSection?.('settings', null);
+      if (typeof settings?.audioMuted === 'boolean') setAudioMuted(settings.audioMuted, false);
     }
 
     function handlePlatformPause() {
       App.platformPaused = true;
+      updateSfxOutput();
       pauseAmbientMusic();
       markGameplayStop();
     }
@@ -504,18 +575,19 @@ const AUDIO = {
     function handlePlatformResume() {
       App.platformPaused = false;
       reviveAudio();
+      updateSfxOutput();
       ensureAmbientMusic(true);
       markGameplayStart();
     }
 
     function playFlashSound() {
       try {
-        if (AUDIO.muted) return;
-        reviveAudio();
-        AUDIO.flash.pause();
-        AUDIO.flash.currentTime = 0;
-        AUDIO.flash.volume = 0.55;
-        const promise = AUDIO.flash.play();
-        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+        playSfx('flash');
       } catch (error) {}
+    }
+
+    try {
+      if (ProcMusic.init()) preloadSfxBuffers();
+    } catch (error) {
+      window.JorAudioReady = Promise.resolve([]);
     }

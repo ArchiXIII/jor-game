@@ -1,6 +1,7 @@
 const App = {
       sdkReady: false,
       platformPaused: false,
+      orientationBlocked: false,
       localPause: false,
       gameplayMarked: false,
       usingBannerApi: true,
@@ -14,6 +15,7 @@ const App = {
       evolutionChoiceUnlockTimer: null,
       hasStarted: false,
       startScreenVisible: false,
+      initialExperienceResolved: false,
       // Р В¤Р В»Р В°Р С–Р С‘ Р Т‘Р В»РЎРЏ Р С”Р С•РЎР‚РЎР‚Р ВµР С”РЎвЂљР Р…Р С•Р С–Р С• РЎРѓРЎР‚Р В°Р В±Р В°РЎвЂљРЎвЂ№Р Р†Р В°Р Р…Р С‘РЎРЏ LoadingAPI.ready() РІР‚вЂќ РЎРѓР С. Р С—. 1.19.
       // gameReadyMoment РІР‚вЂќ Р С‘Р С–РЎР‚Р В° Р С•РЎвЂљРЎР‚Р С‘РЎРѓР С•Р Р†Р В°Р В»Р В° РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… (Р С‘Р С–РЎР‚Р В°Р В±Р ВµР В»РЎРЉР Р…Р В°).
       // loadingReadySent РІР‚вЂќ РЎРѓР С‘Р С–Р Р…Р В°Р В» РЎС“Р В¶Р Вµ Р С•РЎвЂљР С—РЎР‚Р В°Р Р†Р В»Р ВµР Р…, Р Т‘Р Р†Р В°Р В¶Р Т‘РЎвЂ№ Р ВµР С–Р С• РЎРѓР В»Р В°РЎвЂљРЎРЉ Р Р…Р ВµР В»РЎРЉР В·РЎРЏ.
@@ -41,13 +43,16 @@ const App = {
       if (!window.JorPlatform) {
         DOM.sdkStatus.textContent = t('sdkLocal');
         updateOurGamesButtonState();
+        await window.JorSaveManager?.load?.();
+        resolveInitialExperience();
         return;
       }
 
       try {
         const platformState = await window.JorPlatform.init({
           onPause: handlePlatformPause,
-          onResume: handlePlatformResume
+          onResume: handlePlatformResume,
+          onAudioMuteChange: setPlatformAudioMuted
         });
         App.sdkReady = !!platformState?.ready;
         App.loadingReadySent = !!window.jorLoadingReadySent;
@@ -64,10 +69,12 @@ const App = {
         notifyGameReady();
         await initPlatformPlayer();
         await window.JorSaveManager?.load?.();
+        syncAudioSettingsFromSave();
         window.JorDailyBonus?.syncFromSave?.();
         await window.JorMetaUI?.syncPlayerProgress?.();
         await window.JorCampaignUI?.syncCloud?.();
         await window.JorShopUI?.refreshPayments?.();
+        resolveInitialExperience();
         // Р вЂўРЎРѓР В»Р С‘ РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… РЎС“Р В¶Р Вµ Р С•РЎвЂљРЎР‚Р С‘РЎРѓР С•Р Р†Р В°Р Р… Р С” Р СР С•Р СР ВµР Р…РЎвЂљРЎС“ Р С–Р С•РЎвЂљР С•Р Р†Р Р…Р С•РЎРѓРЎвЂљР С‘ SDK РІР‚вЂќ
         // Р Т‘Р В°РЎвЂљРЎРЉ РЎРѓР С‘Р С–Р Р…Р В°Р В» ready() Р С—РЎР‚РЎРЏР СР С• РЎРѓР ВµР в„–РЎвЂЎР В°РЎРѓ. Р ВР Р…Р В°РЎвЂЎР Вµ Р С•Р Р… РЎРѓРЎвЂљРЎР‚Р ВµР В»РЎРЉР Р…РЎвЂРЎвЂљ Р С‘Р В·
         // showStartScreen() Р С”Р В°Р С” РЎвЂљР С•Р В»РЎРЉР С”Р С• РЎвЂљР С•РЎвЂљ Р С—Р С•Р С”Р В°Р В¶Р ВµРЎвЂљРЎРѓРЎРЏ.
@@ -80,7 +87,18 @@ const App = {
         console.error('Platform init error:', error);
         DOM.sdkStatus.textContent = t('sdkError');
         updateOurGamesButtonState();
+        await window.JorSaveManager?.load?.();
+        resolveInitialExperience();
       }
+    }
+
+    async function resolveInitialExperience() {
+      if (App.initialExperienceResolved) return;
+      App.initialExperienceResolved = true;
+      try { await window.JorAudioReady; } catch (error) {}
+      const tutorialStarted = window.JorTutorial?.maybeStart?.() === true;
+      document.documentElement.classList.remove('startupPending');
+      if (!tutorialStarted && !App.hasStarted) showStartScreen();
     }
 
     async function initPlatformPlayer() {
@@ -136,7 +154,7 @@ const App = {
 
     function markGameplayStart() {
       if (!App.sdkReady) return;
-      if (App.localPause || App.platformPaused || App.userPaused) return;
+      if (App.localPause || App.platformPaused || App.orientationBlocked || App.userPaused) return;
       if (!App.gameplayMarked) {
         if (App.interstitialSessionStartedAt <= 0) App.interstitialSessionStartedAt = Date.now();
         window.JorPlatform?.gameplayStart?.();
@@ -161,6 +179,7 @@ const App = {
     }
 
     function shouldShowStickyBanner() {
+      if (App.gameMode === 'tutorial') return false;
       if (!App.keepStickyBannerAlways || window.JorShopUI?.hasNoSideAds?.()) return false;
       return !usesDisabledMobileStickyBanner();
     }
@@ -355,7 +374,7 @@ function showStartScreen() {
       // Р В­Р Р†Р С•Р В»РЎР‹РЎвЂ Р С‘РЎРЏ / РЎвЂ Р ВµР Р…РЎвЂљРЎР‚Р В°Р В»РЎРЉР Р…Р С•Р Вµ РЎРѓР С•Р С•Р В±РЎвЂ°Р ВµР Р…Р С‘Р Вµ РІР‚вЂќ Р ВµРЎРѓРЎвЂљРЎРЉ РЎРѓР Р†Р С•Р С‘ РЎРЊР В»Р ВµР СР ВµР Р…РЎвЂљРЎвЂ№ РЎС“Р С—РЎР‚Р В°Р Р†Р В»Р ВµР Р…Р С‘РЎРЏ.
       if (evolutionPending) return false;
       // Р СџР В»Р В°РЎвЂљРЎвЂћР С•РЎР‚Р СР В° РЎРѓР В°Р СР В° Р С—Р С•РЎРѓРЎвЂљР В°Р Р†Р С‘Р В»Р В° Р Р…Р В° Р С—Р В°РЎС“Р В·РЎС“ (РЎРѓР Р†РЎвЂРЎР‚Р Р…РЎС“РЎвЂљР В°РЎРЏ Р Р†Р С”Р В»Р В°Р Т‘Р С”Р В°, РЎР‚Р ВµР С”Р В»Р В°Р СР В°).
-      if (App.platformPaused) return false;
+      if (App.platformPaused || App.orientationBlocked) return false;
       return true;
     }
 
@@ -472,6 +491,7 @@ function showStartScreen() {
     }
 
     function returnToMainMenu() {
+      window.JorTutorial?.leave?.();
       App.hasStarted = false;
       App.userPaused = false;
       App.localPause = true;
@@ -543,7 +563,7 @@ function showStartScreen() {
 
     function hideCenterMessage() {
       hideElement(DOM.centerMessage);
-      DOM.centerMessage?.classList.remove('leaderboardDialog', 'levelFailedDialog', 'campaignCompleteDialog', 'campaignCompactResult');
+      DOM.centerMessage?.classList.remove('leaderboardDialog', 'levelFailedDialog', 'campaignCompleteDialog', 'campaignCompactResult', 'tutorialCompleteDialog');
       if (DOM.messageRetryBtn) DOM.messageRetryBtn.hidden = true;
       if (DOM.messageOurGamesBtn) {
         DOM.messageOurGamesBtn.dataset.action = '';

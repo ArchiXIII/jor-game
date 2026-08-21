@@ -223,7 +223,7 @@
       const endlessZoom = isTouch
         ? (ENDLESS_CONFIG.CAMERA_ENDLESS_MOBILE_ZOOM_OUT ?? ENDLESS_CONFIG.CAMERA_ENDLESS_ZOOM_OUT)
         : ENDLESS_CONFIG.CAMERA_ENDLESS_ZOOM_OUT;
-      const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
+      const campaignLevel = App.gameMode === 'campaign' || App.gameMode === 'tutorial' ? getCampaignLevelBalance() : null;
       const campaignZoom = clamp(Number(campaignLevel?.cameraZoom) || 1, 0.65, 1);
       return endlessMode
         ? lerp(growthZoom, endlessZoom, endlessTransition)
@@ -232,7 +232,7 @@
 
     function getWorldSpeedScale() {
       const targetZoom = getCameraTargetZoom();
-      const campaignLevel = App.gameMode === 'campaign' ? getCampaignLevelBalance() : null;
+      const campaignLevel = App.gameMode === 'campaign' || App.gameMode === 'tutorial' ? getCampaignLevelBalance() : null;
       const campaignZoom = clamp(Number(campaignLevel?.cameraZoom) || 1, 0.65, 1);
       const speedReferenceZoom = campaignLevel ? targetZoom / campaignZoom : targetZoom;
       const visibleFieldScale = 1 / Math.max(0.1, speedReferenceZoom);
@@ -309,6 +309,7 @@
     }
 
     function getCampaignLevelBalance() {
+      if (App.gameMode === 'tutorial') return window.JorTutorial?.level || null;
       if (App.gameMode !== 'campaign') return null;
       if (typeof getActiveCampaignLevel === 'function') {
         return getActiveCampaignLevel();
@@ -447,6 +448,7 @@
       canvas.height = viewport.height;
       updateWorldSize();
       resetMobileStick();
+      syncOrientationBlock(viewport);
 
       if (player) {
         updateCamera(true);
@@ -497,8 +499,40 @@
       return coarsePrimary || compactTouchScreen;
     }
 
+    function isMobileDevice() {
+      if (navigator.userAgentData?.mobile === true) return true;
+      if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')) return true;
+      return navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
+    }
+
+    function isPhysicalLandscape() {
+      if (window.screen?.orientation?.type?.includes('landscape')) return true;
+      return Math.abs(Number(window.orientation)) === 90;
+    }
+
+    function syncOrientationBlock(viewport = getViewportSize()) {
+      const enabled = window.JorPlatform?.features?.landscapeOnly === true;
+      const blocked = enabled && isMobileDevice() && viewport.height > viewport.width && !isPhysicalLandscape();
+      document.documentElement.classList.toggle('orientationBlocked', blocked);
+      if (App.orientationBlocked === blocked) return;
+
+      App.orientationBlocked = blocked;
+      dashRequested = false;
+      resetMobileStick();
+      updateSfxOutput();
+
+      if (blocked) {
+        pauseAmbientMusic();
+        markGameplayStop();
+      } else {
+        ensureAmbientMusic();
+        markGameplayStart();
+      }
+      updateMobileControlsVisibility();
+    }
+
     function isGameplayBlocked() {
-      return evolutionPending || App.localPause || App.platformPaused || App.userPaused || gameOver || victory;
+      return evolutionPending || App.localPause || App.platformPaused || App.orientationBlocked || App.userPaused || gameOver || victory;
     }
 
     function requestDashIfAllowed() {
@@ -539,7 +573,8 @@
 
     function updateAudioToggleButton() {
       if (!DOM.soundToggleBtn) return;
-      const muted = Boolean(AUDIO?.muted);
+      const muted = Boolean(AUDIO?.muted || AUDIO?.platformMuted);
+      DOM.soundToggleBtn.disabled = Boolean(AUDIO?.platformMuted);
       DOM.soundToggleBtn.classList.toggle('muted', muted);
       DOM.soundToggleBtn.setAttribute('aria-label', muted ? 'Sound off' : 'Sound on');
       DOM.soundToggleBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
@@ -547,7 +582,7 @@
 
     function updateTopControlsVisibility() {
       if (!DOM.topControls) return;
-      const visible = App.hasStarted && !App.startScreenVisible && !gameOver && !victory && !evolutionPending && !App.platformPaused;
+      const visible = App.hasStarted && !App.startScreenVisible && !gameOver && !victory && !evolutionPending && !App.platformPaused && !App.orientationBlocked;
       DOM.topControls.classList.toggle('active', visible);
       DOM.topControls.setAttribute('aria-hidden', visible ? 'false' : 'true');
       if (DOM.pauseToggleBtn) {
@@ -558,7 +593,7 @@
     }
 
     function updateMobileControlsVisibility() {
-      const keepReady = hasTouchControls() && App.hasStarted && !App.startScreenVisible && !gameOver && !victory && !App.platformPaused;
+      const keepReady = hasTouchControls() && App.hasStarted && !App.startScreenVisible && !gameOver && !victory && !App.platformPaused && !App.orientationBlocked;
       setMobileControlsVisible(keepReady, keepReady && !isGameplayBlocked());
       updateTopControlsVisibility();
     }
@@ -621,6 +656,7 @@
     function setupInput() {
       window.addEventListener('resize', stabilizeViewportAfterResize);
       window.addEventListener('orientationchange', stabilizeViewportAfterResize);
+      window.matchMedia?.('(orientation: portrait)')?.addEventListener?.('change', stabilizeViewportAfterResize);
       window.visualViewport?.addEventListener('resize', stabilizeViewportAfterResize);
       window.visualViewport?.addEventListener('scroll', stabilizeViewportAfterResize);
       stabilizeViewportAfterResize();

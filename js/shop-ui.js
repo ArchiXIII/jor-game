@@ -23,8 +23,15 @@
     const platform = String(window.JorPlatform?.name || '');
     return platform === 'vk' || platform === 'ok';
   }
+  function isCrazyGamesBasic() { return window.JorPlatform?.name === 'crazygames'; }
   function products() { return window.JorShopData?.products || []; }
-  function categories() { return window.JorShopData?.categories || []; }
+  function visibleProducts() { return isCrazyGamesBasic() ? products().filter(hasGameplayUnlock) : products(); }
+  function categories() {
+    const source = window.JorShopData?.categories || [];
+    if (!isCrazyGamesBasic()) return source;
+    const visible = visibleProducts();
+    return source.filter((category) => visible.some((item) => item.category === category.id));
+  }
   function byId(id) { return products().find((item) => item.id === id) || null; }
   function nowMs() { return Date.now(); }
   function timedUntil(id) { return Math.max(0, Number(state.timed?.[id] || 0)); }
@@ -67,7 +74,7 @@
     if (!window.matchMedia) return false;
     return window.matchMedia('(orientation: landscape) and (min-width: 560px)').matches;
   }
-  function activeItems() { return products().filter((item) => item.category === state.activeCategory); }
+  function activeItems() { return visibleProducts().filter((item) => item.category === state.activeCategory); }
   function activePage() { return Math.max(0, Math.floor(Number(state.pages[state.activeCategory]) || 0)); }
   function setActivePage(page) { state.pages[state.activeCategory] = Math.max(0, Math.floor(Number(page) || 0)); }
 
@@ -426,7 +433,11 @@
   function renderTabs() {
     if (!dom.tabs) return;
     dom.tabs.replaceChildren();
-    categories().forEach((category) => {
+    const visibleCategories = categories();
+    if (!visibleCategories.some((category) => category.id === state.activeCategory)) {
+      state.activeCategory = visibleCategories[0]?.id || '';
+    }
+    visibleCategories.forEach((category) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = category.id === state.activeCategory ? 'active' : '';
@@ -580,9 +591,13 @@
   function render() {
     renderTabs();
     renderProducts();
-    if (dom.title) dom.title.textContent = tr('\u041c\u0430\u0433\u0430\u0437\u0438\u043d', 'Shop');
+    if (dom.title) dom.title.textContent = isCrazyGamesBasic()
+      ? tr('\u0413\u0430\u0440\u0434\u0435\u0440\u043e\u0431', 'Wardrobe')
+      : tr('\u041c\u0430\u0433\u0430\u0437\u0438\u043d', 'Shop');
     if (dom.close) dom.close.setAttribute('aria-label', tr('\u0417\u0430\u043a\u0440\u044b\u0442\u044c', 'Close'));
-    if (dom.tabs) dom.tabs.setAttribute('aria-label', tr('\u0420\u0430\u0437\u0434\u0435\u043b\u044b \u043c\u0430\u0433\u0430\u0437\u0438\u043d\u0430', 'Shop categories'));
+    if (dom.tabs) dom.tabs.setAttribute('aria-label', isCrazyGamesBasic()
+      ? tr('\u0420\u0430\u0437\u0434\u0435\u043b\u044b \u0433\u0430\u0440\u0434\u0435\u0440\u043e\u0431\u0430', 'Wardrobe categories')
+      : tr('\u0420\u0430\u0437\u0434\u0435\u043b\u044b \u043c\u0430\u0433\u0430\u0437\u0438\u043d\u0430', 'Shop categories'));
     if (dom.status) dom.status.textContent = state.status || '';
   }
 

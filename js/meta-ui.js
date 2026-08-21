@@ -118,6 +118,10 @@
     return window.JorPlatform?.hasFeature?.(name) !== false;
   }
 
+  function isCrazyGamesBasic() {
+    return window.JorPlatform?.name === 'crazygames' && !hasFeature('leaderboards');
+  }
+
   function formatNumber(value) {
     const locale = lang() === 'en' ? 'en-US' : 'ru-RU';
     return Math.max(0, Math.floor(value || 0)).toLocaleString(locale);
@@ -250,7 +254,12 @@
     if (dom.xpLeaderboardHint) dom.xpLeaderboardHint.textContent = tr('xpHint');
     if (dom.topBar) dom.topBar.setAttribute('aria-label', tr('playerProgress'));
     if (dom.trophyShelf) dom.trophyShelf.setAttribute('aria-label', tr('chapterTrophies'));
-    if (dom.leaderboardButton) dom.leaderboardButton.setAttribute('aria-label', tr('rating'));
+    if (dom.leaderboardButton) {
+      const hidden = isCrazyGamesBasic();
+      dom.leaderboardButton.hidden = hidden;
+      dom.leaderboardButton.style.display = hidden ? 'none' : '';
+      dom.leaderboardButton.setAttribute('aria-label', tr('rating'));
+    }
     if (dom.profileClose) dom.profileClose.setAttribute('aria-label', tr('close'));
     if (dom.leaderboardClose) dom.leaderboardClose.setAttribute('aria-label', tr('close'));
     if (dom.xpLeaderboardClose) dom.xpLeaderboardClose.setAttribute('aria-label', tr('close'));
@@ -320,6 +329,7 @@
   }
 
   async function openLeaderboard(tab = 'stars') {
+    if (isCrazyGamesBasic()) return;
     state.activeLeaderboardTab = hasFeature('singleEndlessLeaderboard') || tab === 'endless' ? 'endless' : 'stars';
     state.leaderboardLoading = true;
     state.leaderboardError = '';
@@ -396,7 +406,8 @@
 
   function syncSoundButton() {
     if (!dom.soundButton) return;
-    const muted = Boolean(typeof AUDIO !== 'undefined' && AUDIO?.muted);
+    const muted = Boolean(typeof AUDIO !== 'undefined' && (AUDIO?.muted || AUDIO?.platformMuted));
+    dom.soundButton.disabled = Boolean(typeof AUDIO !== 'undefined' && AUDIO?.platformMuted);
     dom.soundButton.classList.toggle('muted', muted);
     dom.soundButton.setAttribute('aria-label', muted ? 'Sound off' : 'Sound on');
     dom.soundButton.setAttribute('aria-pressed', muted ? 'true' : 'false');

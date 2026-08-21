@@ -168,7 +168,9 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
       if (DOM.startSubtitle) DOM.startSubtitle.textContent = t('startSubtitle');
       if (DOM.startPlayBtn) DOM.startPlayBtn.textContent = t('play');
       if (DOM.startCampaignBtn) DOM.startCampaignBtn.textContent = t('campaign');
-      if (DOM.startShopBtn) DOM.startShopBtn.textContent = t('shop');
+      if (DOM.startShopBtn) DOM.startShopBtn.textContent = window.JorPlatform?.name === 'crazygames'
+        ? (currentLang === 'en' ? 'Wardrobe' : '\u0413\u0430\u0440\u0434\u0435\u0440\u043e\u0431')
+        : t('shop');
       if (DOM.startOurGamesBtn) DOM.startOurGamesBtn.textContent = t('ourGames');
       if (DOM.evolutionTitle) DOM.evolutionTitle.textContent = t('evolutionTitle');
       if (DOM.evolutionText) DOM.evolutionText.textContent = t('evolutionChoose');

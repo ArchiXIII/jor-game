@@ -127,6 +127,8 @@ function escapeHtml(value) {
     }
 
     function buildLeaderboardHtml(finalScore, entries, isAuthorized, state = 'ready', goldfishUnlocked = false) {
+      const leaderboardsEnabled = window.JorPlatform?.name !== 'crazygames'
+        || window.JorPlatform?.hasFeature?.('leaderboards') !== false;
       const currentUserId = window.JorPlatform?.getPlayerId?.() || '';
       const rows = state === 'ready' ? getGameOverLeaderboardRows(entries, currentUserId) : [];
       const enemiesEatenLabel = t('enemiesEaten');
@@ -140,19 +142,21 @@ function escapeHtml(value) {
             <div class="leaderboardScoreValue">${escapeHtml(getLeaderboardScorePrefix())}: ${formatCompactScore(finalScore)}</div>
             ${goldfishUnlocked ? `<div class="goldfishUnlockNotice">${escapeHtml(getGoldfishUnlockText())}</div>` : ''}
             <div class="leaderboardRunStat"><span>${escapeHtml(enemiesEatenLabel)}:</span> <strong>${enemiesEatenValue}</strong></div>
-            ${isAuthorized ? '' : `<div class="leaderboardLoginHint">${escapeHtml(t('leaderboardLoginHint'))}</div>`}
+            ${!leaderboardsEnabled || isAuthorized ? '' : `<div class="leaderboardLoginHint">${escapeHtml(t('leaderboardLoginHint'))}</div>`}
           </div>
 
-          <div class="leaderboardTitle">${escapeHtml(getGameOverLeaderboardTitle())}</div>
-          <div class="leaderboardListCard">
-            <div class="leaderboardRows">
-              ${isLoading
-                ? `<div class="leaderboardPending">${escapeHtml(getGameOverLoadingText())}</div>`
-                : isError
-                  ? `<div class="leaderboardPending">${escapeHtml(getLeaderboardUnavailableText())}</div>`
-                  : buildGameOverLeaderboardRowsHtml(rows)}
+          ${leaderboardsEnabled ? `
+            <div class="leaderboardTitle">${escapeHtml(getGameOverLeaderboardTitle())}</div>
+            <div class="leaderboardListCard">
+              <div class="leaderboardRows">
+                ${isLoading
+                  ? `<div class="leaderboardPending">${escapeHtml(getGameOverLoadingText())}</div>`
+                  : isError
+                    ? `<div class="leaderboardPending">${escapeHtml(getLeaderboardUnavailableText())}</div>`
+                    : buildGameOverLeaderboardRowsHtml(rows)}
+              </div>
             </div>
-          </div>
+          ` : ''}
         </div>
       `;
     }
@@ -170,6 +174,25 @@ function escapeHtml(value) {
       }
       App.localPause = true;
       markGameplayStop();
+
+      if (
+        window.JorPlatform?.name === 'crazygames'
+        && window.JorPlatform?.hasFeature?.('leaderboards') === false
+      ) {
+        if (App.metaXpAwardedSession !== sessionId) {
+          App.metaXpAwardedSession = sessionId;
+          window.JorMetaUI?.awardXp?.(finalScore);
+        }
+        App.lastLeaderboardScore = finalScore;
+        App.lastLeaderboardEntries = null;
+        App.lastLeaderboardAuthorized = false;
+        showHtmlMessage(
+          t('congratsTitle'),
+          buildLeaderboardHtml(finalScore, null, false, 'ready', goldfishUnlocked),
+          'congrats'
+        );
+        return;
+      }
 
       showHtmlMessage(
         t('congratsTitle'),
@@ -374,7 +397,7 @@ function escapeHtml(value) {
       App.localPause = true;
       markGameplayStop();
       const platformName = String(window.JorPlatform?.name || '');
-      const compactPlatformResult = platformName === 'vk' || platformName === 'ok';
+      const compactPlatformResult = platformName === 'vk' || platformName === 'ok' || platformName === 'crazygames';
       const canRetry = compactPlatformResult && Math.max(0, Math.min(3, Math.floor(Number(stars) || 0))) < 3;
       DOM.messageTitle.textContent = getCampaignCompleteTitleForLevel(level?.n || App.campaignLevel || 1);
       DOM.messageTitle.dataset.messageKey = 'campaignComplete';
