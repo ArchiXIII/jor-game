@@ -64,8 +64,14 @@
       display: block;
       width: var(--app-vw, 100vw);
       height: var(--app-vh, 100dvh);
-      cursor: crosshair;
+      cursor: default;
       touch-action: none;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      #game {
+        cursor: url('../sprites/ui/game-cursor.svg') 16 16, crosshair;
+      }
     }
 
     .hud {
