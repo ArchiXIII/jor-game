@@ -8,12 +8,13 @@
 - `platforms/yandex/adapter.js` содержит профиль, облачные сохранения, рекламу, рейтинги, покупки и ссылку на игры разработчика;
 - `platforms/vk/adapter.js` обслуживает одну таблицу бесконечного режима для VK и OK, профиль и VK Storage;
 - `platforms/vk/backend-client.js` обращается только к изолированным маршрутам Жора;
+- `platforms/crazygames/adapter.js` инициализирует CrazyGames SDK и передаёт события загрузки и игрового процесса; в текущей Basic-сборке облако, реклама, рейтинги и покупки отключены;
 - `platforms/local/adapter.js` обеспечивает запуск без SDK для локальной проверки;
 - `tools/build-platform.ps1` собирает из общего исходника отдельные каталоги и ZIP-архивы в `output/`.
 
-Сборка выполняется командой `powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-platform.ps1 -Platform yandex`, `vk` или `local`. Параметр `-SkipArchive` создаёт только каталог для проверки. Ручной архив `Jor.zip` скрипт не изменяет.
+Сборка выполняется командой `powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-platform.ps1 -Platform yandex`, `vk`, `crazygames` или `local`. Параметр `-SkipArchive` создаёт только каталог для проверки. Ручной архив `Jor.zip` скрипт не изменяет.
 
-Актуально на 11 августа 2026 года.
+Актуально на 21 августа 2026 года.
 
 ### Рейтинг VK и OK
 

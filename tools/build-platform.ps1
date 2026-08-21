@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet('yandex', 'vk', 'local')]
+  [ValidateSet('yandex', 'vk', 'crazygames', 'local')]
   [string]$Platform,
   [switch]$SkipArchive
 )
@@ -47,6 +47,10 @@ if ($Platform -ne 'yandex') {
     $backendScript = '  <script src="platforms/vk/backend-client.js"></script>'
     $index = $index.Replace($configScript, $bridgeScript + [Environment]::NewLine + $configScript)
     $index = $index.Replace($adapterScript, $backendScript + [Environment]::NewLine + $adapterScript)
+  } elseif ($Platform -eq 'crazygames') {
+    $configScript = '  <script src="platforms/crazygames/config.js"></script>'
+    $sdkScript = '  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>'
+    $index = $index.Replace($configScript, $sdkScript + [Environment]::NewLine + $configScript)
   }
 }
 [IO.File]::WriteAllText($indexPath, $index, (New-Object Text.UTF8Encoding($false)))

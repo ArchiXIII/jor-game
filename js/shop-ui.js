@@ -250,7 +250,7 @@
     return lang() === 'en' ? item.en : item.ru;
   }
   function productDesc(item) {
-    if (isVkOrOk()) return lang() === 'en' ? (item.platformDescEn || item.descEn) : (item.platformDescRu || item.descRu);
+    if (isVkOrOk()) return lang() === 'en' ? (item.platformDescEn ?? item.descEn) : (item.platformDescRu ?? item.descRu);
     return lang() === 'en' ? item.descEn : item.descRu;
   }
 
