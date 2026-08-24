@@ -237,7 +237,8 @@
       const speedReferenceZoom = campaignLevel ? targetZoom / campaignZoom : targetZoom;
       const visibleFieldScale = 1 / Math.max(0.1, speedReferenceZoom);
       const boostedScale = 1 + (visibleFieldScale - 1) * ENDLESS_CONFIG.WORLD_SPEED_SCALE_STRENGTH;
-      return clamp(boostedScale, 1, ENDLESS_CONFIG.WORLD_SPEED_SCALE_MAX);
+      const campaignSpeedScale = campaignLevel && !hasTouchControls() ? 1 / campaignZoom : 1;
+      return clamp(boostedScale * campaignSpeedScale, 1, ENDLESS_CONFIG.WORLD_SPEED_SCALE_MAX);
     }
 
     function updateCamera(force = false) {
