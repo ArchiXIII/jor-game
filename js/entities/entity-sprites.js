@@ -7,10 +7,9 @@ function getPlayerFxShadowScale() {
     }
 
     const FOOD_TINT_SETS = [
-      ['#89ffb8', '#49e89a', '#d8fff0'],
-      ['#7effcf', '#48e2bb', '#effff8'],
-      ['#9bffd2', '#57e39f', '#f7fff7'],
-      ['#83ffd9', '#3fd0b8', '#dcfffb'],
+      ['#76e79b', '#27865d', '#c5f6cf'],
+      ['#68dfb2', '#237f72', '#bef4dc'],
+      ['#91e776', '#3a8d45', '#d6f8bf'],
     ];
 
     const SHARD_FOOD_TINT_SETS = [
@@ -19,7 +18,6 @@ function getPlayerFxShadowScale() {
       ['#e0fff3', '#aaffcc', '#ffffff'],
     ];
 
-    let bakedTentacleSuckerSprite = null;
     const bakedPlayerSpikeSprites = [];
     const bakedPlayerMandibleSprites = Object.create(null);
     const bakedPlayerFinSprites = Object.create(null);
@@ -29,27 +27,70 @@ function getPlayerFxShadowScale() {
       return Math.max(shard ? 2.5 : 4, Math.round(radius / step) * step);
     }
 
-    function drawBakedFoodSprite(spriteCtx, radius, variant, tintSet, mobileLite = false) {
+    function drawBakedFoodSprite(spriteCtx, radius, variant, tintSet, mobileLite = false, shard = false) {
       const [fillColor, glowColor, highlightColor] = tintSet;
       const pad = Math.ceil(radius * (mobileLite ? 1.6 : 2.8));
       const size = radius * 2 + pad * 2;
       const c = size * 0.5;
 
-      if (mobileLite) {
-        spriteCtx.globalAlpha = 0.34;
+      if (shard) {
+        spriteCtx.globalAlpha = mobileLite ? 0.34 : 0.24;
         spriteCtx.fillStyle = glowColor;
         spriteCtx.beginPath();
-        spriteCtx.arc(c, c, radius * 1.28, 0, Math.PI * 2);
+        spriteCtx.arc(c, c, radius * (mobileLite ? 1.28 : 1.18), 0, Math.PI * 2);
         spriteCtx.fill();
-      } else {
-        spriteCtx.globalAlpha = 0.24;
-        spriteCtx.fillStyle = glowColor;
-        spriteCtx.beginPath();
-        spriteCtx.arc(c, c, radius * 1.18, 0, Math.PI * 2);
-        spriteCtx.fill();
-      }
+        spriteCtx.globalAlpha = 1;
 
-      spriteCtx.globalAlpha = 1;
+        const shardGradient = spriteCtx.createRadialGradient(
+          c - radius * 0.28,
+          c - radius * 0.32,
+          radius * 0.2,
+          c,
+          c,
+          radius * 1.2
+        );
+        shardGradient.addColorStop(0, highlightColor);
+        shardGradient.addColorStop(0.45, fillColor);
+        shardGradient.addColorStop(1, glowColor);
+        spriteCtx.fillStyle = shardGradient;
+        spriteCtx.beginPath();
+        if (variant === 0) {
+          spriteCtx.arc(c, c, radius, 0, Math.PI * 2);
+        } else if (variant === 1) {
+          spriteCtx.ellipse(c, c, radius * 1.08, radius * 0.86, 0.38, 0, Math.PI * 2);
+        } else if (variant === 2) {
+          const spikes = 6;
+          for (let i = 0; i < spikes * 2; i++) {
+            const angle = (Math.PI / spikes) * i - Math.PI * 0.5;
+            const pointRadius = i % 2 === 0 ? radius * 1.02 : radius * 0.66;
+            const pointX = c + Math.cos(angle) * pointRadius;
+            const pointY = c + Math.sin(angle) * pointRadius;
+            if (i === 0) spriteCtx.moveTo(pointX, pointY);
+            else spriteCtx.lineTo(pointX, pointY);
+          }
+        } else {
+          spriteCtx.moveTo(c, c - radius * 1.02);
+          spriteCtx.quadraticCurveTo(c + radius * 0.94, c - radius * 0.5, c + radius * 0.76, c + radius * 0.34);
+          spriteCtx.quadraticCurveTo(c, c + radius * 1.08, c - radius * 0.76, c + radius * 0.34);
+          spriteCtx.quadraticCurveTo(c - radius * 0.94, c - radius * 0.5, c, c - radius * 1.02);
+        }
+        spriteCtx.closePath();
+        spriteCtx.fill();
+        spriteCtx.strokeStyle = 'rgba(235,255,245,0.35)';
+        spriteCtx.lineWidth = Math.max(0.8, radius * 0.14);
+        spriteCtx.beginPath();
+        spriteCtx.arc(c, c, radius * 0.78, -0.9, 0.9);
+        spriteCtx.stroke();
+        spriteCtx.fillStyle = 'rgba(255,255,255,0.82)';
+        spriteCtx.beginPath();
+        spriteCtx.arc(c - radius * 0.34, c - radius * 0.38, Math.max(1.2, radius * 0.24), 0, Math.PI * 2);
+        spriteCtx.fill();
+        spriteCtx.fillStyle = 'rgba(255,255,255,0.26)';
+        spriteCtx.beginPath();
+        spriteCtx.arc(c + radius * 0.2, c + radius * 0.16, Math.max(0.9, radius * 0.14), 0, Math.PI * 2);
+        spriteCtx.fill();
+        return;
+      }
 
       const bodyGradient = spriteCtx.createRadialGradient(
         c - radius * 0.28,
@@ -64,121 +105,143 @@ function getPlayerFxShadowScale() {
       bodyGradient.addColorStop(1, glowColor);
       spriteCtx.fillStyle = bodyGradient;
 
-      if (variant === 0) {
-        spriteCtx.beginPath();
-        spriteCtx.arc(c, c, radius, 0, Math.PI * 2);
-        spriteCtx.fill();
-      } else if (variant === 1) {
-        spriteCtx.beginPath();
-        spriteCtx.ellipse(c, c, radius * 1.08, radius * 0.86, 0.38, 0, Math.PI * 2);
-        spriteCtx.fill();
-      } else if (variant === 2) {
-        const spikes = 6;
-        spriteCtx.beginPath();
-        for (let i = 0; i < spikes * 2; i++) {
-          const a = (Math.PI / spikes) * i - Math.PI * 0.5;
-          const r = i % 2 === 0 ? radius * 1.02 : radius * 0.66;
-          const px = c + Math.cos(a) * r;
-          const py = c + Math.sin(a) * r;
-          if (i === 0) spriteCtx.moveTo(px, py);
-          else spriteCtx.lineTo(px, py);
-        }
-        spriteCtx.closePath();
-        spriteCtx.fill();
-      } else {
-        spriteCtx.beginPath();
-        spriteCtx.moveTo(c, c - radius * 1.02);
-        spriteCtx.quadraticCurveTo(c + radius * 0.94, c - radius * 0.5, c + radius * 0.76, c + radius * 0.34);
-        spriteCtx.quadraticCurveTo(c, c + radius * 1.08, c - radius * 0.76, c + radius * 0.34);
-        spriteCtx.quadraticCurveTo(c - radius * 0.94, c - radius * 0.5, c, c - radius * 1.02);
-        spriteCtx.fill();
-      }
-
-      spriteCtx.strokeStyle = 'rgba(235,255,245,0.35)';
-      spriteCtx.lineWidth = Math.max(0.8, radius * 0.14);
       spriteCtx.beginPath();
-      spriteCtx.arc(c, c, radius * 0.78, -0.9, 0.9);
+      if (variant === 0) {
+        spriteCtx.moveTo(c - radius * 0.98, c + radius * 0.06);
+        spriteCtx.quadraticCurveTo(c - radius * 0.34, c - radius * 0.92, c + radius * 0.9, c - radius * 0.28);
+        spriteCtx.quadraticCurveTo(c + radius * 0.34, c + radius * 0.94, c - radius * 0.98, c + radius * 0.06);
+      } else if (variant === 1) {
+        spriteCtx.moveTo(c + radius, c - radius * 0.08);
+        spriteCtx.quadraticCurveTo(c + radius * 0.2, c + radius * 0.96, c - radius * 0.82, c + radius * 0.34);
+        spriteCtx.quadraticCurveTo(c - radius * 0.94, c - radius * 0.58, c + radius, c - radius * 0.08);
+      } else {
+        const pointCount = 12;
+        let firstX = 0;
+        let firstY = 0;
+        let previousX = 0;
+        let previousY = 0;
+        for (let i = 0; i < pointCount; i++) {
+          const angle = i / pointCount * Math.PI * 2 - Math.PI * 0.5;
+          const lobeRadius = radius * (0.72 + Math.cos(angle * 3) * 0.28);
+          const px = c + Math.cos(angle) * lobeRadius;
+          const py = c + Math.sin(angle) * lobeRadius;
+          if (i === 0) {
+            firstX = px;
+            firstY = py;
+            previousX = px;
+            previousY = py;
+            spriteCtx.moveTo(px, py);
+          } else {
+            const midpointX = (previousX + px) * 0.5;
+            const midpointY = (previousY + py) * 0.5;
+            spriteCtx.quadraticCurveTo(previousX, previousY, midpointX, midpointY);
+            previousX = px;
+            previousY = py;
+          }
+        }
+        spriteCtx.quadraticCurveTo(previousX, previousY, firstX, firstY);
+      }
+      spriteCtx.closePath();
+      spriteCtx.fill();
+      spriteCtx.strokeStyle = 'rgba(18,88,61,0.72)';
+      spriteCtx.lineWidth = Math.max(0.75, radius * 0.13);
       spriteCtx.stroke();
 
-      spriteCtx.fillStyle = 'rgba(255,255,255,0.82)';
+      spriteCtx.strokeStyle = 'rgba(22,102,65,0.55)';
+      spriteCtx.lineWidth = Math.max(0.65, radius * 0.1);
       spriteCtx.beginPath();
-      spriteCtx.arc(c - radius * 0.34, c - radius * 0.38, Math.max(1.2, radius * 0.24), 0, Math.PI * 2);
-      spriteCtx.fill();
+      if (variant === 0) {
+        spriteCtx.moveTo(c - radius * 0.62, c + radius * 0.04);
+        spriteCtx.quadraticCurveTo(c, c - radius * 0.05, c + radius * 0.58, c - radius * 0.18);
+      } else if (variant === 1) {
+        spriteCtx.moveTo(c - radius * 0.48, c + radius * 0.2);
+        spriteCtx.quadraticCurveTo(c + radius * 0.08, c + radius * 0.08, c + radius * 0.68, c - radius * 0.04);
+      } else {
+        spriteCtx.moveTo(c, c + radius * 0.18);
+        spriteCtx.lineTo(c, c - radius * 0.56);
+      }
+      spriteCtx.stroke();
 
-      spriteCtx.fillStyle = 'rgba(255,255,255,0.26)';
+      spriteCtx.globalAlpha = 0.48;
+      spriteCtx.strokeStyle = highlightColor;
+      spriteCtx.lineWidth = Math.max(0.8, radius * 0.16);
       spriteCtx.beginPath();
-      spriteCtx.arc(c + radius * 0.2, c + radius * 0.16, Math.max(0.9, radius * 0.14), 0, Math.PI * 2);
-      spriteCtx.fill();
+      spriteCtx.moveTo(c - radius * 0.58, c - radius * 0.24);
+      spriteCtx.quadraticCurveTo(c - radius * 0.36, c - radius * 0.5, c + radius * 0.18, c - radius * 0.42);
+      spriteCtx.stroke();
+      spriteCtx.globalAlpha = 1;
     }
 
     function getBakedFoodSprite(radius, variant, tintIndex, shard = false) {
       const mobileLite = typeof hasTouchControls === 'function' && hasTouchControls();
-      const spriteRadius = getFoodSpriteRadius(radius, shard);
+      const logicalSpriteRadius = getFoodSpriteRadius(radius, shard);
+      const spriteRadius = logicalSpriteRadius * (shard ? 1 : 2);
       const tintSets = shard ? SHARD_FOOD_TINT_SETS : FOOD_TINT_SETS;
       const safeTintIndex = tintIndex % tintSets.length;
       const pad = Math.ceil(spriteRadius * (mobileLite ? 1.6 : 2.8));
       const size = spriteRadius * 2 + pad * 2;
-      const key = `food-baked:${shard ? 1 : 0}:${mobileLite ? 1 : 0}:${variant}:${safeTintIndex}:${spriteRadius}`;
+      const key = `food-baked:v3:${shard ? 1 : 0}:${mobileLite ? 1 : 0}:${variant}:${safeTintIndex}:${spriteRadius}`;
       const sprite = getCachedEffectSprite(key, size, size, (spriteCtx) => {
-        drawBakedFoodSprite(spriteCtx, spriteRadius, variant, tintSets[safeTintIndex], mobileLite);
+        drawBakedFoodSprite(spriteCtx, spriteRadius, variant, tintSets[safeTintIndex], mobileLite, shard);
       });
       return { sprite, spriteRadius };
     }
 
     function getBakedDnaOrbSprite(radius) {
       const mobileLite = typeof hasTouchControls === 'function' && hasTouchControls();
-      const spriteRadius = Math.max(5, Math.round(radius * 2) / 2);
+      const logicalSpriteRadius = Math.max(5, Math.round(radius * 2) / 2);
+      const spriteRadius = logicalSpriteRadius * 2;
       const pad = Math.ceil(spriteRadius * (mobileLite ? 1.8 : 3));
       const size = spriteRadius * 2 + pad * 2;
-      const key = `dna-orb:${mobileLite ? 1 : 0}:${spriteRadius}`;
+      const key = `dna-orb:v3:${mobileLite ? 1 : 0}:${spriteRadius}`;
       const sprite = getCachedEffectSprite(key, size, size, (spriteCtx) => {
         const c = size * 0.5;
-        if (mobileLite) {
-          spriteCtx.globalAlpha = 0.35;
-          spriteCtx.fillStyle = '#52d8ff';
-          spriteCtx.beginPath();
-          spriteCtx.arc(c, c, spriteRadius * 1.34, 0, Math.PI * 2);
-          spriteCtx.fill();
-        } else {
-          spriteCtx.globalAlpha = 0.28;
-          spriteCtx.fillStyle = '#52d8ff';
-          spriteCtx.beginPath();
-          spriteCtx.arc(c, c, spriteRadius * 1.22, 0, Math.PI * 2);
-          spriteCtx.fill();
-        }
-
-        spriteCtx.globalAlpha = 1;
-        spriteCtx.fillStyle = '#52d8ff';
+        const orbGradient = spriteCtx.createRadialGradient(
+          c - spriteRadius * 0.3,
+          c - spriteRadius * 0.34,
+          spriteRadius * 0.12,
+          c,
+          c,
+          spriteRadius * 1.05
+        );
+        orbGradient.addColorStop(0, '#d9faff');
+        orbGradient.addColorStop(0.42, '#61dfff');
+        orbGradient.addColorStop(1, '#1975ad');
+        spriteCtx.fillStyle = orbGradient;
         spriteCtx.beginPath();
         spriteCtx.arc(c, c, spriteRadius, 0, Math.PI * 2);
         spriteCtx.fill();
+        spriteCtx.strokeStyle = 'rgba(15,75,119,0.82)';
+        spriteCtx.lineWidth = Math.max(0.8, spriteRadius * 0.13);
+        spriteCtx.stroke();
 
-        spriteCtx.fillStyle = 'rgba(255,255,255,0.75)';
+        spriteCtx.strokeStyle = 'rgba(225,252,255,0.88)';
+        spriteCtx.lineWidth = Math.max(0.9, spriteRadius * 0.18);
+        spriteCtx.lineCap = 'round';
         spriteCtx.beginPath();
-        spriteCtx.arc(c - 1.5, c - 1.5, spriteRadius * 0.35, 0, Math.PI * 2);
-        spriteCtx.fill();
-      });
-      return { sprite, spriteRadius };
-    }
-
-    function getBakedTentacleSuckerSprite() {
-      if (bakedTentacleSuckerSprite) return bakedTentacleSuckerSprite;
-      const size = 24;
-      const sprite = getCachedEffectSprite('player-tentacle-sucker:v1', size, size, (spriteCtx) => {
-        const c = size * 0.5;
-        spriteCtx.fillStyle = 'rgba(218,255,246,0.9)';
+        spriteCtx.moveTo(c - spriteRadius * 0.34, c - spriteRadius * 0.48);
+        spriteCtx.bezierCurveTo(
+          c + spriteRadius * 0.44,
+          c - spriteRadius * 0.18,
+          c - spriteRadius * 0.42,
+          c + spriteRadius * 0.18,
+          c + spriteRadius * 0.34,
+          c + spriteRadius * 0.48
+        );
+        spriteCtx.stroke();
         spriteCtx.beginPath();
-        spriteCtx.ellipse(c, c, 8.2, 5.7, 0, 0, Math.PI * 2);
-        spriteCtx.fill();
-        spriteCtx.strokeStyle = 'rgba(120,240,222,0.55)';
-        spriteCtx.lineWidth = 1.4;
-        spriteCtx.beginPath();
-        spriteCtx.ellipse(c, c, 4.3, 2.7, 0, 0, Math.PI * 2);
+        spriteCtx.moveTo(c + spriteRadius * 0.34, c - spriteRadius * 0.48);
+        spriteCtx.bezierCurveTo(
+          c - spriteRadius * 0.44,
+          c - spriteRadius * 0.18,
+          c + spriteRadius * 0.42,
+          c + spriteRadius * 0.18,
+          c - spriteRadius * 0.34,
+          c + spriteRadius * 0.48
+        );
         spriteCtx.stroke();
       });
-      sprite.baseRadius = 7;
-      bakedTentacleSuckerSprite = sprite;
-      return bakedTentacleSuckerSprite;
+      return { sprite, spriteRadius };
     }
 
     function getBakedPlayerFinSprite(finIndex, phase, swimPower, mobileLite) {

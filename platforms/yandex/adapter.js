@@ -16,7 +16,6 @@
         this.sdk.on('game_api_pause', () => handlers?.onPause?.());
         this.sdk.on('game_api_resume', () => handlers?.onResume?.());
       }
-      await this.ensurePlayer();
       return { ready: true, language: this.getLanguage() };
     },
 

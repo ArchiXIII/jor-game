@@ -60,6 +60,75 @@
       height: var(--app-vh, 100dvh);
     }
 
+    .yandexBootScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(29, 102, 122, 0.52) 0%, rgba(8, 42, 55, 0.32) 34%, rgba(2, 15, 24, 0) 66%),
+        linear-gradient(180deg, #0a3342 0%, #051d2a 52%, #020d16 100%);
+      pointer-events: none;
+    }
+
+    .platformYandexBooting .yandexBootScreen {
+      display: flex;
+      pointer-events: auto;
+    }
+
+    .yandexBootBubbles {
+      position: relative;
+      width: 112px;
+      height: 72px;
+    }
+
+    .yandexBootBubbles span {
+      position: absolute;
+      bottom: 4px;
+      border: 2px solid rgba(151, 239, 255, 0.94);
+      border-radius: 50%;
+      background: rgba(62, 197, 222, 0.22);
+      opacity: 0.22;
+      animation: yandexBootBubble 1.35s ease-in-out infinite;
+    }
+
+    .yandexBootBubbles span:nth-child(1) {
+      left: 5px;
+      width: 24px;
+      height: 24px;
+      animation-delay: -0.9s;
+    }
+
+    .yandexBootBubbles span:nth-child(2) {
+      left: 40px;
+      width: 34px;
+      height: 34px;
+      animation-delay: -0.45s;
+    }
+
+    .yandexBootBubbles span:nth-child(3) {
+      right: 2px;
+      width: 20px;
+      height: 20px;
+    }
+
+    @keyframes yandexBootBubble {
+      0% {
+        opacity: 0.22;
+        transform: translateY(12px) scale(0.72);
+      }
+      42% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.22;
+        transform: translateY(-26px) scale(1.08);
+      }
+    }
+
     #game {
       display: block;
       width: var(--app-vw, 100vw);

@@ -27,6 +27,7 @@ function prepareEnemyAiFrameContext() {
 class EnemyAiMethods {
       update(player, foods, enemies, frameContext = prepareEnemyAiFrameContext()) {
         this.dirTimer -= 1;
+        if (this.shieldBreakGrace > 0) this.shieldBreakGrace -= 1;
         if (this.ambushCooldown > 0) this.ambushCooldown -= 1;
         if (this.campaignAlarmTimer > 0) this.campaignAlarmTimer -= 1;
 
@@ -206,6 +207,40 @@ class EnemyAiMethods {
                               : this.aiState === 'hunt'   ? 0.4
                               : this.aiState === 'flee'   ? 0.2
                               : 1.0;
+
+        let visualIntent = 0;
+        let visualMouthTarget = 0;
+        const playerIsPrey = !playerIsEdibleThreat && player.radius < this.radius * 0.97;
+        const playerIsNearbyThreat = (playerIsEdibleThreat || player.radius > this.radius * 1.04) && dist < playerFleeRange;
+
+        if (this.aiState === 'flee' && (playerIsNearbyThreat || closestThreat)) {
+          visualIntent = 4;
+        } else if ((this.aiState === 'hunt' || this.aiState === 'ambush') && playerIsPrey && dist < playerChaseRange) {
+          const proximity = clamp(1 - dist / Math.max(1, playerChaseRange), 0, 1);
+          const headingX = Math.cos(this.displayAngle);
+          const headingY = Math.sin(this.displayAngle);
+          const alignment = Math.max(0, headingX * (dx / dist) + headingY * (dy / dist));
+          visualIntent = 3;
+          visualMouthTarget = 0.12 + proximity * (0.4 + alignment * 0.38);
+          if (this.aiState === 'ambush') visualMouthTarget = Math.max(visualMouthTarget, 0.28 + this.ambushCharge / Math.max(1, ambushChargeFrames) * 0.42);
+        } else if (this.aiState === 'hunt' && closestPrey) {
+          const preyX = closestPrey.x - this.x;
+          const preyY = closestPrey.y - this.y;
+          const preyDist = Math.hypot(preyX, preyY) || 1;
+          const proximity = clamp(1 - preyDist / Math.max(1, playerChaseRange), 0, 1);
+          visualIntent = 2;
+          visualMouthTarget = 0.08 + proximity * 0.52;
+        } else if (this.aiState === 'forage' && closestFood) {
+          const foodX = closestFood.x - this.x;
+          const foodY = closestFood.y - this.y;
+          const foodDist = Math.hypot(foodX, foodY) || 1;
+          const foodInterest = clamp(1 - foodDist / Math.max(70, this.radius + 80), 0, 1);
+          visualIntent = 1;
+          visualMouthTarget = foodInterest * 0.28;
+        }
+
+        this.visualIntent = visualIntent;
+        this.visualMouthOpen += (visualMouthTarget - this.visualMouthOpen) * (visualMouthTarget > this.visualMouthOpen ? 0.18 : 0.1);
 
         // Р‘Р°Р·РѕРІРѕРµ РїРѕРІРµРґРµРЅРёРµ РїРѕ РёРіСЂРѕРєСѓ (СЃ СѓС‡С‘С‚РѕРј СЃРѕСЃС‚РѕСЏРЅРёСЏ).
         if (!playerIsEdibleThreat && player.radius < this.radius * 0.97 && dist < playerChaseRange) {

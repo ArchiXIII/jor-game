@@ -58,8 +58,47 @@
 
     const ENEMY_PERK_CONFIG = {
       MAX_PERKS: 3,
-      BASE_PERKS: ['spike', 'tail', 'shell', 'maw', 'tentacle', 'agility'],
+      BASE_PERKS: ['spike', 'tail', 'shell', 'maw', 'agility'],
     };
+
+    const GAMEPLAY_BACKGROUND_DEFAULT_PALETTE = {
+      id: 'default',
+      base: '#09111a',
+      center: '#3a7890',
+      middle: '#255569',
+      depth: '#123247',
+      edge: '#08131f',
+      upperLight: 'rgba(180, 255, 245, 0.16)',
+      accentA: 'rgba(110, 255, 225, 0.16)',
+      accentB: 'rgba(215, 150, 255, 0.14)',
+      glowHues: [165, 178, 192, 286, 304],
+    };
+
+    const GAMEPLAY_BACKGROUND_ENDLESS_PALETTE = {
+      id: 'endless',
+      base: '#050914',
+      center: '#2b4c68',
+      middle: '#172d43',
+      depth: '#0a1a2d',
+      edge: '#040812',
+      upperLight: 'rgba(172, 218, 244, 0.11)',
+      accentA: 'rgba(75, 198, 187, 0.12)',
+      accentB: 'rgba(126, 102, 214, 0.10)',
+      glowHues: [178, 192, 208, 252, 274],
+    };
+
+    const GAMEPLAY_BACKGROUND_CHAPTER_PALETTES = [
+      { id: 'chapter-1', base: '#090811', center: '#55387c', middle: '#2f1f45', depth: '#120f23', edge: '#090811', upperLight: 'rgba(220, 196, 255, 0.13)', accentA: 'rgba(150, 84, 255, 0.16)', accentB: 'rgba(226, 154, 255, 0.11)', glowHues: [258, 272, 286, 304] },
+      { id: 'chapter-2', base: '#050812', center: '#324c8b', middle: '#1c2a4d', depth: '#0a142a', edge: '#050812', upperLight: 'rgba(170, 210, 255, 0.14)', accentA: 'rgba(72, 151, 255, 0.15)', accentB: 'rgba(100, 224, 255, 0.1)', glowHues: [205, 220, 232, 250] },
+      { id: 'chapter-3', base: '#050d0d', center: '#2b6851', middle: '#183a2d', depth: '#081e19', edge: '#050d0d', upperLight: 'rgba(178, 255, 216, 0.13)', accentA: 'rgba(79, 230, 145, 0.13)', accentB: 'rgba(96, 255, 218, 0.1)', glowHues: [145, 160, 174, 185] },
+      { id: 'chapter-4', base: '#0e050a', center: '#79314d', middle: '#431b2b', depth: '#220a16', edge: '#0e050a', upperLight: 'rgba(255, 180, 203, 0.13)', accentA: 'rgba(255, 82, 132, 0.14)', accentB: 'rgba(255, 145, 104, 0.1)', glowHues: [340, 352, 8, 18] },
+      { id: 'chapter-5', base: '#0f0904', center: '#7e5528', middle: '#462f16', depth: '#241608', edge: '#0f0904', upperLight: 'rgba(255, 222, 164, 0.14)', accentA: 'rgba(255, 178, 64, 0.15)', accentB: 'rgba(255, 224, 102, 0.1)', glowHues: [28, 38, 48, 55] },
+      { id: 'chapter-6', base: '#040a10', center: '#2b5e83', middle: '#183449', depth: '#081927', edge: '#040a10', upperLight: 'rgba(170, 232, 255, 0.14)', accentA: 'rgba(77, 214, 255, 0.14)', accentB: 'rgba(85, 255, 222, 0.1)', glowHues: [180, 194, 208, 220] },
+      { id: 'chapter-7', base: '#050e08', center: '#387341', middle: '#1f4024', depth: '#0c2011', edge: '#050e08', upperLight: 'rgba(212, 255, 176, 0.13)', accentA: 'rgba(154, 236, 86, 0.13)', accentB: 'rgba(74, 255, 166, 0.1)', glowHues: [92, 110, 130, 150] },
+      { id: 'chapter-8', base: '#0b0512', center: '#683a89', middle: '#3a204c', depth: '#1c0c2a', edge: '#0b0512', upperLight: 'rgba(235, 188, 255, 0.14)', accentA: 'rgba(217, 88, 255, 0.15)', accentB: 'rgba(126, 135, 255, 0.1)', glowHues: [268, 284, 300, 320] },
+      { id: 'chapter-9', base: '#070709', center: '#554838', middle: '#2f281f', depth: '#121112', edge: '#070709', upperLight: 'rgba(255, 232, 178, 0.13)', accentA: 'rgba(255, 210, 92, 0.13)', accentB: 'rgba(188, 225, 210, 0.09)', glowHues: [38, 48, 58, 172] },
+      { id: 'chapter-10', base: '#05060b', center: '#5e5a75', middle: '#343241', depth: '#10111b', edge: '#05060b', upperLight: 'rgba(255, 245, 218, 0.14)', accentA: 'rgba(255, 242, 194, 0.14)', accentB: 'rgba(181, 198, 255, 0.1)', glowHues: [42, 218, 238, 262] },
+    ];
 
     PROGRESSION_CONFIG.ENDLESS_LEVEL_SCORE_THRESHOLDS = (() => {
       const thresholds = [];

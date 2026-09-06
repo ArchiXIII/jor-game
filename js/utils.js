@@ -127,24 +127,41 @@ let displayedTopScore = 0;
       clearRenderWarmupQueue();
     }
 
-    function getEnemyParticleSprite(core, glow) {
-      return getCachedEffectSprite(`enemy:${core}:${glow}`, 44, 30, (spriteCtx, w, h) => {
+    function getEnemyParticleSprite(core, edge, shape = 0) {
+      const safeShape = shape & 3;
+      return getCachedEffectSprite(`enemy-fragment:v2:${core}:${edge}:${safeShape}`, 36, 30, (spriteCtx, w, h) => {
         const cx = w * 0.52;
         const cy = h * 0.5;
-        spriteCtx.save();
-        spriteCtx.fillStyle = glow;
+        const points = safeShape === 0
+          ? [[-10, -2], [-5, -8], [5, -6], [10, 1], [4, 7], [-7, 6]]
+          : safeShape === 1
+            ? [[-9, -6], [2, -8], [10, -2], [7, 7], [-2, 5], [-10, 1]]
+            : safeShape === 2
+              ? [[-11, 0], [-3, -7], [8, -5], [10, 4], [1, 8], [-7, 5]]
+              : [[-8, -7], [4, -6], [11, 2], [3, 8], [-7, 6], [-11, -1]];
+        spriteCtx.fillStyle = edge;
         spriteCtx.beginPath();
-        spriteCtx.ellipse(cx, cy, 12, 8, 0, 0, Math.PI * 2);
+        spriteCtx.moveTo(cx + points[0][0] * 1.12, cy + points[0][1] * 1.12);
+        for (let i = 1; i < points.length; i++) {
+          spriteCtx.lineTo(cx + points[i][0] * 1.12, cy + points[i][1] * 1.12);
+        }
+        spriteCtx.closePath();
         spriteCtx.fill();
         spriteCtx.fillStyle = core;
         spriteCtx.beginPath();
-        spriteCtx.ellipse(cx - 1.6, cy - 0.6, 8.6, 5.2, 0.3, 0, Math.PI * 2);
+        spriteCtx.moveTo(cx + points[0][0], cy + points[0][1]);
+        for (let i = 1; i < points.length; i++) {
+          spriteCtx.lineTo(cx + points[i][0], cy + points[i][1]);
+        }
+        spriteCtx.closePath();
         spriteCtx.fill();
-        spriteCtx.fillStyle = 'rgba(255,255,255,0.96)';
+        spriteCtx.strokeStyle = 'rgba(255,238,224,0.58)';
+        spriteCtx.lineWidth = 1.2;
         spriteCtx.beginPath();
-        spriteCtx.arc(cx - 5, cy - 3.6, 2.4, 0, Math.PI * 2);
-        spriteCtx.fill();
-        spriteCtx.restore();
+        spriteCtx.moveTo(cx + points[0][0] * 0.62, cy + points[0][1] * 0.62);
+        spriteCtx.lineTo(cx + points[1][0] * 0.64, cy + points[1][1] * 0.64);
+        spriteCtx.lineTo(cx + points[2][0] * 0.42, cy + points[2][1] * 0.42);
+        spriteCtx.stroke();
       });
     }
 

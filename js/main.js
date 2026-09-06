@@ -123,8 +123,23 @@ DOM.startPlayBtn.addEventListener('click', startGameFromMenu);
     currentLang = detectPreferredLanguage();
     document.documentElement.lang = currentLang;
     applyLocalization();
-    initPlatform();
+    const deferYandexReady = String(window.JorPlatform?.name || '') === 'yandex';
+    const platformInitPromise = initPlatform(deferYandexReady);
+    const pageLoadPromise = deferYandexReady && document.readyState !== 'complete'
+      ? new Promise(resolve => window.addEventListener('load', resolve, { once: true }))
+      : Promise.resolve();
+    const fontLoadPromise = deferYandexReady && document.fonts?.ready
+      ? document.fonts.ready
+      : Promise.resolve();
     resetGame();
     showStartScreen();
     loop();
+    if (deferYandexReady) {
+      Promise.allSettled([platformInitPromise, pageLoadPromise, fontLoadPromise]).then(() => {
+        document.documentElement.classList.remove('platformYandexBooting');
+        App.gameReadyMoment = true;
+        notifyGameReady();
+        showEvolutionBanner();
+      });
+    }
 

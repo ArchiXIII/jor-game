@@ -153,6 +153,7 @@ function spawnShatterFood(x, y, amount) {
 
 function handlePlayerCollisions() {
       applyTentaclePull();
+      const pickupCapturePadding = clamp(player.radius * 0.42, 24, 54);
 
       let foodsRemovedThisFrame = false;
       for (let i = foods.length - 1; i >= 0; i--) {
@@ -176,20 +177,26 @@ function handlePlayerCollisions() {
       }
 
       if (foodsRemovedThisFrame) rebuildSpatialIndex();
-      const nearbyPlayerFoods = getNearbyFoods(player.x, player.y, player.radius + 48);
+      const nearbyPlayerFoods = getNearbyFoods(player.x, player.y, player.radius + pickupCapturePadding + 18);
       for (const food of nearbyPlayerFoods) {
         const foodIndex = foods.indexOf(food);
         if (foodIndex === -1) continue;
-        if (!isWithinDistance(player, food, player.radius + food.radius)) continue;
+        const isShard = food instanceof ShardFood;
+        const collectRange = player.radius + food.radius + (isShard ? 0 : pickupCapturePadding);
+        if (!isWithinDistance(player, food, collectRange)) continue;
 
+        const animatedPickup = !isShard && spawnPickupCollectEffect(food, player, 'food');
+        if (!isShard && !animatedPickup && !isWithinDistance(player, food, player.radius + food.radius)) continue;
         foods.splice(foodIndex, 1);
-        playEatingSound();
-        player.triggerSwallow(food instanceof ShardFood ? 0.42 : 0.72);
-        if (food instanceof ShardFood) {
+        if (!animatedPickup) {
+          playEatingSound();
+          player.triggerSwallow(isShard ? 0.42 : 0.72);
+        }
+        if (isShard) {
           player.grow(0.10);
           addScore(ENDLESS_CONFIG.SCORE_PER_SHARD);
         } else {
-          player.grow(0.32);
+          player.grow(0.32, !animatedPickup);
           addScore(ENDLESS_CONFIG.SCORE_PER_FOOD);
           if (typeof recordCampaignFood === 'function') recordCampaignFood();
         }
@@ -212,11 +219,13 @@ function handlePlayerCollisions() {
         const orb = dnaOrbs[i];
         if (orb.collectDelay > 0) continue;
 
-        if (isWithinDistance(player, orb, player.radius + orb.radius + 2)) {
+        if (isWithinDistance(player, orb, player.radius + orb.radius + pickupCapturePadding)) {
+          const animatedPickup = spawnPickupCollectEffect(orb, player, 'dna');
+          if (!animatedPickup && !isWithinDistance(player, orb, player.radius + orb.radius + 2)) continue;
           dnaOrbs.splice(i, 1);
-          playEatingSound();
+          if (!animatedPickup) playEatingSound();
           player.dna += 1;
-          player.grow(endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_GROWTH : 0.95);
+          player.grow(endlessMode ? ENDLESS_CONFIG.ENDLESS_DNA_GROWTH : 0.95, !animatedPickup);
           addScore(endlessMode ? ENDLESS_CONFIG.SCORE_PER_ENDLESS_DNA : ENDLESS_CONFIG.SCORE_PER_DNA);
           if (orb.countsForCampaignDna && typeof recordCampaignDna === 'function') recordCampaignDna();
           if (typeof recordCampaignFood === 'function') recordCampaignFood();
@@ -225,11 +234,15 @@ function handlePlayerCollisions() {
 
       for (let i = tomatoFoods.length - 1; i >= 0; i--) {
         const tomato = tomatoFoods[i];
-        if (isWithinDistance(player, tomato, player.radius + tomato.radius + 2)) {
+        if (isWithinDistance(player, tomato, player.radius + tomato.radius + pickupCapturePadding)) {
+          const animatedPickup = spawnPickupCollectEffect(tomato, player, 'tomato');
+          if (!animatedPickup && !isWithinDistance(player, tomato, player.radius + tomato.radius + 2)) continue;
           tomatoFoods.splice(i, 1);
-          playEatingSound();
-          player.triggerSwallow(0.72);
-          player.grow(endlessMode ? ENDLESS_CONFIG.TOMATO_ENDLESS_GROWTH : ENDLESS_CONFIG.TOMATO_GROWTH);
+          if (!animatedPickup) {
+            playEatingSound();
+            player.triggerSwallow(0.72);
+          }
+          player.grow(endlessMode ? ENDLESS_CONFIG.TOMATO_ENDLESS_GROWTH : ENDLESS_CONFIG.TOMATO_GROWTH, !animatedPickup);
           addScore(ENDLESS_CONFIG.SCORE_PER_TOMATO);
           if (typeof recordCampaignTomato === 'function') recordCampaignTomato();
           if (typeof recordCampaignFood === 'function') recordCampaignFood();
@@ -239,16 +252,25 @@ function handlePlayerCollisions() {
       for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
         const contactRange = player.radius + enemy.radius * 0.9;
+        const edible = playerCanEatTarget(enemy);
+        if (edible && typeof player.prepareSwallow === 'function') {
+          const dx = enemy.x - player.x;
+          const dy = enemy.y - player.y;
+          const anticipationRange = contactRange + player.radius * 0.75;
+          const facing = Math.cos(player.displayAngle ?? player.angle ?? 0) * dx + Math.sin(player.displayAngle ?? player.angle ?? 0) * dy;
+          if (dx * dx + dy * dy < anticipationRange * anticipationRange && facing > -player.radius * 0.12) {
+            player.prepareSwallow(0.62, 4);
+          }
+        }
 
         if (isWithinDistance(player, enemy, contactRange)) {
-          if (playerCanEatTarget(enemy)) {
+          if (edible) {
             const shieldBlockedAttack = enemy.onAttack(player);
             if (shieldBlockedAttack) {
               continue;
             }
 
             enemy.receiveImpact(1);
-            playEatingSound();
             spawnEnemyEatEffect(enemy, player);
             enemies.splice(i, 1);
             if (typeof triggerCampaignEnemyAlarm === 'function') triggerCampaignEnemyAlarm(enemy.x, enemy.y);
@@ -282,7 +304,28 @@ function handlePlayerCollisions() {
             const endlessState = endlessMode && typeof getEndlessPressureState === 'function' ? getEndlessPressureState() : null;
             const lateGameScale = endlessState ? endlessState.lateGameScale : 0;
             const damageAmount = 10 + lateGameScale * 4;
-            player.takeDamage(damageAmount, enemy.radius);
+            const playerRadiusBeforeDamage = player.radius;
+            if (player.takeDamage(damageAmount, enemy.radius)) {
+              const dx = player.x - enemy.x;
+              const dy = player.y - enemy.y;
+              const dist = Math.hypot(dx, dy);
+              const nx = dist > 0.001 ? dx / dist : -Math.cos(player.angle);
+              const ny = dist > 0.001 ? dy / dist : -Math.sin(player.angle);
+              const relativeVX = player.motionVX - (enemy.vx || 0);
+              const relativeVY = player.motionVY - (enemy.vy || 0);
+              const closingSpeed = Math.max(0, -(relativeVX * nx + relativeVY * ny));
+              const sizeRatio = enemy.radius / Math.max(1, playerRadiusBeforeDamage);
+              const impactStrength = clamp(0.42 + (sizeRatio - 1) * 0.7 + closingSpeed * 0.1, 0.42, 1);
+              const rebound = 0.95 + impactStrength * 2.35;
+              player.applyKnockback(nx * rebound, ny * rebound, 5 + Math.round(impactStrength * 3));
+              enemy.vx -= nx * (0.45 + impactStrength * 0.85);
+              enemy.vy -= ny * (0.45 + impactStrength * 0.85);
+              enemy.receiveImpact(0.4 + impactStrength * 0.5);
+              player.triggerContactImpact(-nx, -ny, impactStrength);
+              const contactX = player.x - nx * player.radius * 0.78;
+              const contactY = player.y - ny * player.radius * 0.78;
+              spawnContactImpactEffect(contactX, contactY, -nx, -ny, impactStrength, player.radius);
+            }
           }
         }
       }

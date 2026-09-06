@@ -34,7 +34,7 @@ class Particle {
     }
 
     class BackgroundGlow {
-      constructor(x, y) {
+      constructor(x, y, palette = GAMEPLAY_BACKGROUND_DEFAULT_PALETTE) {
         this.x = x;
         this.y = y;
         this.baseRadius = randomRange(120, 300);
@@ -46,7 +46,8 @@ class Particle {
         this.speed = randomRange(0.004, 0.014);
         this.alphaBase = randomRange(0.10, 0.20);
         this.alphaWave = randomRange(0.05, 0.12);
-        this.hue = [165, 178, 192, 286, 304][Math.floor(Math.random() * 5)];
+        const hues = palette.glowHues || GAMEPLAY_BACKGROUND_DEFAULT_PALETTE.glowHues;
+        this.hue = hues[Math.floor(Math.random() * hues.length)];
         this.sprite = this.createSprite();
       }
 
@@ -102,7 +103,7 @@ class Particle {
         if (alphaScale <= 0.04) return;
 
         ctx.save();
-        ctx.globalAlpha = Math.max(0, alpha) * alphaScale;
+        ctx.globalAlpha = Math.max(0, alpha) * alphaScale * 0.9;
         ctx.translate(this.x, this.y);
         ctx.rotate(Math.sin(this.phase * 0.6) * 0.5);
         drawSpriteCentered(this.sprite, 0, 0);
@@ -256,8 +257,8 @@ class Particle {
         this.pulse = Math.random() * Math.PI * 2;
         this.spin = Math.random() * Math.PI * 2;
         this.animationStartFrame = typeof simulationFrame === 'number' ? simulationFrame : 0;
-        this.spinSpeed = randomRange(-0.02, 0.02);
-        this.variant = Math.floor(Math.random() * 4);
+        this.spinSpeed = randomRange(-0.012, 0.012);
+        this.variant = Math.floor(Math.random() * 3);
         this.tintIndex = Math.floor(Math.random() * FOOD_TINT_SETS.length);
         if (!options.deferSprite) {
           const baked = getBakedFoodSprite(this.radius, this.variant, this.tintIndex);
@@ -273,25 +274,26 @@ class Particle {
       }
 
       update() {
-        this.pulse += 0.05;
+        this.pulse += 0.025;
         this.spin += this.spinSpeed;
       }
 
       draw() {
         const animationAge = Math.max(0, simulationFrame - this.animationStartFrame);
-        const pulse = this.pulse + animationAge * 0.05;
+        const pulse = this.pulse + animationAge * 0.025;
         const spin = this.spin + animationAge * this.spinSpeed;
-        const radius = this.radius + Math.sin(pulse) * 0.7;
+        const radius = this.radius + Math.sin(pulse) * 0.35;
+        const visualRadius = radius * (App.gameMode === 'campaign' ? 2.15 : 1.72);
         if (!this.sprite) {
           ctx.save();
           ctx.fillStyle = 'rgba(106, 242, 164, 0.84)';
           ctx.beginPath();
-          ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+          ctx.arc(this.x, this.y, visualRadius, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
           return;
         }
-        const size = this.sprite.width * (radius / Math.max(0.001, this.spriteBaseRadius ?? this.radius));
+        const size = this.sprite.width * (visualRadius / Math.max(0.001, this.spriteBaseRadius ?? this.radius));
         ctx.save();
         if (typeof this.fadeOut === 'number') {
           ctx.globalAlpha *= clamp(this.fadeOut, 0, 1);
@@ -322,6 +324,7 @@ class Particle {
 
       update() {
         super.update();
+        this.pulse += 0.025;
         this.x += this.vx;
         this.y += this.vy;
         this.vx *= 0.985;
@@ -457,22 +460,23 @@ class Particle {
       }
 
       update() {
-        this.pulse += 0.08;
+        this.pulse += 0.045;
         if (this.collectDelay > 0) this.collectDelay -= 1;
       }
 
       draw() {
-        const radius = this.radius + Math.sin(this.pulse) * 1;
+        const radius = this.radius + Math.sin(this.pulse) * 0.5;
+        const visualRadius = radius * (App.gameMode === 'campaign' ? 1.69 : 1.35);
         if (!this.sprite) {
           ctx.save();
           ctx.fillStyle = 'rgba(82, 216, 255, 0.86)';
           ctx.beginPath();
-          ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+          ctx.arc(this.x, this.y, visualRadius, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
           return;
         }
-        const size = this.sprite.width * (radius / Math.max(0.001, this.spriteBaseRadius ?? this.radius));
+        const size = this.sprite.width * (visualRadius / Math.max(0.001, this.spriteBaseRadius ?? this.radius));
         drawSpriteCentered(this.sprite, this.x, this.y, size, size);
       }
     }

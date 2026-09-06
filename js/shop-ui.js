@@ -245,6 +245,17 @@
     return lang() === 'en' ? `${item.priceYan} YAN` : `${item.priceYan} \u044f\u043d`;
   }
 
+  function priceCurrencyImage(item) {
+    if (String(window.JorPlatform?.name || '') !== 'yandex') return '';
+    const product = state.catalog[item.id];
+    if (typeof product?.getPriceCurrencyImage !== 'function') return '';
+    try {
+      return String(product.getPriceCurrencyImage('small') || '');
+    } catch (error) {
+      return '';
+    }
+  }
+
   function productTitle(item) {
     if (isVkOrOk()) return lang() === 'en' ? (item.platformEn || item.en) : (item.platformRu || item.ru);
     return lang() === 'en' ? item.en : item.ru;
@@ -453,6 +464,10 @@
     const action = owned
       ? (isTimedAdItem(item) ? tr('\u0410\u043a\u0442\u0438\u0432\u043d\u043e', 'Active') : (isAdItem(item) ? tr('\u041a\u0443\u043f\u043b\u0435\u043d\u043e', 'Owned') : (selected ? (canDisableSelection(item) ? tr('\u041e\u0442\u043a\u043b\u044e\u0447\u0438\u0442\u044c', 'Disable') : tr('\u0412\u044b\u0431\u0440\u0430\u043d\u043e', 'Selected')) : tr('\u0412\u044b\u0431\u0440\u0430\u0442\u044c', 'Select'))))
       : (gameplayLocked ? '' : priceText(item));
+    const currencyImage = !owned && !gameplayLocked ? priceCurrencyImage(item) : '';
+    const actionHtml = currencyImage
+      ? `<span>${escapeHtml(action)}</span><img class="shopCurrencyIcon" src="${escapeHtml(currencyImage)}" alt="">`
+      : escapeHtml(action);
     const unlockHint = gameplayLocked
       ? (item.unlockCampaignLevel
           ? tr(`\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u0437\u0430 \u043f\u0440\u043e\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0435 ${item.unlockCampaignLevel} \u0440\u0430\u0443\u043d\u0434\u0430 \u0432 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438`, `Unlocks after completing campaign round ${item.unlockCampaignLevel}`)
@@ -478,7 +493,7 @@
         <h3>${title}</h3>
         <p${item?.bonuses && Object.keys(item.bonuses).length ? ' class="shopBonusDesc"' : ''}>${descHtml}</p>
       </div>
-      ${gameplayLocked ? '' : `<button class="shopBuyBtn" type="button" ${((state.pendingId && state.pendingId !== item.id) || (owned && isAdItem(item))) ? 'disabled' : ''}>${state.pendingId === item.id ? tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430...', 'Purchasing...') : action}</button>`}
+      ${gameplayLocked ? '' : `<button class="shopBuyBtn${currencyImage ? ' withCurrencyIcon' : ''}" type="button" ${((state.pendingId && state.pendingId !== item.id) || (owned && isAdItem(item))) ? 'disabled' : ''}>${state.pendingId === item.id ? tr('\u041f\u043e\u043a\u0443\u043f\u043a\u0430...', 'Purchasing...') : actionHtml}</button>`}
       ${unlockHint ? `<div class="shopUnlockHint">${escapeHtml(unlockHint)}</div>` : ''}
     `;
     const previewCanvas = card.querySelector('canvas[data-character-preview]');
@@ -494,6 +509,8 @@
       window.JorGrowthEffects.drawPreview(effectCanvas, item, selectedCharacterSkinId(), performance.now());
     }
     const actionButton = card.querySelector('button');
+    const currencyIcon = card.querySelector('.shopCurrencyIcon');
+    currencyIcon?.addEventListener('error', () => { currencyIcon.hidden = true; }, { once: true });
     if (actionButton) {
       actionButton.addEventListener('click', async () => {
         if (owned) {

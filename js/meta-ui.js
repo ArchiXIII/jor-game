@@ -357,6 +357,7 @@
   }
 
   async function loadXpLeaderboard(force = false) {
+    if (!hasFeature('profileXpLeaderboard')) return;
     if ((!force && state.xpLeaderboardLoaded) || state.xpLeaderboardLoading) return;
     state.xpLeaderboardLoading = true;
     state.xpLeaderboardError = '';
@@ -375,6 +376,7 @@
   }
 
   async function openXpLeaderboard() {
+    if (!hasFeature('profileXpLeaderboard')) return;
     setModal('xpLeaderboard');
     await loadXpLeaderboard();
   }
@@ -637,8 +639,14 @@
     if (savedMeta && Number.isFinite(Number(savedMeta.fullXp))) {
       state.fullXp = Math.max(0, Math.floor(Number(savedMeta.fullXp) || 0));
       render();
-      await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
+      if (hasFeature('profileXpLeaderboard')) {
+        await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
+      }
       return true;
+    }
+    if (!hasFeature('profileXpLeaderboard')) {
+      render();
+      return false;
     }
     const api = await getLeaderboardsApi();
     if (!api) return false;
@@ -672,7 +680,9 @@
     setFullXp(state.fullXp + baseValue);
     state.xpLeaderboardLoaded = false;
     render();
-    await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
+    if (hasFeature('profileXpLeaderboard')) {
+      await submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp);
+    }
   }
 
   async function setStars(totalStars) {
@@ -714,7 +724,9 @@
     openProfile,
     openLeaderboard,
     openXpLeaderboard,
-    submitFullXp: () => submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp),
+    submitFullXp: () => hasFeature('profileXpLeaderboard')
+      ? submitLeaderboardScore(FULL_XP_LEADERBOARD, state.fullXp)
+      : Promise.resolve(false),
     submitStars: () => submitLeaderboardScore(STARS_LEADERBOARD, state.totalStars),
     submitScore: submitLeaderboardScore,
     syncPlayerProgress

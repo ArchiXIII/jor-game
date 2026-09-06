@@ -1,19 +1,10 @@
 (function () {
   'use strict';
 
+  document.documentElement.classList.add('platformYandexBooting');
   window.jorYandexSdkPromise = typeof YaGames === 'undefined'
     ? null
-    : YaGames.init().then(function (sdk) {
-        try {
-          if (typeof sdk.features?.LoadingAPI?.ready === 'function') {
-            sdk.features.LoadingAPI.ready();
-            window.jorLoadingReadySent = true;
-          }
-        } catch (error) {
-          window.jorLoadingReadyError = error;
-        }
-        return sdk;
-      }).catch(function (error) {
+    : YaGames.init().catch(function (error) {
         window.jorYandexSdkInitError = error;
         return null;
       });

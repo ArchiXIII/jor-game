@@ -1,6 +1,7 @@
     const SECONDARY_ENTITY_LIMITS = {
       DNA_MAX: 20,
       ENEMY_EAT_PARTICLES_MAX: 156,
+      PICKUP_COLLECT_EFFECTS_MAX: 6,
       ENEMY_SPIKES_MAX: 6,
     };
 
@@ -11,6 +12,14 @@
     let entitySpatialIndex = null;
     const enemyEatParticlePool = [];
     let enemyEatParticles = [];
+    const enemyConsumeEffectPool = [];
+    let enemyConsumeEffects = [];
+    const contactImpactParticlePool = [];
+    let contactImpactParticles = [];
+    const pickupCollectEffectPool = [];
+    let pickupCollectEffects = [];
+    let pickupCollectStreak = 0;
+    let lastPickupCollectFrame = -120;
     let enemySpikes = [];
     let enemySpikeGlobalCooldown = 0;
     let enemies = [];
@@ -299,7 +308,7 @@
     }
 
     function getEnemyPerkPool(source = ENEMY_PERK_CONFIG.BASE_PERKS) {
-      return shuffleArray([...source]);
+      return shuffleArray(source.filter((perkId) => perkId !== 'tentacle'));
     }
 
     function getCampaignSurvivalTailTier(level) {
@@ -341,11 +350,6 @@
           enemy.mawLevel += 1;
           enemy.foodGrowthBonus = Math.min(1.95, enemy.foodGrowthBonus + 0.1);
           enemy.predatorBonus += 0.05;
-        }
-
-        if (perkId === 'tentacle') {
-          enemy.hasTentacle = true;
-          enemy.tentacleLevel += 1;
         }
 
         if (perkId === 'agility') {
@@ -578,6 +582,14 @@ function resetGame() {
       spatialQueryScratch.length = 0;
       enemyEatParticlePool.length = 0;
       enemyEatParticles = [];
+      enemyConsumeEffectPool.length = 0;
+      enemyConsumeEffects = [];
+      contactImpactParticlePool.length = 0;
+      contactImpactParticles = [];
+      pickupCollectEffectPool.length = 0;
+      pickupCollectEffects = [];
+      pickupCollectStreak = 0;
+      lastPickupCollectFrame = -120;
       enemySpikes = [];
       enemySpikeGlobalCooldown = 0;
       enemies = [];
@@ -732,6 +744,7 @@ function resetGame() {
         for (const bloom of backgroundBlooms) bloom.update(bloomBounds, ambientStride);
         for (const particle of ambientParticles) particle.update(particleBounds, ambientStride);
       }
+      updateDeepBackgroundCreature();
       for (const food of foods) {
         if (food instanceof ShardFood) food.update();
       }
@@ -743,6 +756,8 @@ function resetGame() {
         if (!shouldThrottleSecondary || !isEntityFarOutsideView(tomato, 120)) tomato.update();
       }
       updateEnemyEatEffects();
+      updateContactImpactEffects();
+      updatePickupCollectEffects();
       if (typeof updateEnemySpikes === 'function') updateEnemySpikes();
       trimSecondaryVisualLoad();
       const enemyAiContext = prepareEnemyAiFrameContext();
@@ -824,6 +839,9 @@ function getEnemyDecorQuality() {
       const activeLoad =
         enemies.length +
         enemyEatParticles.length * 0.34 +
+        enemyConsumeEffects.length * 0.5 +
+        contactImpactParticles.length * 0.18 +
+        pickupCollectEffects.length * 0.16 +
         dnaOrbs.length * 0.25 +
         tomatoFoods.length * 0.22 +
         foods.length * 0.08;

@@ -14,6 +14,11 @@ class Player {
         };
         this.shopBonuses = shopBonuses;
         this.skinId = (typeof window !== 'undefined' && window.JorShopUI?.selectedCharacterSkinId?.()) || 'default';
+        const playerSkin = (typeof window !== 'undefined' && window.JorPlayerSkins?.getSkin?.(this.skinId)) || null;
+        this.tentacleBaseColor = playerSkin?.fin2 || '#1f9e93';
+        this.tentacleBodyColor = playerSkin?.body || '#71ffd8';
+        this.tentacleAccentColor = playerSkin?.fin || '#46f0d7';
+        this.tentacleEdgeColor = playerSkin?.mouth || '#064958';
         // Чуть быстрее: 2.6 вместо 2.5, штраф за размер мягче (0.012 вместо
         // 0.018). На макс. размере игрок теряет ~0.6 скорости вместо ~0.6 +
         // упирается в минимум — мутация Tail остаётся ценной, но не критичной.
@@ -71,9 +76,35 @@ class Player {
         this.mobileCoastSpeed = 0;
         this.pullTargets = [];
         this.tentacleLockedTargets = [];
+        this.tentacleVisuals = [
+          {
+            x: new Float32Array(5), y: new Float32Array(5),
+            vx: new Float32Array(5), vy: new Float32Array(5),
+            leftX: new Float32Array(5), leftY: new Float32Array(5),
+            rightX: new Float32Array(5), rightY: new Float32Array(5),
+            widths: new Float32Array(5),
+            targetX: 0, targetY: 0, side: -1, curveSide: -1,
+            seed: Math.random() * 8, amount: 0, initialized: false,
+          },
+          {
+            x: new Float32Array(5), y: new Float32Array(5),
+            vx: new Float32Array(5), vy: new Float32Array(5),
+            leftX: new Float32Array(5), leftY: new Float32Array(5),
+            rightX: new Float32Array(5), rightY: new Float32Array(5),
+            widths: new Float32Array(5),
+            targetX: 0, targetY: 0, side: 1, curveSide: 1,
+            seed: Math.random() * 8, amount: 0, initialized: false,
+          },
+        ];
         this.knockbackVX = 0;
         this.knockbackVY = 0;
         this.knockbackTime = 0;
+        this.motionVX = 0;
+        this.motionVY = 0;
+        this.contactImpactTimer = 0;
+        this.contactImpactDuration = 14;
+        this.contactImpactStrength = 0;
+        this.contactImpactWorldAngle = 0;
 
         // Визуальная анимация существа.
         this.swimPhase = Math.random() * Math.PI * 2;
@@ -81,6 +112,11 @@ class Player {
         this.attackPulse = 0;
         this.eatPulse = 0;
         this.swallowPulse = 0;
+        this.swallowPreparation = 0;
+        this.swallowPreparationTimer = 0;
+        this.swallowAnimationFrame = -1;
+        this.swallowAnimationDuration = 18;
+        this.swallowAnimationStrength = 0;
         this.hurtPulse = 0;
         this.damageFlash = 0;
         this.idlePulse = Math.random() * Math.PI * 2;
@@ -103,10 +139,24 @@ class Player {
         );
       }
 
+      prepareSwallow(strength = 0.3, frames = 12) {
+        if (this.swallowAnimationFrame >= 0) {
+          this.swallowAnimationStrength = Math.max(this.swallowAnimationStrength, strength * 0.7);
+          return;
+        }
+        this.swallowPreparation = Math.max(this.swallowPreparation, Math.min(0.7, strength));
+        this.swallowPreparationTimer = Math.max(this.swallowPreparationTimer, Math.ceil(frames));
+      }
+
       triggerSwallow(strength = 1) {
-        this.swallowPulse = Math.max(this.swallowPulse, strength);
-        this.eatPulse = Math.max(this.eatPulse, strength * 0.95);
-        this.attackPulse = Math.max(this.attackPulse, strength * 0.5);
+        this.swallowPreparation = 0;
+        this.swallowPreparationTimer = 0;
+        if (this.swallowAnimationFrame < 0) {
+          this.swallowAnimationFrame = 0;
+        } else if (this.swallowAnimationFrame > 12) {
+          this.swallowAnimationFrame = 12;
+        }
+        this.swallowAnimationStrength = Math.max(this.swallowAnimationStrength, Math.min(1.25, strength));
       }
 
       receiveImpact(strength = 1) {
@@ -114,8 +164,16 @@ class Player {
         this.damageFlash = Math.max(this.damageFlash, 0.6 + strength * 0.3);
       }
 
+      triggerContactImpact(dirX, dirY, strength) {
+        this.contactImpactTimer = this.contactImpactDuration;
+        this.contactImpactStrength = clamp(strength, 0.25, 1);
+        this.contactImpactWorldAngle = Math.atan2(dirY, dirX);
+      }
+
       update() {
         updatePointerFromMobileControl();
+        const frameStartX = this.x;
+        const frameStartY = this.y;
         const worldPointer = screenToWorld(pointer.x, pointer.y);
         const dx = worldPointer.x - this.x;
         const dy = worldPointer.y - this.y;
@@ -201,7 +259,14 @@ class Player {
           this.knockbackTime -= 1;
         }
 
+        this.motionVX = this.x - frameStartX;
+        this.motionVY = this.y - frameStartY;
+
         if (this.hitCooldown > 0) this.hitCooldown -= 1;
+        if (this.contactImpactTimer > 0) {
+          this.contactImpactTimer -= 1;
+          if (this.contactImpactTimer <= 0) this.contactImpactStrength = 0;
+        }
         if (this.dashCooldown > 0) this.dashCooldown -= 1;
         if (this.cameraGrowthDelay > 0) {
           this.cameraGrowthDelay -= 1;
@@ -230,6 +295,19 @@ class Player {
         this.attackPulse *= 0.91;
         this.eatPulse *= 0.9;
         this.swallowPulse *= 0.88;
+        if (this.swallowPreparationTimer > 0) {
+          this.swallowPreparationTimer -= 1;
+        } else {
+          this.swallowPreparation *= 0.76;
+          if (this.swallowPreparation < 0.01) this.swallowPreparation = 0;
+        }
+        if (this.swallowAnimationFrame >= 0) {
+          this.swallowAnimationFrame += 1;
+          if (this.swallowAnimationFrame >= this.swallowAnimationDuration) {
+            this.swallowAnimationFrame = -1;
+            this.swallowAnimationStrength = 0;
+          }
+        }
         this.hurtPulse *= 0.85;
         this.damageFlash *= 0.84;
       }
@@ -240,7 +318,7 @@ class Player {
         this.knockbackTime = Math.max(this.knockbackTime, frames);
       }
 
-      grow(amount) {
+      grow(amount, triggerEatAnimation = true) {
         const phaseGrowthScale = endlessMode ? 1 : (GROWTH_CONFIG.FIRST_PHASE_GROWTH_SCALE ?? 1);
         let growthDelta = amount * GROWTH_CONFIG.GROWTH_RATE_FACTOR * phaseGrowthScale * this.foodGrowthBonus;
         const radiusCap = GROWTH_CONFIG.TARGET_MAX_RADIUS;
@@ -298,12 +376,11 @@ class Player {
 
         this.foodEaten += 1;
         this.level = calculateLevelFromRadius(this.radius);
-        this.triggerSwallow(1);
-        this.attackPulse = Math.max(this.attackPulse, 0.45);
+        if (triggerEatAnimation) this.triggerSwallow(1);
       }
 
       takeDamage(amount, attackerRadius = null) {
-        if (this.hitCooldown > 0) return;
+        if (this.hitCooldown > 0) return false;
 
         this.hitCooldown = 30;
 
@@ -338,6 +415,7 @@ class Player {
         this.growthPopStartScale = 1;
         this.evolutionDelayTimer = 0;
         this.receiveImpact(1);
+        return true;
       }
 
       applyMutation(id) {
@@ -397,6 +475,82 @@ class Player {
         const swimPower = Math.min(1.55, 0.55 + this.legWave * 1.05 + (this.dashTime > 0 ? 0.24 : 0));
         drawBakedPlayerSideFins(ctx, width, height, this.radius, this.legCycle, swimPower);
       }
+
+      drawBodySurface(width, height, lowDetail) {
+        if (typeof window !== 'undefined' && window.JorPlayerSkins?.drawGameBody) {
+          window.JorPlayerSkins.drawGameBody(ctx, this.skinId, width, height, this.radius, frameTime);
+        } else if (lowDetail) {
+          const bodySprite = getBakedPlayerBodySprite();
+          const sx = width / bodySprite.baseRx;
+          const sy = height / bodySprite.baseRy;
+          ctx.drawImage(
+            bodySprite,
+            -bodySprite.originX * sx,
+            -bodySprite.originY * sy,
+            bodySprite.width * sx,
+            bodySprite.height * sy
+          );
+        } else {
+          const gradient = ctx.createRadialGradient(
+            -width * 0.25,
+            -height * 0.35,
+            width * 0.12,
+            0,
+            0,
+            width * 1.1
+          );
+          gradient.addColorStop(0, '#edfff9');
+          gradient.addColorStop(0.45, '#71ffd8');
+          gradient.addColorStop(1, '#1f9e93');
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, width, height, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      drawImpactBodySurface(width, height, lowDetail, amount, angle) {
+        if (amount <= 0.001) {
+          this.drawBodySurface(width, height, lowDetail);
+          return;
+        }
+        const extent = Math.max(width, height) * 2.4;
+        const middleStart = -this.radius * 0.08;
+        const frontStart = this.radius * 0.48;
+
+        ctx.save();
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.rect(-extent, -extent, extent + middleStart + 3, extent * 2);
+        ctx.clip();
+        ctx.rotate(-angle);
+        this.drawBodySurface(width, height, lowDetail);
+        ctx.restore();
+
+        ctx.save();
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.rect(middleStart - 3, -extent, frontStart - middleStart + 6, extent * 2);
+        ctx.clip();
+        ctx.translate(-this.radius * amount * 0.055, 0);
+        ctx.scale(1 - amount * 0.12, 1 + amount * 0.08);
+        ctx.rotate(-angle);
+        this.drawBodySurface(width, height, lowDetail);
+        ctx.restore();
+
+        ctx.save();
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.rect(frontStart - 3, -extent, extent, extent * 2);
+        ctx.clip();
+        ctx.translate(frontStart - this.radius * amount * 0.24, 0);
+        ctx.scale(1 - amount * 0.48, 1 + amount * 0.16);
+        ctx.translate(-frontStart, 0);
+        ctx.rotate(-angle);
+        this.drawBodySurface(width, height, lowDetail);
+        ctx.restore();
+      }
+
       draw() {
         const locomotion = Math.sin(this.swimPhase * PLAYER_SWIM_VISUAL_SPEED);
         const totalMutations = this.getTotalMutationLevels();
@@ -404,13 +558,33 @@ class Player {
         const dashBoost = this.dashTime > 0 ? 0.18 : 0;
         const playerFxShadowScale = getPlayerFxShadowScale();
         const lowDetail = isPlayerLowDetail();
-        const width = this.radius * (1.04 + locomotion * 0.06 + dashBoost + this.attackPulse * 0.08 + evolutionScale * 0.08 + this.hurtPulse * 0.02);
-        const height = this.radius * (0.9 - locomotion * 0.05 + this.eatPulse * 0.05 + evolutionScale * 0.04 + this.swallowPulse * 0.05 - this.hurtPulse * 0.09);
+        const swallowPrep = this.swallowPreparation;
+        let swallowBiteOpen = 0;
+        let swallowWave = 0;
+        let swallowRecoil = 0;
+        if (this.swallowAnimationFrame >= 0) {
+          const swallowT = clamp(this.swallowAnimationFrame / this.swallowAnimationDuration, 0, 1);
+          const closeT = clamp(swallowT / 0.42, 0, 1);
+          const closeEase = closeT * closeT * (3 - 2 * closeT);
+          const waveT = clamp((swallowT - 0.1) / 0.9, 0, 1);
+          swallowBiteOpen = (1 - closeEase) * this.swallowAnimationStrength;
+          swallowWave = Math.sin(waveT * Math.PI) * this.swallowAnimationStrength;
+          swallowRecoil = Math.sin(clamp(swallowT / 0.68, 0, 1) * Math.PI) * this.swallowAnimationStrength;
+        }
+        const width = this.radius * (
+          1.04 + locomotion * 0.06 + dashBoost + this.attackPulse * 0.08 + evolutionScale * 0.08 +
+          this.hurtPulse * 0.02 + swallowWave * 0.065 - swallowBiteOpen * 0.035
+        );
+        const height = this.radius * (
+          0.9 - locomotion * 0.05 + this.eatPulse * 0.05 + evolutionScale * 0.04 +
+          this.swallowPulse * 0.05 - this.hurtPulse * 0.09 + swallowWave * 0.17 - swallowBiteOpen * 0.055
+        );
+        const swallowForward = this.radius * (swallowPrep * 0.055 - swallowRecoil * 0.055);
 
         ctx.save();
         ctx.translate(
-          this.x + Math.sin(frameTime * 0.22 + this.patternPhase) * this.hurtPulse * 3.2,
-          this.y + Math.cos(frameTime * 0.18 + this.patternPhase * 1.3) * this.hurtPulse * 2.4
+          this.x + Math.sin(frameTime * 0.22 + this.patternPhase) * this.hurtPulse * 3.2 + Math.cos(this.angle) * swallowForward,
+          this.y + Math.cos(frameTime * 0.18 + this.patternPhase * 1.3) * this.hurtPulse * 2.4 + Math.sin(this.angle) * swallowForward
         );
         ctx.rotate(this.angle + this.turnTilt * 0.18);
         if (this.growthPopTimer > 0 && this.growthPopDuration > 0) {
@@ -434,114 +608,160 @@ class Player {
           ctx.scale(popScale, popScale);
         }
 
-        if (this.pullTargets.length) {
+        if (this.hasTentacle) {
           ctx.save();
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
 
-          const visualPullTargets = lowDetail ? this.pullTargets.slice(0, 2) : this.pullTargets;
-          for (const target of visualPullTargets) {
-            const tipX = target.relX;
-            const tipY = target.relY;
-            const dist = Math.max(1, Math.hypot(tipX, tipY));
-            const nx = tipX / dist;
-            const ny = tipY / dist;
-            const px = -ny;
-            const py = nx;
-            const phase = this.swimPhase * 1.45 + (target.seed ?? 0);
-            const wave = Math.sin(phase) * (dist * 0.12 + this.radius * 0.22);
-            const curl = Math.cos(phase * 1.28) * (dist * 0.07 + this.radius * 0.12);
-            const rootX = this.radius * (0.46 + (target.side ?? 0) * 0.04);
-            const rootY = (target.side ?? 1) * this.radius * 0.08;
-            const ctrl1X = rootX + tipX * 0.22 + px * (wave * 0.9);
-            const ctrl1Y = rootY + tipY * 0.16 + py * (wave * 0.9);
-            const ctrl2X = rootX + tipX * 0.68 - px * (curl + wave * 0.42);
-            const ctrl2Y = rootY + tipY * 0.74 - py * (curl + wave * 0.42);
-            const tipBackX = tipX - nx * Math.min(this.radius * 0.3, dist * 0.12);
-            const tipBackY = tipY - ny * Math.min(this.radius * 0.3, dist * 0.12);
-            const baseThickness = Math.max(2.8, this.radius * (0.09 + this.tentacleLevel * 0.012));
-
-            // Мягкое внешнее свечение.
-            ctx.strokeStyle = `rgba(115,255,230,${0.18 + this.tentacleLevel * 0.04})`;
-            ctx.lineWidth = baseThickness * 1.9;
-            ctx.beginPath();
-            ctx.moveTo(rootX, rootY);
-            ctx.bezierCurveTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, tipX, tipY);
-            ctx.stroke();
-
-            // Основное тело щупальца с плавным сужением.
-            ctx.strokeStyle = 'rgba(205,255,244,0.96)';
-            ctx.lineWidth = baseThickness;
-            ctx.beginPath();
-            ctx.moveTo(rootX, rootY);
-            ctx.bezierCurveTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, tipX, tipY);
-            ctx.stroke();
-
-            if (!lowDetail) {
-              // Светлая продольная жила.
-              ctx.strokeStyle = 'rgba(255,255,255,0.52)';
-              ctx.lineWidth = Math.max(1.1, baseThickness * 0.22);
-              ctx.beginPath();
-              ctx.moveTo(rootX + px * baseThickness * 0.1, rootY + py * baseThickness * 0.1);
-              ctx.bezierCurveTo(
-                ctrl1X + px * baseThickness * 0.08,
-                ctrl1Y + py * baseThickness * 0.08,
-                ctrl2X - px * baseThickness * 0.04,
-                ctrl2Y - py * baseThickness * 0.04,
-                tipBackX,
-                tipBackY
-              );
-              ctx.stroke();
+          for (let i = 0; i < this.tentacleVisuals.length; i++) {
+            const visual = this.tentacleVisuals[i];
+            const target = this.pullTargets[i];
+            let justStarted = false;
+            if (target) {
+              if (visual.amount <= 0.01) {
+                visual.side = target.side ?? visual.side;
+                visual.curveSide = visual.side;
+                visual.seed = target.seed ?? visual.seed;
+                justStarted = true;
+              } else if ((target.side ?? visual.side) !== visual.side && Math.abs(target.relY) > this.radius * 0.45) {
+                visual.side = target.side;
+                visual.curveSide = target.side;
+              }
+              visual.targetX = target.relX;
+              visual.targetY = target.relY;
+              visual.amount += (1 - visual.amount) * 0.22;
+            } else {
+              visual.amount *= 0.82;
+              if (visual.amount < 0.012) {
+                visual.amount = 0;
+                visual.initialized = false;
+                continue;
+              }
             }
 
-            // Присоски вдоль внутренней стороны щупальца.
-            const suckerCount = Math.max(2, Math.round((4 + this.tentacleLevel + Math.floor(dist / 55)) * 0.5));
-            const suckerSprite = getBakedTentacleSuckerSprite();
-            for (let i = 1; i <= suckerCount; i++) {
-              const t = i / (suckerCount + 1);
-              const mt = 1 - t;
-              const bx =
-                mt * mt * mt * rootX +
-                3 * mt * mt * t * ctrl1X +
-                3 * mt * t * t * ctrl2X +
-                t * t * t * tipX;
-              const by =
-                mt * mt * mt * rootY +
-                3 * mt * mt * t * ctrl1Y +
-                3 * mt * t * t * ctrl2Y +
-                t * t * t * tipY;
-              const tx =
-                3 * mt * mt * (ctrl1X - rootX) +
-                6 * mt * t * (ctrl2X - ctrl1X) +
-                3 * t * t * (tipX - ctrl2X);
-              const ty =
-                3 * mt * mt * (ctrl1Y - rootY) +
-                6 * mt * t * (ctrl2Y - ctrl1Y) +
-                3 * t * t * (tipY - ctrl2Y);
-              const tangentLen = Math.max(0.001, Math.hypot(tx, ty));
-              const sx = -ty / tangentLen;
-              const sy = tx / tangentLen;
-              const offsetDir = target.side ?? 1;
-              const suckX = bx - sx * baseThickness * (0.45 + (1 - t) * 0.22) * offsetDir;
-              const suckY = by - sy * baseThickness * (0.45 + (1 - t) * 0.22) * offsetDir;
-              const suckR = Math.max(1.3, baseThickness * (0.16 + (1 - t) * 0.12));
-              const suckerScale = suckR / suckerSprite.baseRadius;
-              const suckerWidth = suckerSprite.width * suckerScale;
-              const suckerHeight = suckerSprite.height * suckerScale;
-              ctx.drawImage(
-                suckerSprite,
-                suckX - suckerWidth * 0.5,
-                suckY - suckerHeight * 0.5,
-                suckerWidth,
-                suckerHeight
-              );
+            const rootX = this.radius * 0.5;
+            const rootY = visual.side * this.radius * 0.12;
+            if (justStarted || !visual.initialized) {
+              for (let pointIndex = 0; pointIndex < 5; pointIndex++) {
+                visual.x[pointIndex] = rootX;
+                visual.y[pointIndex] = rootY;
+                visual.vx[pointIndex] = 0;
+                visual.vy[pointIndex] = 0;
+              }
+              visual.initialized = true;
             }
 
-            // Светящийся кончик у цели.
-            ctx.fillStyle = 'rgba(240,255,250,0.95)';
+            const reach = visual.amount * visual.amount * (3 - visual.amount * 2);
+            const desiredTipX = rootX + (visual.targetX - rootX) * reach;
+            const desiredTipY = rootY + (visual.targetY - rootY) * reach;
+            visual.vx[4] = (visual.vx[4] + (desiredTipX - visual.x[4]) * 0.17) * 0.68;
+            visual.vy[4] = (visual.vy[4] + (desiredTipY - visual.y[4]) * 0.17) * 0.68;
+            visual.x[4] += visual.vx[4];
+            visual.y[4] += visual.vy[4];
+            visual.x[0] = rootX;
+            visual.y[0] = rootY;
+
+            const tipDx = visual.x[4] - rootX;
+            const tipDy = visual.y[4] - rootY;
+            const tipDist = Math.max(1, Math.hypot(tipDx, tipDy));
+            const dirX = tipDx / tipDist;
+            const dirY = tipDy / tipDist;
+            const normalX = -dirY;
+            const normalY = dirX;
+            const phase = this.swimPhase * 0.36 + visual.seed;
+            const curve = (this.radius * 0.5 + Math.min(this.radius * 0.92, tipDist * 0.14)) * visual.curveSide * reach;
+
+            for (let pointIndex = 1; pointIndex < 4; pointIndex++) {
+              const pointT = pointIndex * 0.25;
+              const curveProfile = Math.sin(Math.PI * pointT);
+              const calmWave = Math.sin(phase + pointT * 2.1) * this.radius * 0.1 * reach;
+              const offset = (curve + calmWave) * curveProfile;
+              const desiredX = rootX + tipDx * pointT + normalX * offset;
+              const desiredY = rootY + tipDy * pointT + normalY * offset;
+              const spring = 0.085 + pointIndex * 0.014;
+              visual.vx[pointIndex] = (visual.vx[pointIndex] + (desiredX - visual.x[pointIndex]) * spring) * 0.73;
+              visual.vy[pointIndex] = (visual.vy[pointIndex] + (desiredY - visual.y[pointIndex]) * spring) * 0.73;
+              visual.x[pointIndex] += visual.vx[pointIndex];
+              visual.y[pointIndex] += visual.vy[pointIndex];
+            }
+
+            const thickness = Math.max(9.2, this.radius * (0.27 + this.tentacleLevel * 0.022));
+            for (let pointIndex = 0; pointIndex < 5; pointIndex++) {
+              const previousIndex = pointIndex > 0 ? pointIndex - 1 : 0;
+              const nextIndex = pointIndex < 4 ? pointIndex + 1 : 4;
+              let tangentX = visual.x[nextIndex] - visual.x[previousIndex];
+              let tangentY = visual.y[nextIndex] - visual.y[previousIndex];
+              let tangentLength = Math.hypot(tangentX, tangentY);
+              if (tangentLength < 0.001) {
+                tangentX = dirX;
+                tangentY = dirY;
+                tangentLength = 1;
+              }
+              const pointNormalX = -tangentY / tangentLength;
+              const pointNormalY = tangentX / tangentLength;
+              const widthProfile = pointIndex === 0 ? 0.64 : pointIndex === 1 ? 0.72 : pointIndex === 2 ? 0.61 : pointIndex === 3 ? 0.43 : 0.22;
+              const muscleWave = 1 + Math.sin(phase * 0.92 - pointIndex * 0.92) * 0.09 * reach;
+              const pointWidth = thickness * widthProfile * muscleWave;
+              visual.widths[pointIndex] = pointWidth;
+              visual.leftX[pointIndex] = visual.x[pointIndex] + pointNormalX * pointWidth;
+              visual.leftY[pointIndex] = visual.y[pointIndex] + pointNormalY * pointWidth;
+              visual.rightX[pointIndex] = visual.x[pointIndex] - pointNormalX * pointWidth;
+              visual.rightY[pointIndex] = visual.y[pointIndex] - pointNormalY * pointWidth;
+            }
+
+            const gradientTipX = Math.abs(tipDx) + Math.abs(tipDy) > 0.01 ? visual.x[4] : rootX + 1;
+            const gradientTipY = Math.abs(tipDx) + Math.abs(tipDy) > 0.01 ? visual.y[4] : rootY;
+            const tentacleGradient = ctx.createLinearGradient(rootX, rootY, gradientTipX, gradientTipY);
+            tentacleGradient.addColorStop(0, this.tentacleBaseColor);
+            tentacleGradient.addColorStop(0.46, this.tentacleBodyColor);
+            tentacleGradient.addColorStop(1, this.tentacleAccentColor);
+            ctx.fillStyle = tentacleGradient;
             ctx.beginPath();
-            ctx.ellipse(tipX, tipY, baseThickness * 0.34, baseThickness * 0.24, Math.atan2(ny, nx), 0, Math.PI * 2);
+            ctx.moveTo(visual.leftX[0], visual.leftY[0]);
+            for (let pointIndex = 1; pointIndex < 4; pointIndex++) {
+              const midpointX = (visual.leftX[pointIndex] + visual.leftX[pointIndex + 1]) * 0.5;
+              const midpointY = (visual.leftY[pointIndex] + visual.leftY[pointIndex + 1]) * 0.5;
+              ctx.quadraticCurveTo(visual.leftX[pointIndex], visual.leftY[pointIndex], midpointX, midpointY);
+            }
+            ctx.quadraticCurveTo(visual.leftX[4], visual.leftY[4], visual.leftX[4], visual.leftY[4]);
+            ctx.quadraticCurveTo(
+              visual.x[4] + dirX * visual.widths[4] * 0.78,
+              visual.y[4] + dirY * visual.widths[4] * 0.78,
+              visual.rightX[4],
+              visual.rightY[4]
+            );
+            for (let pointIndex = 3; pointIndex > 0; pointIndex--) {
+              const midpointX = (visual.rightX[pointIndex] + visual.rightX[pointIndex - 1]) * 0.5;
+              const midpointY = (visual.rightY[pointIndex] + visual.rightY[pointIndex - 1]) * 0.5;
+              ctx.quadraticCurveTo(visual.rightX[pointIndex], visual.rightY[pointIndex], midpointX, midpointY);
+            }
+            ctx.quadraticCurveTo(visual.rightX[0], visual.rightY[0], visual.rightX[0], visual.rightY[0]);
+            ctx.closePath();
             ctx.fill();
+            ctx.strokeStyle = this.tentacleEdgeColor;
+            ctx.lineWidth = Math.max(1.25, thickness * 0.1);
+            ctx.stroke();
+
+            ctx.strokeStyle = this.tentacleAccentColor;
+            ctx.lineWidth = Math.max(0.85, thickness * 0.1);
+            ctx.beginPath();
+            let highlightX = visual.x[0] + (visual.leftX[0] - visual.x[0]) * 0.32;
+            let highlightY = visual.y[0] + (visual.leftY[0] - visual.y[0]) * 0.32;
+            ctx.moveTo(highlightX, highlightY);
+            for (let pointIndex = 1; pointIndex < 4; pointIndex++) {
+              highlightX = visual.x[pointIndex] + (visual.leftX[pointIndex] - visual.x[pointIndex]) * 0.32;
+              highlightY = visual.y[pointIndex] + (visual.leftY[pointIndex] - visual.y[pointIndex]) * 0.32;
+              const nextHighlightX = visual.x[pointIndex + 1] + (visual.leftX[pointIndex + 1] - visual.x[pointIndex + 1]) * 0.32;
+              const nextHighlightY = visual.y[pointIndex + 1] + (visual.leftY[pointIndex + 1] - visual.y[pointIndex + 1]) * 0.32;
+              ctx.quadraticCurveTo(highlightX, highlightY, (highlightX + nextHighlightX) * 0.5, (highlightY + nextHighlightY) * 0.5);
+            }
+            ctx.quadraticCurveTo(
+              visual.x[4],
+              visual.y[4],
+              visual.x[4] - dirX * visual.widths[4] * 0.7,
+              visual.y[4] - dirY * visual.widths[4] * 0.7
+            );
+            ctx.stroke();
           }
 
           ctx.restore();
@@ -662,43 +882,14 @@ class Player {
         // чтобы персонаж визуально именно плыл, а не перебирал лапами.
         this.drawSideLegs(width, height);
 
-        if (typeof window !== 'undefined' && window.JorPlayerSkins?.drawGameBody) {
-          window.JorPlayerSkins.drawGameBody(ctx, this.skinId, width, height, this.radius, frameTime);
-        } else if (lowDetail) {
-          const bodySprite = getBakedPlayerBodySprite();
-          const sx = width / bodySprite.baseRx;
-          const sy = height / bodySprite.baseRy;
-          ctx.drawImage(
-            bodySprite,
-            -bodySprite.originX * sx,
-            -bodySprite.originY * sy,
-            bodySprite.width * sx,
-            bodySprite.height * sy
-          );
-        } else {
-          const gradient = ctx.createRadialGradient(
-            -width * 0.25,
-            -height * 0.35,
-            width * 0.12,
-            0,
-            0,
-            width * 1.1
-          );
-          gradient.addColorStop(0, '#edfff9');
-          gradient.addColorStop(0.45, '#71ffd8');
-          gradient.addColorStop(1, '#1f9e93');
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, width, height, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        if (this.hurtPulse > 0.02) {
-          ctx.fillStyle = `rgba(255, 130, 160, ${0.18 + this.damageFlash * 0.22})`;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, width * 1.03, height * 1.02, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        const impactAge = this.contactImpactDuration - this.contactImpactTimer;
+        const impactAmount = this.contactImpactTimer > 0
+          ? this.contactImpactStrength * (impactAge < 2
+            ? 0.55 + impactAge * 0.225
+            : Math.pow(this.contactImpactTimer / Math.max(1, this.contactImpactDuration - 2), 1.35))
+          : 0;
+        const impactAngle = this.contactImpactWorldAngle - (this.angle + this.turnTilt * 0.18);
+        this.drawImpactBodySurface(width, height, lowDetail, impactAmount, impactAngle);
 
         // Внутренние органические ядра.
         if (!lowDetail) {
@@ -711,6 +902,16 @@ class Player {
           ctx.beginPath();
           ctx.ellipse(width * 0.04, height * 0.18, width * 0.2, height * 0.16, 0.4, 0, Math.PI * 2);
           ctx.fill();
+        }
+
+        if (this.hasShell && this.shellLevel > 0) {
+          const armor = getEnemyShieldArmorSprite(true);
+          const armorScale = 1 + Math.min(3, this.shellLevel - 1) * 0.035;
+          ctx.save();
+          ctx.globalAlpha = Math.min(0.98, 0.9 + this.shellLevel * 0.02);
+          ctx.scale(width / 70 * armorScale, height / 51 * armorScale);
+          ctx.drawImage(armor, -armor.originX, -armor.originY);
+          ctx.restore();
         }
 
         // Мембрана.
@@ -728,7 +929,13 @@ class Player {
           ctx.restore();
         }
 
-        const mouthOpen = (this.hasMaw ? 0.32 + this.mawLevel * 0.052 : 0.19) + this.attackPulse * 0.38 + this.eatPulse * 0.23 + this.swallowPulse * 0.34;
+        const mouthOpen =
+          (this.hasMaw ? 0.32 + this.mawLevel * 0.052 : 0.19) +
+          this.attackPulse * 0.38 +
+          this.eatPulse * 0.12 +
+          this.swallowPulse * 0.12 +
+          swallowPrep * 0.82 +
+          swallowBiteOpen * 0.86;
         const mandibleBaseX = width * 0.4;
 
         // Центральная ротовая полость между жвалами.
@@ -836,15 +1043,6 @@ class Player {
 
         ctx.restore();
 
-        if (this.hitCooldown > 0) {
-          ctx.save();
-          ctx.globalAlpha = 0.15 + Math.sin(frameTime * 0.04) * 0.1;
-          ctx.fillStyle = '#ff6d7f';
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.radius + 7, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
       }
     }
 

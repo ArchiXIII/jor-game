@@ -209,8 +209,10 @@ function drawMobileEnemyEdgeIndicators() {
         spike.draw();
       }
 
+      drawPickupCollectEffects();
       if (activePet && player) activePet.draw(player);
       if (player) player.draw();
+      drawEnemyEatFragments();
       ctx.restore();
       updateTopProgressBar();
       if (!player) return;

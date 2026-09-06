@@ -154,6 +154,8 @@
 .shopItem p.shopBonusDesc { color: #bfffea; }
 .shopItem .shopBonusValue { color: #ffe071; }
 .shopBuyBtn { position: relative; grid-column: 2; min-height: 34px; border-radius: 12px; border: 1px solid rgba(230,255,252,0.7); background: linear-gradient(180deg, #d9ffff 0%, #7aefff 52%, #1395b4 100%); color: #04141b; font-weight: 700; cursor: pointer; }
+.shopBuyBtn.withCurrencyIcon { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.shopCurrencyIcon { width: 16px; height: 16px; flex: 0 0 16px; object-fit: contain; pointer-events: none; }
 .shopItem.availableToSelect .shopBuyBtn {
   border-color: #d9ffea;
   background: linear-gradient(180deg, #d9ffea 0%, #5cffb4 48%, #12b98c 100%);

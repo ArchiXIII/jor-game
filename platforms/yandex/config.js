@@ -12,7 +12,7 @@
       stickyBanner: true,
       developerGames: true,
       singleEndlessLeaderboard: false,
-      profileXpLeaderboard: true,
+      profileXpLeaderboard: false,
       campaignLeaderboard: true
     }
   };

@@ -35,7 +35,7 @@ const App = {
     // ------------------------------
     // Yandex SDK
     // ------------------------------
-    async function initPlatform() {
+    async function initPlatform(deferGameReady = false) {
       const platformName = String(window.JorPlatform?.name || '');
       document.documentElement.classList.toggle('platformVkOk', platformName === 'vk' || platformName === 'ok');
       if (!window.JorPlatform) {
@@ -51,7 +51,6 @@ const App = {
         });
         App.sdkReady = !!platformState?.ready;
         App.loadingReadySent = !!window.jorLoadingReadySent;
-        App.gameReadyMoment = true;
         // Р СћРЎР‚Р ВµР В±Р С•Р Р†Р В°Р Р…Р С‘Р Вµ Р Р‡Р Р…Р Т‘Р ВµР С”РЎРѓ.Р ВР С–РЎР‚ Р С—. 2.14: РЎРЏР В·РЎвЂ№Р С” Р С‘Р Р…РЎвЂљР ВµРЎР‚РЎвЂћР ВµР в„–РЎРѓР В° Р С•Р С—РЎР‚Р ВµР Т‘Р ВµР В»РЎРЏР ВµРЎвЂљРЎРѓРЎРЏ
         // РЎвЂЎР ВµРЎР‚Р ВµР В· ysdk.environment.i18n.lang. Р вЂќР ВµР В»Р В°Р ВµР С РЎРЊРЎвЂљР С• РЎРѓРЎР‚Р В°Р В·РЎС“ Р С—Р С•РЎРѓР В»Р Вµ init
         // Р С‘ Р С—Р ВµРЎР‚Р ВµР Т‘ Р Р†РЎРѓР ВµР СР С‘ Р С•РЎРѓРЎвЂљР В°Р В»РЎРЉР Р…РЎвЂ№Р СР С‘ UI-Р С•Р С—Р ВµРЎР‚Р В°РЎвЂ Р С‘РЎРЏР СР С‘.
@@ -61,7 +60,10 @@ const App = {
         }
         DOM.sdkStatus.textContent = App.sdkReady ? t('sdkReady') : t('sdkLocal');
 
-        notifyGameReady();
+        if (!deferGameReady) {
+          App.gameReadyMoment = true;
+          notifyGameReady();
+        }
         await initPlatformPlayer();
         await window.JorSaveManager?.load?.();
         window.JorDailyBonus?.syncFromSave?.();
@@ -71,11 +73,15 @@ const App = {
         // Р вЂўРЎРѓР В»Р С‘ РЎРѓРЎвЂљР В°РЎР‚РЎвЂљР С•Р Р†РЎвЂ№Р в„– РЎРЊР С”РЎР‚Р В°Р Р… РЎС“Р В¶Р Вµ Р С•РЎвЂљРЎР‚Р С‘РЎРѓР С•Р Р†Р В°Р Р… Р С” Р СР С•Р СР ВµР Р…РЎвЂљРЎС“ Р С–Р С•РЎвЂљР С•Р Р†Р Р…Р С•РЎРѓРЎвЂљР С‘ SDK РІР‚вЂќ
         // Р Т‘Р В°РЎвЂљРЎРЉ РЎРѓР С‘Р С–Р Р…Р В°Р В» ready() Р С—РЎР‚РЎРЏР СР С• РЎРѓР ВµР в„–РЎвЂЎР В°РЎРѓ. Р ВР Р…Р В°РЎвЂЎР Вµ Р С•Р Р… РЎРѓРЎвЂљРЎР‚Р ВµР В»РЎРЉР Р…РЎвЂРЎвЂљ Р С‘Р В·
         // showStartScreen() Р С”Р В°Р С” РЎвЂљР С•Р В»РЎРЉР С”Р С• РЎвЂљР С•РЎвЂљ Р С—Р С•Р С”Р В°Р В¶Р ВµРЎвЂљРЎРѓРЎРЏ.
-        showEvolutionBanner();
-        if (App.hasStarted && !App.startScreenVisible) {
-          markGameplayStart();
+        if (deferGameReady) {
+          await refreshOurGamesUrl();
+        } else {
+          showEvolutionBanner();
+          if (App.hasStarted && !App.startScreenVisible) {
+            markGameplayStart();
+          }
+          refreshOurGamesUrl();
         }
-        refreshOurGamesUrl();
       } catch (error) {
         console.error('Platform init error:', error);
         DOM.sdkStatus.textContent = t('sdkError');

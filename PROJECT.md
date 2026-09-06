@@ -4,7 +4,7 @@
 
 Общий игровой код не обращается к SDK площадок напрямую. Единый интерфейс находится в `js/platform-core.js`, а платформенные реализации в `platforms/<platform>/`.
 
-- `platforms/yandex/early.js` запускает Yandex SDK и отправляет `LoadingAPI.ready()` максимально рано;
+- `platforms/yandex/early.js` запускает Yandex SDK и удерживает экран загрузки до готовности локализации и стартового интерфейса;
 - `platforms/yandex/adapter.js` содержит профиль, облачные сохранения, рекламу, рейтинги, покупки и ссылку на игры разработчика;
 - `platforms/vk/adapter.js` обслуживает одну таблицу бесконечного режима для VK и OK, профиль и VK Storage;
 - `platforms/vk/backend-client.js` обращается только к изолированным маршрутам Жора;

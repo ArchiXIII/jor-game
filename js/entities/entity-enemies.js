@@ -136,6 +136,9 @@ class Enemy {
         this.fleeShakeY = 0;
         this.finOffset = Math.random() * Math.PI * 2;
         this.bodyPatternSeed = Math.random() * Math.PI * 2;
+        this.appendageVariant = Math.floor(Math.random() * 4);
+        this.visualIntent = 0;
+        this.visualMouthOpen = 0;
 
         // ---- РџРѕРІРµРґРµРЅРёРµ AI ----
         // РЎРѕСЃС‚РѕСЏРЅРёРµ РІСЂР°РіР°: 'wander' (Р±СЂРѕРґРёС‚), 'forage' (РµСЃС‚ РєРѕСЂРј),
@@ -201,11 +204,6 @@ class Enemy {
           this.mawLevel += 1;
           this.foodGrowthBonus = Math.min(1.45, this.foodGrowthBonus + 0.1);
           this.predatorBonus += 0.05;
-        }
-
-        if (id === 'tentacle') {
-          this.hasTentacle = true;
-          this.tentacleLevel += 1;
         }
 
         if (id === 'agility') {
