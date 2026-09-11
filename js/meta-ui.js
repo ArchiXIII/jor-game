@@ -250,7 +250,12 @@
     if (dom.xpLeaderboardHint) dom.xpLeaderboardHint.textContent = tr('xpHint');
     if (dom.topBar) dom.topBar.setAttribute('aria-label', tr('playerProgress'));
     if (dom.trophyShelf) dom.trophyShelf.setAttribute('aria-label', tr('chapterTrophies'));
-    if (dom.leaderboardButton) dom.leaderboardButton.setAttribute('aria-label', tr('rating'));
+    if (dom.leaderboardButton) {
+      const hidden = !hasFeature('leaderboards');
+      dom.leaderboardButton.hidden = hidden;
+      dom.leaderboardButton.style.display = hidden ? 'none' : '';
+      dom.leaderboardButton.setAttribute('aria-label', tr('rating'));
+    }
     if (dom.profileClose) dom.profileClose.setAttribute('aria-label', tr('close'));
     if (dom.leaderboardClose) dom.leaderboardClose.setAttribute('aria-label', tr('close'));
     if (dom.xpLeaderboardClose) dom.xpLeaderboardClose.setAttribute('aria-label', tr('close'));
@@ -320,6 +325,7 @@
   }
 
   async function openLeaderboard(tab = 'stars') {
+    if (!hasFeature('leaderboards')) return;
     state.activeLeaderboardTab = hasFeature('singleEndlessLeaderboard') || tab === 'endless' ? 'endless' : 'stars';
     state.leaderboardLoading = true;
     state.leaderboardError = '';

@@ -56,6 +56,7 @@ async function showRewardedRerollAd() {
 
 function updateRewardButtonState() {
   if (!DOM.rewardAdBtn) return;
+  DOM.rewardAdBtn.hidden = window.JorPlatform?.hasFeature?.('rewardedAds') === false;
   DOM.rewardAdBtn.disabled = App.rewardedUsedThisEvolution;
   DOM.rewardAdBtn.textContent = App.rewardedUsedThisEvolution
     ? t('rewardButtonUsed')
@@ -225,7 +226,7 @@ function renderEvolutionChoices() {
     DOM.evolutionCards.appendChild(buildMutationCard(mutation, index));
   });
 
-  if (!App.rewardedUsedThisEvolution) {
+  if (!App.rewardedUsedThisEvolution && window.JorPlatform?.hasFeature?.('rewardedAds') !== false) {
     DOM.evolutionCards.appendChild(buildLockedRewardCard());
   }
 

@@ -123,11 +123,12 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
     };
 
     function normalizeLanguage(lang) {
-      const value = String(lang || 'ru').toLowerCase();
+      const fallback = window.JorPlatformConfig?.name === 'crazygames' ? 'en' : 'ru';
+      const value = String(lang || fallback).toLowerCase();
       if (SUPPORTED_LANGS.has(value)) return value;
       if (value.startsWith('ru')) return 'ru';
       if (value.startsWith('en')) return 'en';
-      return 'ru';
+      return fallback;
     }
 
     function getLocale() {
@@ -168,7 +169,9 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
       if (DOM.startSubtitle) DOM.startSubtitle.textContent = t('startSubtitle');
       if (DOM.startPlayBtn) DOM.startPlayBtn.textContent = t('play');
       if (DOM.startCampaignBtn) DOM.startCampaignBtn.textContent = t('campaign');
-      if (DOM.startShopBtn) DOM.startShopBtn.textContent = t('shop');
+      if (DOM.startShopBtn) DOM.startShopBtn.textContent = window.JorPlatformConfig?.name === 'crazygames'
+        ? (currentLang === 'en' ? 'Wardrobe' : 'Гардероб')
+        : t('shop');
       if (DOM.startOurGamesBtn) DOM.startOurGamesBtn.textContent = t('ourGames');
       if (DOM.evolutionTitle) DOM.evolutionTitle.textContent = t('evolutionTitle');
       if (DOM.evolutionText) DOM.evolutionText.textContent = t('evolutionChoose');
@@ -257,6 +260,6 @@ const SUPPORTED_LANGS = new Set(['ru', 'en']);
           if (SUPPORTED_LANGS.has(normalized)) return normalized;
         }
       } catch (e) {}
-      return 'ru';
+      return normalizeLanguage('');
     }
 
