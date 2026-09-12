@@ -416,6 +416,7 @@ class EnemyRenderMethods {
           const agilityLevel = Math.min(4, this.agilityLevel);
           const totalPerks = tailLevel + spikeLevel + shellLevel + mawLevel + tentacleLevel + agilityLevel;
           const usesTopDownBody = this.usesTopDownEnemyBody();
+          const appendagePalette = ENEMY_APPENDAGE_PALETTES[this.appendageVariant];
           const width = radius * (usesTopDownBody ? 1.1 : 1.1 + totalPerks * 0.012);
           const height = radius * (usesTopDownBody ? 0.8 : 0.8 + totalPerks * 0.005);
           const dorsalHeight = 0.18 + agilityLevel * 0.035;
@@ -504,7 +505,6 @@ class EnemyRenderMethods {
             spriteCtx.closePath();
           }
           spriteCtx.fill();
-
           spriteCtx.lineWidth = Math.max(1, radius * 0.045);
           if (usesTopDownBody) {
             spriteCtx.strokeStyle = 'rgba(255,235,211,0.62)';
@@ -557,9 +557,19 @@ class EnemyRenderMethods {
 
           if (!usesTopDownBody) {
             const mouthScale = 0.22 + mawLevel * 0.055;
+            spriteCtx.fillStyle = appendagePalette[3];
+            spriteCtx.globalAlpha = 0.3;
+            spriteCtx.beginPath();
+            spriteCtx.ellipse(width * 0.67, 0, width * 0.25, height * (mouthScale + 0.08), 0, 0, Math.PI * 2);
+            spriteCtx.fill();
+            spriteCtx.globalAlpha = 1;
             spriteCtx.fillStyle = 'rgba(28, 12, 18, 0.52)';
             spriteCtx.beginPath();
             spriteCtx.ellipse(width * 0.74, 0, width * (0.16 + mawLevel * 0.015), height * mouthScale, 0, -Math.PI * 0.9, Math.PI * 0.9);
+            spriteCtx.fill();
+            spriteCtx.fillStyle = appendagePalette[6];
+            spriteCtx.beginPath();
+            spriteCtx.ellipse(width * 0.67, height * 0.025, width * 0.09, height * mouthScale * 0.42, 0, 0, Math.PI * 2);
             spriteCtx.fill();
           }
 
@@ -619,8 +629,8 @@ class EnemyRenderMethods {
         const perkScale = 1 + Math.min(4, this.agilityLevel) * 0.1;
         const shieldWeight = this.type === 'shield' ? 0.68 : 1;
         for (let side = -1; side <= 1; side += 2) {
-          const finWave = Math.sin(this.swimPhase * (this.type === 'shield' ? 0.54 : 0.78) + this.finOffset + side * 0.42) * 0.1 * shieldWeight;
-          const turnOpen = clamp(this.turnTilt * side / 0.36, -1, 1);
+          const turnOpen = clamp(this.finTurnLag * side / 0.36, -1, 1);
+          const finWave = Math.sin(this.swimPhase * (this.type === 'shield' ? 0.54 : 0.78) + this.finOffset + side * 0.42 - turnOpen * 0.34) * 0.1 * shieldWeight;
           const openness = 1 + Math.max(0, turnOpen) * 0.34 - Math.max(0, -turnOpen) * 0.18;
           ctx.save();
           ctx.translate(-bodyWidth * 0.04, side * bodyHeight * 0.72);
@@ -691,6 +701,18 @@ class EnemyRenderMethods {
           0,
           bodyWidth * 0.22,
           bodyHeight * (0.17 + openPulse * 0.1 + this.mawLevel * 0.008),
+          0,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.fillStyle = palette[6];
+        ctx.beginPath();
+        ctx.ellipse(
+          bodyWidth * 0.71,
+          bodyHeight * 0.02,
+          bodyWidth * 0.095,
+          bodyHeight * (0.065 + openPulse * 0.045),
           0,
           0,
           Math.PI * 2

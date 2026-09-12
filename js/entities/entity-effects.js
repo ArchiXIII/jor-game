@@ -349,6 +349,7 @@
         this.effort = effort;
         this.duration = Math.round(26 + effort * 10);
         this.biteTriggered = false;
+        this.swallowTriggered = false;
         this.particleCountOverride = options.particleCount;
         const angle = eater.displayAngle ?? eater.angle ?? 0;
         const cosA = Math.cos(angle);
@@ -365,7 +366,7 @@
         source.spikeChargeTimer = 0;
         source.vx = 0;
         source.vy = 0;
-        if (typeof eater.prepareSwallow === 'function') eater.prepareSwallow(0.7 + effort * 0.2, this.duration * 0.22);
+        if (typeof eater.prepareSwallow === 'function') eater.prepareSwallow(0.7 + effort * 0.2, this.duration * (eater === player && effort > 0.5 ? 0.9 : 0.22));
       }
 
       update() {
@@ -398,11 +399,18 @@
         this.source.damageFlash *= 0.82;
         if (!this.biteTriggered && progress >= 0.24) {
           this.biteTriggered = true;
-          if (this.eater === player) playEatingSound();
+          if (this.eater === player && this.effort <= 0.5) playEatingSound();
           this.eater.attackPulse = Math.max(this.eater.attackPulse || 0, 1);
           this.eater.eatPulse = Math.max(this.eater.eatPulse || 0, 1.1);
-          if (typeof this.eater.triggerSwallow === 'function') this.eater.triggerSwallow(0.92 + this.effort * 0.32);
+          if ((this.eater !== player || this.effort <= 0.5) && typeof this.eater.triggerSwallow === 'function') this.eater.triggerSwallow(0.92 + this.effort * 0.32);
           spawnEnemyEatFragments(this.source, this.eater, this.particleCountOverride);
+        }
+        if (!this.swallowTriggered && progress >= 0.9) {
+          this.swallowTriggered = true;
+          if (this.eater === player && this.effort > 0.5) {
+            playEatingSound();
+            this.eater.triggerPreySwallow(this.effort);
+          }
         }
         return progress >= 1;
       }

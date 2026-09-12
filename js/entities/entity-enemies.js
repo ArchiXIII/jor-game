@@ -125,6 +125,7 @@ class Enemy {
         this.swimPhase = Math.random() * Math.PI * 2;
         this.displayAngle = Math.atan2(this.vy, this.vx);
         this.turnTilt = 0;
+        this.finTurnLag = 0;
         this.eatPulse = 0;
         this.attackPulse = 0;
         this.swallowPulse = 0;

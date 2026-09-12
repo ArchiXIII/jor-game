@@ -310,6 +310,11 @@ const App = {
     // ------------------------------
 
 function showStartScreen() {
+      if (player) {
+        player.preyZoomFrame = -1;
+        player.preyZoomCooldown = 0;
+        player.preyZoomStrength = 0;
+      }
       App.startScreenVisible = true;
       App.localPause = true;
       markGameplayStop();

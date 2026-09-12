@@ -21,6 +21,8 @@ function getPlayerFxShadowScale() {
     const bakedPlayerSpikeSprites = [];
     const bakedPlayerMandibleSprites = Object.create(null);
     const bakedPlayerFinSprites = Object.create(null);
+    const bakedPlayerFinKeys = new Array(512);
+    let bakedPlayerFinCursor = 0;
 
     function getFoodSpriteRadius(radius, shard = false) {
       const step = shard ? 0.5 : 0.75;
@@ -244,12 +246,13 @@ function getPlayerFxShadowScale() {
       return { sprite, spriteRadius };
     }
 
-    function getBakedPlayerFinSprite(finIndex, phase, swimPower, mobileLite) {
+    function getBakedPlayerFinSprite(finIndex, phase, swimPower, mobileLite, skinId = 'default') {
+      const skin = window.JorPlayerSkins?.getSkin(skinId);
       const frameCount = mobileLite ? 14 : 18;
       const phaseTurn = ((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       const phaseFrame = Math.round(phaseTurn / (Math.PI * 2) * frameCount) % frameCount;
       const powerFrame = Math.round(clamp((swimPower - 0.72) / 0.83, 0, 1) * 3);
-      const key = `${finIndex}:${phaseFrame}:${powerFrame}:${mobileLite ? 1 : 0}`;
+      const key = `${skin?.id || 'default'}:${finIndex}:${phaseFrame}:${powerFrame}:${mobileLite ? 1 : 0}`;
       if (bakedPlayerFinSprites[key]) return bakedPlayerFinSprites[key];
 
       const baseRadius = 64;
@@ -289,7 +292,12 @@ function getPlayerFxShadowScale() {
       const sprite = createSpriteCanvas(width, height, (spriteCtx) => {
         spriteCtx.save();
         spriteCtx.translate(originX, originY);
-        spriteCtx.fillStyle = 'rgba(98,242,219,0.64)';
+        const membrane = spriteCtx.createLinearGradient(trailingX, 0, tipX, tipY);
+        membrane.addColorStop(0, skin?.fin2 || '#1f9e93');
+        membrane.addColorStop(0.55, skin?.finMembrane || skin?.fin || '#46f0d7');
+        membrane.addColorStop(1, skin?.fin || '#46f0d7');
+        spriteCtx.globalAlpha = 0.68;
+        spriteCtx.fillStyle = membrane;
         spriteCtx.beginPath();
         spriteCtx.moveTo(trailingX, 0);
         spriteCtx.quadraticCurveTo(-finLength * 0.12, upperCtrlY * 0.96, tipX, tipY);
@@ -297,17 +305,20 @@ function getPlayerFxShadowScale() {
         spriteCtx.quadraticCurveTo(-finLength * 0.02, finWidth * 0.34, trailingX, 0);
         spriteCtx.closePath();
         spriteCtx.fill();
+        spriteCtx.globalAlpha = 1;
         spriteCtx.strokeStyle = 'rgba(235,255,250,0.92)';
         spriteCtx.lineWidth = Math.max(1.4, baseRadius * 0.032);
         spriteCtx.stroke();
 
-        spriteCtx.fillStyle = 'rgba(230,255,248,0.28)';
+        spriteCtx.globalAlpha = 0.28;
+        spriteCtx.fillStyle = skin?.finMembrane || skin?.fin || '#46f0d7';
         spriteCtx.beginPath();
         spriteCtx.moveTo(0, 0);
         spriteCtx.quadraticCurveTo(upperCtrlX, upperCtrlY, tipX, tipY);
         spriteCtx.quadraticCurveTo(lowerCtrlX, lowerCtrlY, 0, 0);
         spriteCtx.closePath();
         spriteCtx.fill();
+        spriteCtx.globalAlpha = 1;
 
         spriteCtx.strokeStyle = 'rgba(255,255,255,0.58)';
         spriteCtx.lineWidth = Math.max(1.1, baseRadius * 0.024);
@@ -333,22 +344,28 @@ function getPlayerFxShadowScale() {
       sprite.originX = originX;
       sprite.originY = originY;
       sprite.baseRadius = baseRadius;
+      const expiredKey = bakedPlayerFinKeys[bakedPlayerFinCursor];
+      if (expiredKey !== undefined) delete bakedPlayerFinSprites[expiredKey];
+      bakedPlayerFinKeys[bakedPlayerFinCursor] = key;
+      bakedPlayerFinCursor = (bakedPlayerFinCursor + 1) % bakedPlayerFinKeys.length;
       bakedPlayerFinSprites[key] = sprite;
       return sprite;
     }
 
-    function drawBakedPlayerSideFins(renderCtx, width, height, radius, legCycle, swimPower) {
+    function drawBakedPlayerSideFins(renderCtx, width, height, radius, legCycle, swimPower, skinId = 'default', turnLag = 0) {
       const mobileLite = isPlayerLowDetail();
       for (let side = -1; side <= 1; side += 2) {
+        const turnOpen = clamp(turnLag * side / 0.45, -1, 1);
         for (let finIndex = 0; finIndex < 2; finIndex++) {
-          const phase = legCycle * 0.72 + finIndex * Math.PI * 0.52 + (side === 1 ? 0 : Math.PI * 0.55);
-          const sprite = getBakedPlayerFinSprite(finIndex, phase, swimPower, mobileLite);
+          const phase = legCycle * 0.72 + finIndex * Math.PI * 0.52 + (side === 1 ? 0 : Math.PI * 0.55) - turnOpen * 0.34;
+          const sprite = getBakedPlayerFinSprite(finIndex, phase, swimPower, mobileLite, skinId);
           const scale = radius / sprite.baseRadius;
           const rootX = finIndex === 0 ? -width * 0.2 : width * 0.26;
           const rootY = side * height * (0.64 + finIndex * 0.03);
           renderCtx.save();
           renderCtx.translate(rootX, rootY);
-          renderCtx.scale(scale, scale * side);
+          renderCtx.rotate(-side * turnOpen * 0.07);
+          renderCtx.scale(scale * (1 + Math.max(0, turnOpen) * 0.06), scale * side * (1 + turnOpen * 0.11));
           renderCtx.drawImage(sprite, -sprite.originX, -sprite.originY);
           renderCtx.restore();
         }

@@ -176,6 +176,15 @@ function drawMobileEnemyEdgeIndicators() {
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
       ctx.filter = 'none';
+      ctx.save();
+      const preyZoom = player && !App.startScreenVisible && !gameOver && !victory ? player.getPreyZoomScale() : 1;
+      if (preyZoom > 1) {
+        const anchorX = clamp((player.x - camera.x) * (camera.zoom || 1), 0, canvas.width);
+        const anchorY = clamp((player.y - camera.y) * (camera.zoom || 1), 0, canvas.height);
+        ctx.translate(anchorX, anchorY);
+        ctx.scale(preyZoom, preyZoom);
+        ctx.translate(-anchorX, -anchorY);
+      }
       drawBackground();
       if (typeof drawCampaignCurrents === 'function') drawCampaignCurrents();
       DOM.sdkStatus.textContent = endlessMode && typeof getEndlessWave === 'function'
@@ -213,6 +222,7 @@ function drawMobileEnemyEdgeIndicators() {
       if (activePet && player) activePet.draw(player);
       if (player) player.draw();
       drawEnemyEatFragments();
+      ctx.restore();
       ctx.restore();
       updateTopProgressBar();
       if (!player) return;

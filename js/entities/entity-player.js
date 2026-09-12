@@ -109,6 +109,7 @@ class Player {
         // Визуальная анимация существа.
         this.swimPhase = Math.random() * Math.PI * 2;
         this.turnTilt = 0;
+        this.finTurnLag = 0;
         this.attackPulse = 0;
         this.eatPulse = 0;
         this.swallowPulse = 0;
@@ -117,6 +118,10 @@ class Player {
         this.swallowAnimationFrame = -1;
         this.swallowAnimationDuration = 18;
         this.swallowAnimationStrength = 0;
+        this.preySwallowStrength = 0;
+        this.preyZoomFrame = -1;
+        this.preyZoomCooldown = 0;
+        this.preyZoomStrength = 0;
         this.hurtPulse = 0;
         this.damageFlash = 0;
         this.idlePulse = Math.random() * Math.PI * 2;
@@ -157,6 +162,28 @@ class Player {
           this.swallowAnimationFrame = 12;
         }
         this.swallowAnimationStrength = Math.max(this.swallowAnimationStrength, Math.min(1.25, strength));
+      }
+
+      triggerPreySwallow(ratio) {
+        const amount = clamp((ratio - 0.5) / 0.45, 0, 1);
+        const strength = 0.72 * amount * amount * (3 - 2 * amount);
+        this.swallowAnimationFrame = 0;
+        this.triggerSwallow(0.92 + clamp(ratio, 0.3, 1) * 0.32);
+        this.preySwallowStrength = Math.max(this.preySwallowStrength, strength);
+        if (ratio <= 0.5 || this.preyZoomCooldown > 0) return;
+        const mediumT = clamp((ratio - 0.5) / 0.2, 0, 1);
+        const largeT = clamp((ratio - 0.7) / 0.15, 0, 1);
+        this.preyZoomStrength = 0.012 * mediumT * mediumT * (3 - 2 * mediumT)
+          + 0.018 * largeT * largeT * (3 - 2 * largeT);
+        this.preyZoomFrame = 0;
+        this.preyZoomCooldown = 24;
+      }
+
+      getPreyZoomScale() {
+        if (this.preyZoomFrame < 0 || this.preyZoomFrame >= 22) return 1;
+        const t = this.preyZoomFrame < 7 ? this.preyZoomFrame / 7 : (this.preyZoomFrame - 7) / 15;
+        const eased = t * t * (3 - 2 * t);
+        return 1 + this.preyZoomStrength * (this.preyZoomFrame < 7 ? eased : 1 - eased);
       }
 
       receiveImpact(strength = 1) {
@@ -205,6 +232,7 @@ class Player {
         } else {
           this.turnTilt *= 0.72;
         }
+        this.finTurnLag += (this.turnTilt - this.finTurnLag) * 0.1;
 
         if (
           dashRequested &&
@@ -295,6 +323,8 @@ class Player {
         this.attackPulse *= 0.91;
         this.eatPulse *= 0.9;
         this.swallowPulse *= 0.88;
+        if (this.preyZoomCooldown > 0) this.preyZoomCooldown -= 1;
+        if (this.preyZoomFrame >= 0 && ++this.preyZoomFrame >= 22) this.preyZoomFrame = -1;
         if (this.swallowPreparationTimer > 0) {
           this.swallowPreparationTimer -= 1;
         } else {
@@ -306,6 +336,7 @@ class Player {
           if (this.swallowAnimationFrame >= this.swallowAnimationDuration) {
             this.swallowAnimationFrame = -1;
             this.swallowAnimationStrength = 0;
+            this.preySwallowStrength = 0;
           }
         }
         this.hurtPulse *= 0.85;
@@ -473,7 +504,7 @@ class Player {
 
       drawSideLegs(width, height) {
         const swimPower = Math.min(1.55, 0.55 + this.legWave * 1.05 + (this.dashTime > 0 ? 0.24 : 0));
-        drawBakedPlayerSideFins(ctx, width, height, this.radius, this.legCycle, swimPower);
+        drawBakedPlayerSideFins(ctx, width, height, this.radius, this.legCycle, swimPower, this.skinId, this.finTurnLag);
       }
 
       drawBodySurface(width, height, lowDetail) {
@@ -562,6 +593,7 @@ class Player {
         let swallowBiteOpen = 0;
         let swallowWave = 0;
         let swallowRecoil = 0;
+        let preyWave = 0;
         if (this.swallowAnimationFrame >= 0) {
           const swallowT = clamp(this.swallowAnimationFrame / this.swallowAnimationDuration, 0, 1);
           const closeT = clamp(swallowT / 0.42, 0, 1);
@@ -570,14 +602,15 @@ class Player {
           swallowBiteOpen = (1 - closeEase) * this.swallowAnimationStrength;
           swallowWave = Math.sin(waveT * Math.PI) * this.swallowAnimationStrength;
           swallowRecoil = Math.sin(clamp(swallowT / 0.68, 0, 1) * Math.PI) * this.swallowAnimationStrength;
+          preyWave = Math.sin(clamp(this.swallowAnimationFrame / 12, 0, 1) * Math.PI) * this.preySwallowStrength;
         }
         const width = this.radius * (
           1.04 + locomotion * 0.06 + dashBoost + this.attackPulse * 0.08 + evolutionScale * 0.08 +
-          this.hurtPulse * 0.02 + swallowWave * 0.065 - swallowBiteOpen * 0.035
+          this.hurtPulse * 0.02 + swallowWave * 0.065 - swallowBiteOpen * 0.035 - preyWave * 0.09
         );
         const height = this.radius * (
           0.9 - locomotion * 0.05 + this.eatPulse * 0.05 + evolutionScale * 0.04 +
-          this.swallowPulse * 0.05 - this.hurtPulse * 0.09 + swallowWave * 0.17 - swallowBiteOpen * 0.055
+          this.swallowPulse * 0.05 - this.hurtPulse * 0.09 + swallowWave * 0.17 - swallowBiteOpen * 0.055 + preyWave * 0.085
         );
         const swallowForward = this.radius * (swallowPrep * 0.055 - swallowRecoil * 0.055);
 
@@ -769,6 +802,7 @@ class Player {
 
         if (this.hasTail || (typeof window !== 'undefined' && window.JorPlayerSkins?.hasVisualTail?.(this.skinId))) {
           ctx.save();
+          const tailSkin = window.JorPlayerSkins?.getSkin(this.skinId);
           const tailPhase = this.swimPhase * 0.92 * PLAYER_SWIM_VISUAL_SPEED;
           const tailSwing = Math.sin(tailPhase) * this.radius * (0.34 + this.tailLevel * 0.035);
           const tailTipSwing = Math.sin(tailPhase - 0.75) * this.radius * (0.62 + this.tailLevel * 0.06);
@@ -778,7 +812,8 @@ class Player {
           const tailFinHeight = height * (0.52 + this.tailLevel * 0.05);
           const splitDepth = width * (0.18 + this.tailLevel * 0.02);
 
-          ctx.strokeStyle = 'rgba(178,255,242,0.82)';
+          ctx.globalAlpha = 0.82;
+          ctx.strokeStyle = tailSkin?.fin || '#46f0d7';
           ctx.lineWidth = Math.max(3.5, this.radius * (0.11 + this.tailLevel * 0.012));
           ctx.lineCap = 'round';
           ctx.beginPath();
@@ -792,6 +827,7 @@ class Player {
             tailTipSwing * 0.26
           );
           ctx.stroke();
+          ctx.globalAlpha = 1;
 
           ctx.beginPath();
           ctx.moveTo(tailBaseX, 0);
@@ -824,8 +860,10 @@ class Player {
             0
           );
           ctx.closePath();
-          ctx.fillStyle = 'rgba(168,252,236,0.34)';
+          ctx.globalAlpha = 0.42;
+          ctx.fillStyle = tailSkin?.finMembrane || tailSkin?.fin || '#46f0d7';
           ctx.fill();
+          ctx.globalAlpha = 1;
           ctx.strokeStyle = 'rgba(236,255,250,0.88)';
           ctx.lineWidth = Math.max(1.3, this.radius * 0.026);
           ctx.stroke();
@@ -891,19 +929,6 @@ class Player {
         const impactAngle = this.contactImpactWorldAngle - (this.angle + this.turnTilt * 0.18);
         this.drawImpactBodySurface(width, height, lowDetail, impactAmount, impactAngle);
 
-        // Внутренние органические ядра.
-        if (!lowDetail) {
-          ctx.fillStyle = 'rgba(255,255,255,0.12)';
-          ctx.beginPath();
-          ctx.ellipse(-width * 0.14, 0, width * 0.28, height * 0.32, Math.sin(this.idlePulse) * 0.22, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = 'rgba(18, 78, 67, 0.18)';
-          ctx.beginPath();
-          ctx.ellipse(width * 0.04, height * 0.18, width * 0.2, height * 0.16, 0.4, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
         if (this.hasShell && this.shellLevel > 0) {
           const armor = getEnemyShieldArmorSprite(true);
           const armorScale = 1 + Math.min(3, this.shellLevel - 1) * 0.035;
@@ -913,13 +938,6 @@ class Player {
           ctx.drawImage(armor, -armor.originX, -armor.originY);
           ctx.restore();
         }
-
-        // Мембрана.
-        ctx.strokeStyle = 'rgba(235,255,250,0.32)';
-        ctx.lineWidth = Math.max(1.2, this.radius * 0.055);
-        ctx.beginPath();
-        ctx.ellipse(0, 0, width * 1.03, height * 1.03, 0, 0, Math.PI * 2);
-        ctx.stroke();
 
         if (this.hasSpike) {
           ctx.save();
@@ -939,18 +957,14 @@ class Player {
         const mandibleBaseX = width * 0.4;
 
         // Центральная ротовая полость между жвалами.
-        ctx.fillStyle = 'rgba(7, 30, 28, 0.68)';
-        ctx.beginPath();
-        ctx.ellipse(
-          width * 0.77,
-          0,
-          Math.max(7.5, this.radius * (0.24 + this.mawLevel * 0.03)),
-          Math.max(3.4, this.radius * (0.14 + mouthOpen * 0.22)),
-          0,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
+        if (typeof window !== 'undefined' && window.JorPlayerSkins?.drawGameMouthCavity) {
+          window.JorPlayerSkins.drawGameMouthCavity(ctx, this.skinId, width, height, this.radius, mouthOpen);
+        } else {
+          ctx.fillStyle = 'rgba(7, 30, 28, 0.68)';
+          ctx.beginPath();
+          ctx.ellipse(width * 0.77, 0, Math.max(7.5, this.radius * (0.24 + this.mawLevel * 0.03)), Math.max(3.4, this.radius * (0.14 + mouthOpen * 0.22)), 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         const mandibleSprite = getBakedPlayerMandibleSprite(this.mawLevel, mouthOpen, this.attackPulse);
         const mandibleScaleX = width / mandibleSprite.baseWidth;

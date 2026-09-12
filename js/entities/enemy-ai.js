@@ -440,6 +440,7 @@ class EnemyAiMethods {
           ? 0.24 + this.agilityLevel * 0.018
           : 0.14 + this.agilityLevel * 0.018 + lateGameScale * 0.024 + campaignThreat * 0.025;
         this.displayAngle += angleDelta * turnResponsiveness;
+        this.finTurnLag += (this.turnTilt - this.finTurnLag) * 0.09;
 
         const animationCurrentSpeed = (currentSpeed * enemyPlatformSpeedScale) / Math.max(1, worldSpeedScale);
         this.swimPhase += 0.11 + animationCurrentSpeed * 0.12 + this.tailLevel * 0.02;
