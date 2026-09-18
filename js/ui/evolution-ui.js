@@ -244,7 +244,7 @@ async function openEvolutionPanel(source = 'normal') {
   App.rewardedUsedThisEvolution = false;
   lockEvolutionChoices(500);
   currentChoices = getMutationChoices();
-  if (window.JorPlatform?.name === 'local' || window.JorShopUI?.hasNoRewardAds?.()) {
+  if (window.JorPlatform?.name === 'local' || window.JorPlatform?.name === 'crazygames' || window.JorShopUI?.hasNoRewardAds?.()) {
     unlockRewardMutationChoice();
   }
 

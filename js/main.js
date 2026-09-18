@@ -25,7 +25,7 @@ const FIXED_STEP_MS = 1000 / 60;
       fixedStepAccumulator += deltaMs;
       updateMobileControlsVisibility();
       if (typeof processRenderWarmupQueue === 'function') {
-        const warmupIdle = App.startScreenVisible || App.localPause || App.platformPaused || App.userPaused;
+        const warmupIdle = App.startScreenVisible || App.localPause || App.platformPaused || App.orientationBlocked || App.userPaused;
         processRenderWarmupQueue(warmupIdle ? 4 : 0.75, warmupIdle ? 6 : 1);
       }
 
@@ -94,6 +94,9 @@ DOM.startPlayBtn.addEventListener('click', startGameFromMenu);
       });
 
       DOM.restartBtn.addEventListener('click', () => {
+        if (App.gameMode === 'tutorial' && window.JorTutorial?.isComplete?.()) {
+          return window.JorTutorial.continueToMenu();
+        }
         returnToMainMenuFromRoundEnd();
       });
 

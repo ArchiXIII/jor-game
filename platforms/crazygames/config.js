@@ -5,7 +5,9 @@
     name: 'crazygames',
     documentTitle: 'Gulp',
     features: {
-      cloudStorage: false,
+      cloudStorage: true,
+      sdkManagedStorage: true,
+      landscapeOnly: true,
       leaderboards: false,
       purchases: false,
       rewardedAds: false,

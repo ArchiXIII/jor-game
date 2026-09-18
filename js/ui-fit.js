@@ -58,6 +58,7 @@
       case 'xpLeaderboard': return compact ? [460, 360] : [460, 560];
       case 'evolution': return viewport.height <= 520 ? [560, 230] : [980, 310];
       case 'message':
+        if (element.classList.contains('tutorialCompleteDialog')) return compact ? [420, 210] : [440, 240];
         if (element.classList.contains('campaignCompleteDialog')) {
           if (element.classList.contains('campaignCompactResult')) {
             const hasRetry = !!element.querySelector('#messageRetryBtn:not([hidden])');
@@ -84,6 +85,7 @@
     const size = sizeFor(entry.name, viewport, element);
     const simpleMessage = entry.name === 'message'
       && !element.classList.contains('campaignCompleteDialog')
+      && !element.classList.contains('tutorialCompleteDialog')
       && !element.classList.contains('leaderboardDialog')
       && !element.classList.contains('levelFailedDialog');
     const contentHeight = entry.name === 'roundIntro'

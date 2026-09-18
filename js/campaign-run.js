@@ -1,7 +1,9 @@
 let campaignRun = null;
 
 function getActiveCampaignLevel() {
-  if (typeof App !== 'object' || App.gameMode !== 'campaign') return null;
+  if (typeof App !== 'object') return null;
+  if (App.gameMode === 'tutorial') return window.JorTutorial?.level || null;
+  if (App.gameMode !== 'campaign') return null;
   return window.JorCampaignLevels?.getLevel?.(App.campaignLevel) || null;
 }
 
@@ -79,6 +81,7 @@ function getCampaignProgressValue() {
 
 function getCampaignTimeLimitFrames() {
   if (!campaignRun) return 0;
+  if (App.gameMode === 'tutorial') return 0;
   if (campaignRun.level.timeLimit) return Math.max(1, campaignRun.level.timeLimit) * 60;
   if (campaignRun.level.type === 'survive') return campaignRun.level.stars[2] * 60;
   return Math.max(75, 50 + campaignRun.level.n * 5) * 60;
@@ -109,6 +112,7 @@ function getCampaignTopProgressText() {
 
   const level = campaignRun.level;
   const value = getCampaignProgressValue();
+  if (App.gameMode === 'tutorial') return window.JorTutorial?.progressText?.(value) || '';
   const goal = level.stars[2] || level.target || 1;
   const label = window.JorCampaignLevels?.label?.(level.type) || level.type;
 
@@ -134,6 +138,16 @@ function getCampaignXpReward(level, stars, previousStars) {
 
 function completeCampaignRun(stars) {
   if (!campaignRun || campaignRun.completed) return;
+
+  if (App.gameMode === 'tutorial') {
+    campaignRun.completed = true;
+    victory = true;
+    gameOver = false;
+    App.localPause = true;
+    markGameplayStop();
+    window.JorTutorial?.showCompletion?.();
+    return;
+  }
 
   const safeStars = Math.max(0, Math.min(3, Math.floor(Number(stars) || 0)));
   const completedLevel = campaignRun.level;

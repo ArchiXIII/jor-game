@@ -42,12 +42,21 @@
     return !!window.JorPlatform?.isAuthorized?.();
   }
 
+  function hasSdkManagedStorage() {
+    return window.JorPlatform?.features?.sdkManagedStorage === true;
+  }
+
+  function canUseCloudStorage() {
+    return (isAuthorized() || hasSdkManagedStorage()) && !!window.JorPlatform?.hasCloudStorage?.();
+  }
+
   function playerId() {
     if (!isAuthorized()) return 'guest';
     return String(window.JorPlatform?.getPlayerId?.() || 'authorized');
   }
 
   function ownerId() {
+    if (hasSdkManagedStorage()) return `sdk:${window.JorPlatform?.name || 'platform'}`;
     return isAuthorized() ? `player:${playerId()}` : 'guest';
   }
 
@@ -72,7 +81,30 @@
     }
   }
 
+  function loadSdkMigrationLocal() {
+    const current = readJson(localKey('guest'));
+    const migrated = current ? normalize(current) : normalize({
+      campaign: readJson('jor-campaign-progress-v1'),
+      shop: readJson('jor-shop-v1'),
+      meta: {
+        fullXp: readNumber('jor-full-xp'),
+        bestEndlessScore: readNumber('jor-best-endless-score')
+      }
+    });
+    try {
+      const audioMuted = localStorage.getItem('jorAudioMuted');
+      if (audioMuted === '0' || audioMuted === '1') {
+        migrated.settings = {
+          ...(migrated.settings && typeof migrated.settings === 'object' ? migrated.settings : {}),
+          audioMuted: audioMuted === '1'
+        };
+      }
+    } catch (error) {}
+    return migrated;
+  }
+
   function loadLocal(owner = ownerId()) {
+    if (hasSdkManagedStorage()) return loadSdkMigrationLocal();
     const current = readJson(localKey(owner));
     if (current) return normalize(current);
     if (window.JorPlatform?.hasCloudStorage?.()) return createEmptySave();
@@ -97,6 +129,7 @@
   }
 
   function saveLocal(owner = dataOwner || ownerId()) {
+    if (hasSdkManagedStorage()) return;
     try {
       localStorage.setItem(localKey(owner), JSON.stringify(data));
     } catch (error) {}
@@ -167,12 +200,13 @@
     const result = { ...copy(serverMeta || localMeta || {}) };
     result.fullXp = Math.max(Number(localMeta?.fullXp) || 0, Number(serverMeta?.fullXp) || 0);
     result.bestEndlessScore = Math.max(Number(localMeta?.bestEndlessScore) || 0, Number(serverMeta?.bestEndlessScore) || 0);
+    result.tutorialVersion = Math.max(Number(localMeta?.tutorialVersion) || 0, Number(serverMeta?.tutorialVersion) || 0);
     return result;
   }
 
   function resolveSave(server, local) {
     const unified = objectSource(server?.[CLOUD_KEY]);
-    const result = normalize(unified || {});
+    const result = normalize(unified || local || {});
     result.campaign = mergeCampaign(local?.campaign, server?.jorCampaign, unified?.campaign);
     result.shop = mergeShop(local?.shop, server?.jorShop, unified?.shop);
     result.meta = mergeMeta(local?.meta, unified?.meta);
@@ -212,14 +246,14 @@
   async function persist(flush = false) {
     const owner = ensureOwnerData();
     saveLocal(owner);
-    if (!isAuthorized() || !window.JorPlatform?.hasCloudStorage?.()) return true;
+    if (!canUseCloudStorage()) return true;
     if (cloudOwner !== owner) return load();
     return queueCloudSave(data, flush);
   }
 
   async function load() {
     const owner = ownerId();
-    if (!isAuthorized() || !window.JorPlatform?.hasCloudStorage?.()) {
+    if (!canUseCloudStorage()) {
       ensureOwnerData();
       return true;
     }
@@ -288,7 +322,7 @@
   function setSection(name, value, flush = false) {
     const owner = ensureOwnerData();
     data[name] = copy(value);
-    if (isAuthorized() && cloudOwner !== owner) {
+    if ((isAuthorized() || hasSdkManagedStorage()) && cloudOwner !== owner) {
       if (dirtyOwner !== owner) {
         dirtyOwner = owner;
         dirtySections = Object.create(null);
@@ -305,7 +339,7 @@
   }
 
   if (!window.JorPlatform?.hasCloudStorage?.()) {
-    dataOwner = 'guest';
+    dataOwner = ownerId();
     data = loadLocal(dataOwner);
     loaded = true;
   }

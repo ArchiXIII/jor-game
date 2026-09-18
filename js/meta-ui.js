@@ -404,7 +404,7 @@
 
   function syncSoundButton() {
     if (!dom.soundButton) return;
-    const muted = Boolean(typeof AUDIO !== 'undefined' && AUDIO?.muted);
+    const muted = Boolean(typeof AUDIO !== 'undefined' && (AUDIO?.muted || AUDIO?.platformMuted));
     dom.soundButton.classList.toggle('muted', muted);
     dom.soundButton.setAttribute('aria-label', muted ? 'Sound off' : 'Sound on');
     dom.soundButton.setAttribute('aria-pressed', muted ? 'true' : 'false');

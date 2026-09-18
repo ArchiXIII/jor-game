@@ -90,7 +90,7 @@ function handlePostSimulationProgression() {
 
       const nextFirstPhaseRewardLevel = getNextFirstPhaseRewardLevel();
       const nextEndlessRewardLevel = getNextEndlessRewardLevel();
-      const canOpenPhaseLevelUp = !endlessMode && nextFirstPhaseRewardLevel !== null && player.level >= nextFirstPhaseRewardLevel;
+      const canOpenPhaseLevelUp = App.gameMode !== 'tutorial' && !endlessMode && nextFirstPhaseRewardLevel !== null && player.level >= nextFirstPhaseRewardLevel;
       const canOpenEndlessLevelUp = endlessMode && nextEndlessRewardLevel !== null && endlessLevel >= nextEndlessRewardLevel;
       const canOpenEvolutionNow = (player.evolutionDelayTimer ?? 0) <= 0;
       const canOpenRegularEvolution = canOpenPhaseLevelUp || canOpenEndlessLevelUp;
@@ -119,7 +119,7 @@ function handlePostSimulationProgression() {
         player.level >= GROWTH_CONFIG.TARGET_MAX_LEVEL &&
         firstPhaseRewardLevel > getFirstPhaseRewardCap();
 
-      if (roundCompleted && !endlessMode && App.gameMode !== 'campaign') {
+      if (roundCompleted && !endlessMode && App.gameMode !== 'campaign' && App.gameMode !== 'tutorial') {
         enterEndlessMode();
       }
       return false;
