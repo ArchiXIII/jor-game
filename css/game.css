@@ -216,6 +216,16 @@ html.orientationBlocked body > * {
       pointer-events: auto;
     }
 
+    html.startupPending body > *:not(.yandexBootScreen) {
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    html.startupPending .yandexBootScreen {
+      display: flex;
+      pointer-events: auto;
+    }
+
     .yandexBootBubbles {
       position: relative;
       width: 112px;
